@@ -64,7 +64,7 @@ int PeerConnection::Init(PeerConnectionParams params,
            hardware_acceleration_ ? "ON" : "OFF");
 
   av1_encoding_ = cfg_av1_encoding_ == "true" ? true : false;
-  LOG_INFO("av1 encoding [{}]", hardware_acceleration_ ? "ON" : "OFF");
+  LOG_INFO("av1 encoding [{}]", av1_encoding_ ? "ON" : "OFF");
 
   on_receive_video_buffer_ = params.on_receive_video_buffer;
   on_receive_audio_buffer_ = params.on_receive_audio_buffer;
