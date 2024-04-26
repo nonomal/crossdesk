@@ -429,7 +429,7 @@ const uint8_t *RtpPacket::EncodeAv1(uint8_t *payload, size_t payload_size) {
       extension_offset;
   memcpy(buffer_ + 12 + aggr_header_offset, &av1_aggr_header_, 1);
 
-  uint32_t payload_offset = aggr_header_offset + 1;
+  uint32_t payload_offset = aggr_header_offset;
   memcpy(buffer_ + 13 + payload_offset, payload, payload_size);
   size_ = payload_size + (13 + payload_offset);
 

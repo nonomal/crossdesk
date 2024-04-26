@@ -249,8 +249,8 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
 
         rtp_packet.SetAv1AggrHeader(0, 0, 1, 0);
 
-        // rtp_packet.EncodeAv1(buffer, size);
-        // packets.emplace_back(rtp_packet);
+        rtp_packet.EncodeAv1(obus[i].payload_, obus[i].payload_size_);
+        packets.emplace_back(rtp_packet);
       }
     }
 
