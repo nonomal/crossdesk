@@ -8,8 +8,7 @@
 #define SAVE_RECEIVED_NV12_STREAM 0
 #define SAVE_ENCODED_AV1_STREAM 0
 
-#define YUV420P_BUFFER_SIZE 1280 * 720 * 3 / 2
-static unsigned char yuv420p_buffer[YUV420P_BUFFER_SIZE];
+#define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 
 #define SET_ENCODER_PARAM_OR_RETURN_ERROR(param_id, param_value) \
   do {                                                           \
@@ -106,7 +105,7 @@ AomAv1Encoder::~AomAv1Encoder() {
 }
 
 int AomAv1Encoder::Init() {
-  encoded_frame_ = new uint8_t[YUV420P_BUFFER_SIZE];
+  encoded_frame_ = new uint8_t[NV12_BUFFER_SIZE];
 
   // Initialize encoder configuration structure with default values
   aom_codec_err_t ret = aom_codec_enc_config_default(

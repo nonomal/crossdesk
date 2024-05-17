@@ -2,22 +2,8 @@
 
 #include <cstring>
 
+#include "libyuv.h"
 #include "log.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavdevice/avdevice.h>
-#include <libavfilter/avfilter.h>
-#include <libavformat/avformat.h>
-#include <libavutil/imgutils.h>
-#include <libswscale/swscale.h>
-};
-#ifdef __cplusplus
-};
-#endif
 
 #define SAVE_NV12_STREAM 0
 #define SAVE_H264_STREAM 0
@@ -51,30 +37,6 @@ void CopyYUVWithStride(uint8_t *srcY, uint8_t *srcU, uint8_t *srcV, int width,
     srcV += strideV;
     yuv_data_ += actualStrideV;
   }
-}
-
-int YUV420ToNV12PFFmpeg(unsigned char *src_buffer, int width, int height,
-                        unsigned char *dst_buffer) {
-  AVFrame *Input_pFrame = av_frame_alloc();
-  AVFrame *Output_pFrame = av_frame_alloc();
-  struct SwsContext *img_convert_ctx = sws_getContext(
-      width, height, AV_PIX_FMT_YUV420P, 1280, 720, AV_PIX_FMT_NV12,
-      SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
-
-  av_image_fill_arrays(Input_pFrame->data, Input_pFrame->linesize, src_buffer,
-                       AV_PIX_FMT_YUV420P, width, height, 1);
-  av_image_fill_arrays(Output_pFrame->data, Output_pFrame->linesize, dst_buffer,
-                       AV_PIX_FMT_NV12, 1280, 720, 1);
-
-  sws_scale(img_convert_ctx, (uint8_t const **)Input_pFrame->data,
-            Input_pFrame->linesize, 0, height, Output_pFrame->data,
-            Output_pFrame->linesize);
-
-  if (Input_pFrame) av_free(Input_pFrame);
-  if (Output_pFrame) av_free(Output_pFrame);
-  if (img_convert_ctx) sws_freeContext(img_convert_ctx);
-
-  return 0;
 }
 
 OpenH264Decoder::OpenH264Decoder() {}
@@ -175,8 +137,16 @@ int OpenH264Decoder::Decode(
         fwrite((unsigned char *)decoded_frame_, 1,
                frame_width_ * frame_height_ * 3 / 2, nv12_stream_);
       }
-      YUV420ToNV12PFFmpeg(decoded_frame_, frame_width_, frame_height_,
-                          nv12_frame_);
+
+      libyuv::I420ToNV12(
+          (const uint8_t *)decoded_frame_, frame_width_,
+          (const uint8_t *)decoded_frame_ + frame_width_ * frame_height_,
+          frame_width_ / 2,
+          (const uint8_t *)decoded_frame_ +
+              frame_width_ * frame_height_ * 3 / 2,
+          frame_width_ / 2, nv12_frame_, frame_width_,
+          nv12_frame_ + frame_width_ * frame_height_, frame_width_,
+          frame_width_, frame_height_);
 
       VideoFrame decoded_frame(nv12_frame_,
                                frame_width_ * frame_height_ * 3 / 2,

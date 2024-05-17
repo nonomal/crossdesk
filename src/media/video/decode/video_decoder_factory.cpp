@@ -2,11 +2,9 @@
 
 #if __APPLE__
 #include "dav1d/dav1d_av1_decoder.h"
-#include "ffmpeg/ffmpeg_video_decoder.h"
 #include "openh264/openh264_decoder.h"
 #else
 #include "dav1d/dav1d_av1_decoder.h"
-#include "ffmpeg/ffmpeg_video_decoder.h"
 #include "nvcodec/nvidia_video_decoder.h"
 #include "openh264/openh264_decoder.h"
 #endif
@@ -24,7 +22,6 @@ std::unique_ptr<VideoDecoder> VideoDecoderFactory::CreateVideoDecoder(
   } else {
 #if __APPLE__
     return std::make_unique<OpenH264Decoder>(OpenH264Decoder());
-    // return std::make_unique<FfmpegVideoDecoder>(FfmpegVideoDecoder());
 #else
     if (hardware_acceleration) {
       if (CheckIsHardwareAccerlerationSupported()) {
@@ -33,7 +30,6 @@ std::unique_ptr<VideoDecoder> VideoDecoderFactory::CreateVideoDecoder(
         return nullptr;
       }
     } else {
-      // return std::make_unique<FfmpegVideoDecoder>(FfmpegVideoDecoder());
       return std::make_unique<OpenH264Decoder>(OpenH264Decoder());
     }
 #endif

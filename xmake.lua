@@ -17,28 +17,25 @@ add_packages("asio", "nlohmann_json", "spdlog", "openfec", "libopus", "dav1d", "
 includes("thirdparty")
 
 if is_os("windows") then
-    add_requires("vcpkg::ffmpeg 5.1.2", {configs = {shared = false}})
     add_requires("vcpkg::libnice 0.1.21")
     add_requires("openh264 2.1.1", {configs = {shared = false}})
     add_requires("vcpkg::aom")
-    add_packages("vcpkg::ffmpeg", "vcpkg::libnice", "openh264", "vcpkg::aom", "cuda")
+    add_packages("vcpkg::libnice", "openh264", "vcpkg::aom", "cuda")
     add_defines("_WEBSOCKETPP_CPP11_INTERNAL_")
     add_requires("cuda")
 elseif is_os("linux") then
-    add_requires("ffmpeg 5.1.2", {system = false})
     add_requires("glib", {system = true})
     add_requires("vcpkg::libnice 0.1.21")
     add_requires("openh264 2.1.1", {configs = {shared = false}})
     add_requires("vcpkg::aom")
-    add_packages("ffmpeg", "glib", "vcpkg::libnice", "openh264", "cuda")
+    add_packages("glib", "vcpkg::libnice", "openh264", "cuda")
     add_cxflags("-fPIC") 
     add_syslinks("pthread")
 elseif is_os("macosx") then
-    add_requires("ffmpeg 5.1.2", {system = false})
     add_requires("vcpkg::libnice", {configs = {shared = false}})
     add_requires("vcpkg::openh264", {configs = {shared = false}})
     add_requires("vcpkg::aom")
-    add_packages("ffmpeg", "vcpkg::libnice", "vcpkg::openh264", "vcpkg::aom")
+    add_packages("vcpkg::libnice", "vcpkg::openh264", "vcpkg::aom")
     add_ldflags("-Wl,-ld_classic")
 end
 
@@ -119,8 +116,6 @@ target("media")
         "src/media/video/decode/*.cpp",
         "src/media/video/encode/nvcodec/*.cpp",
         "src/media/video/decode/nvcodec/*.cpp",
-        "src/media/video/encode/ffmpeg/*.cpp",
-        "src/media/video/decode/ffmpeg/*.cpp",
         "src/media/video/encode/openh264/*.cpp",
         "src/media/video/decode/openh264/*.cpp",
         "src/media/video/encode/aom/*.cpp",
@@ -129,8 +124,6 @@ target("media")
         "src/media/video/decode",
         "src/media/video/encode/nvcodec",
         "src/media/video/decode/nvcodec",
-        "src/media/video/encode/ffmpeg",
-        "src/media/video/decode/ffmpeg",
         "src/media/video/encode/openh264",
         "src/media/video/decode/openh264",
         "src/media/video/encode/aom",
@@ -142,8 +135,6 @@ target("media")
         "src/media/video/decode/*.cpp",
         "src/media/video/encode/nvcodec/*.cpp",
         "src/media/video/decode/nvcodec/*.cpp",
-        "src/media/video/encode/ffmpeg/*.cpp",
-        "src/media/video/decode/ffmpeg/*.cpp",
         "src/media/video/encode/openh264/*.cpp",
         "src/media/video/decode/openh264/*.cpp",
         "src/media/video/encode/aom/*.cpp",
@@ -152,8 +143,6 @@ target("media")
         "src/media/video/decode",
         "src/media/video/encode/nvcodec",
         "src/media/video/decode/nvcodec",
-        "src/media/video/encode/ffmpeg",
-        "src/media/video/decode/ffmpeg",
         "src/media/video/encode/openh264",
         "src/media/video/decode/openh264",
         "src/media/video/encode/aom",
@@ -163,16 +152,12 @@ target("media")
     elseif is_os("macosx") then
         add_files("src/media/video/encode/*.cpp",
         "src/media/video/decode/*.cpp",
-        "src/media/video/encode/ffmpeg/*.cpp",
-        "src/media/video/decode/ffmpeg/*.cpp",
         "src/media/video/encode/openh264/*.cpp",
         "src/media/video/decode/openh264/*.cpp",
         "src/media/video/encode/aom/*.cpp",
         "src/media/video/decode/dav1d/*.cpp")
         add_includedirs("src/media/video/encode",
         "src/media/video/decode",
-        "src/media/video/encode/ffmpeg",
-        "src/media/video/decode/ffmpeg",
         "src/media/video/encode/openh264",
         "src/media/video/decode/openh264",
         "src/media/video/encode/aom",
@@ -197,8 +182,7 @@ target("transmission")
 
 target("pc")
     set_kind("object")
-    add_deps("log")
-    add_deps("ws", "ice", "transmission", "inih", "common", "media")
+    add_deps("log", "ws", "ice", "transmission", "inih", "common", "media")
     add_files("src/pc/*.cpp")
     add_includedirs("src/transmission", "src/interface", {public = true})
 

@@ -2,11 +2,9 @@
 
 #if __APPLE__
 #include "aom/aom_av1_encoder.h"
-#include "ffmpeg/ffmpeg_video_encoder.h"
 #include "openh264/openh264_encoder.h"
 #else
 #include "aom/aom_av1_encoder.h"
-#include "ffmpeg/ffmpeg_video_encoder.h"
 #include "nvcodec/nvidia_video_encoder.h"
 #include "openh264/openh264_encoder.h"
 #endif
@@ -23,7 +21,6 @@ std::unique_ptr<VideoEncoder> VideoEncoderFactory::CreateVideoEncoder(
     return std::make_unique<AomAv1Encoder>(AomAv1Encoder());
   } else {
 #if __APPLE__
-    // return std::make_unique<FFmpegVideoEncoder>(FFmpegVideoEncoder());
     return std::make_unique<OpenH264Encoder>(OpenH264Encoder());
 #else
     if (hardware_acceleration) {
@@ -33,7 +30,6 @@ std::unique_ptr<VideoEncoder> VideoEncoderFactory::CreateVideoEncoder(
         return nullptr;
       }
     } else {
-      // return std::make_unique<FFmpegVideoEncoder>(FFmpegVideoEncoder());
       return std::make_unique<OpenH264Encoder>(OpenH264Encoder());
     }
 #endif
