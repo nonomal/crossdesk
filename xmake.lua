@@ -17,24 +17,24 @@ add_packages("asio", "nlohmann_json", "spdlog", "openfec", "libopus", "dav1d", "
 includes("thirdparty")
 
 if is_os("windows") then
-    add_requires("vcpkg::libnice 0.1.21")
+    add_requires("vcpkg::libnice", {configs = {shared = false}})
     add_requires("openh264 2.1.1", {configs = {shared = false}})
-    add_requires("vcpkg::aom")
+    add_requires("vcpkg::aom 3.8.1")
     add_packages("vcpkg::libnice", "openh264", "vcpkg::aom", "cuda")
     add_defines("_WEBSOCKETPP_CPP11_INTERNAL_")
     add_requires("cuda")
 elseif is_os("linux") then
     add_requires("glib", {system = true})
-    add_requires("vcpkg::libnice 0.1.21")
+    add_requires("vcpkg::libnice", {configs = {shared = false}})
     add_requires("openh264 2.1.1", {configs = {shared = false}})
-    add_requires("vcpkg::aom")
+    add_requires("vcpkg::aom 3.8.1")
     add_packages("glib", "vcpkg::libnice", "openh264", "cuda")
     add_cxflags("-fPIC") 
     add_syslinks("pthread")
 elseif is_os("macosx") then
     add_requires("vcpkg::libnice", {configs = {shared = false}})
     add_requires("vcpkg::openh264", {configs = {shared = false}})
-    add_requires("vcpkg::aom")
+    add_requires("vcpkg::aom 3.8.1")
     add_packages("vcpkg::libnice", "vcpkg::openh264", "vcpkg::aom")
     add_ldflags("-Wl,-ld_classic")
 end
@@ -196,8 +196,8 @@ target("projectx")
         add_linkdirs("thirdparty/nvcodec/Lib/x64")
         add_links("nice", "glib-2.0", "gio-2.0", "gmodule-2.0", "gobject-2.0",
         "pcre2-8", "pcre2-16", "pcre2-32", "pcre2-posix", 
-        "zlib", "ffi", "libcrypto", "libssl", "intl", "iconv", "charset", "bz2",
-        "Shell32", "Advapi32", "Dnsapi", "Shlwapi", "Iphlpapi",
+        "zlib", "ffi", "libcrypto", "libssl", "intl", "iconv", 
+        "Shell32", "Advapi32", "Dnsapi", "Shlwapi", 
         "cuda", "nvencodeapi", "nvcuvid",
         "ws2_32", "Bcrypt", "windowsapp", "User32", "Strmiids", "Mfuuid",
         "Secur32", "Bcrypt")

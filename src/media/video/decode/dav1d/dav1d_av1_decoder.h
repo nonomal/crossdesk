@@ -7,24 +7,9 @@
 #ifndef _DAV1D_AV1_DECODER_H_
 #define _DAV1D_AV1_DECODER_H_
 
-#include "dav1d/dav1d.h"
-
-#ifdef _WIN32
-extern "C" {
-#include "libavcodec/avcodec.h"
-};
-#else
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include <libavcodec/avcodec.h>
-#ifdef __cplusplus
-};
-#endif
-#endif
-
 #include <functional>
 
+#include "dav1d/dav1d.h"
 #include "video_decoder.h"
 
 class Dav1dAv1Decoder : public VideoDecoder {
@@ -38,14 +23,6 @@ class Dav1dAv1Decoder : public VideoDecoder {
              std::function<void(VideoFrame)> on_receive_decoded_frame);
 
  private:
-  AVCodecID codec_id_;
-  const AVCodec *codec_;
-  AVCodecContext *codec_ctx_ = nullptr;
-  AVPacket *packet_ = nullptr;
-  AVFrame *frame_ = nullptr;
-  AVFrame *frame_nv12_ = nullptr;
-  struct SwsContext *img_convert_ctx = nullptr;
-
   VideoFrame *decoded_frame_yuv_ = nullptr;
   VideoFrame *decoded_frame_nv12_ = nullptr;
 
