@@ -91,12 +91,15 @@ int ScreenCapturerX11::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
       pFrame_->width, pFrame_->height, pCodecCtx_->pix_fmt, pFrameNv12_->width,
       pFrameNv12_->height, AV_PIX_FMT_NV12, SWS_BICUBIC, NULL, NULL, NULL);
 
+  inited_ = true;
+
   return 0;
 }
 
 int ScreenCapturerX11::Destroy() {
-  if (capture_thread_->joinable()) {
+  if (inited_ && capture_thread_->joinable()) {
     capture_thread_->join();
+    inited_ = false;
   }
 
   return 0;

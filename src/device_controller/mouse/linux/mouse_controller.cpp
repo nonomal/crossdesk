@@ -13,6 +13,7 @@ int MouseController::Init(int screen_width, int screen_height) {
   uinput_fd_ = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
   if (uinput_fd_ < 0) {
     LOG_ERROR("Cannot open device: /dev/uinput");
+    return -1;
   }
 
   ioctl(uinput_fd_, UI_SET_EVBIT, EV_KEY);
@@ -35,14 +36,17 @@ int MouseController::Init(int screen_width, int screen_height) {
   uidev.absmin[ABS_Y] = 0;
   uidev.absmax[ABS_Y] = screen_height_;
 
-  write(uinput_fd_, &uidev, sizeof(uidev));
+  int res_uidev = write(uinput_fd_, &uidev, sizeof(uidev));
   ioctl(uinput_fd_, UI_DEV_CREATE);
   return 0;
 }
 
 int MouseController::Destroy() {
-  ioctl(uinput_fd_, UI_DEV_DESTROY);
-  close(uinput_fd_);
+  if (uinput_fd_) {
+    ioctl(uinput_fd_, UI_DEV_DESTROY);
+    close(uinput_fd_);
+  }
+  return 0;
 }
 
 int MouseController::SendCommand(RemoteAction remote_action) {
@@ -71,6 +75,7 @@ int MouseController::SendCommand(RemoteAction remote_action) {
 }
 
 void MouseController::SimulateKeyDown(int fd, int kval) {
+  int res_ev = 0;
   struct input_event event;
   memset(&event, 0, sizeof(event));
   gettimeofday(&event.time, 0);
@@ -78,15 +83,16 @@ void MouseController::SimulateKeyDown(int fd, int kval) {
   event.type = EV_KEY;
   event.value = 1;
   event.code = kval;
-  write(fd, &event, sizeof(event));
+  res_ev = write(fd, &event, sizeof(event));
 
   event.type = EV_SYN;
   event.value = 0;
   event.code = SYN_REPORT;
-  write(fd, &event, sizeof(event));
+  res_ev = write(fd, &event, sizeof(event));
 }
 
 void MouseController::SimulateKeyUp(int fd, int kval) {
+  int res_ev = 0;
   struct input_event event;
   memset(&event, 0, sizeof(event));
   gettimeofday(&event.time, 0);
@@ -94,12 +100,12 @@ void MouseController::SimulateKeyUp(int fd, int kval) {
   event.type = EV_KEY;
   event.value = 0;
   event.code = kval;
-  write(fd, &event, sizeof(event));
+  res_ev = write(fd, &event, sizeof(event));
 
   event.type = EV_SYN;
   event.value = 0;
   event.code = SYN_REPORT;
-  write(fd, &event, sizeof(event));
+  res_ev = write(fd, &event, sizeof(event));
 }
 
 void MouseController::SetMousePosition(int fd, int x, int y) {

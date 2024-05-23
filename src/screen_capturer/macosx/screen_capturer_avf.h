@@ -66,6 +66,8 @@ class ScreenCapturerAvf : public ScreenCapturer {
   int i_ = 0;
   int videoindex_ = 0;
   int got_picture_ = 0;
+  bool inited_ = false;
+
   // ffmpeg
   AVFormatContext *pFormatCtx_ = nullptr;
   AVCodecContext *pCodecCtx_ = nullptr;

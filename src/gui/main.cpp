@@ -253,7 +253,9 @@ void ServerReceiveDataBuffer(const char *data, size_t size, const char *user_id,
   //           << remote_action.m.flag << " " << remote_action.m.x << " "
   //           << remote_action.m.y << std::endl;
 #if MOUSE_CONTROL
-  mouse_controller->SendCommand(remote_action);
+  if (mouse_controller) {
+    mouse_controller->SendCommand(remote_action);
+  }
 #endif
 }
 
@@ -521,7 +523,7 @@ int main(int argc, char *argv[]) {
           rect.right = screen_w;
           rect.bottom = screen_h;
 
-          screen_capturer->Init(
+          int screen_capturer_init_ret = screen_capturer->Init(
               rect, 60,
               [](unsigned char *data, int size, int width, int height) -> void {
                 auto now_time = std::chrono::high_resolution_clock::now();
@@ -536,14 +538,24 @@ int main(int argc, char *argv[]) {
                 }
               });
 
-          screen_capturer->Start();
+          if (0 == screen_capturer_init_ret) {
+            screen_capturer->Start();
+          } else {
+            screen_capturer->Destroy();
+            screen_capturer = nullptr;
+          }
 
           // Mouse control
           device_controller_factory = new DeviceControllerFactory();
           mouse_controller =
               (MouseController *)device_controller_factory->Create(
                   DeviceControllerFactory::Device::Mouse);
-          mouse_controller->Init(screen_w, screen_h);
+          int mouse_controller_init_ret =
+              mouse_controller->Init(screen_w, screen_h);
+          if (0 != mouse_controller_init_ret) {
+            mouse_controller->Destroy();
+            mouse_controller = nullptr;
+          }
         }
       },
       screen_w, screen_h);
@@ -754,7 +766,13 @@ int main(int argc, char *argv[]) {
   SDL_CloseAudioDevice(output_dev);
   SDL_CloseAudioDevice(input_dev);
 
-  mouse_controller->Destroy();
+  if (screen_capturer) {
+    screen_capturer->Destroy();
+  }
+
+  if (mouse_controller) {
+    mouse_controller->Destroy();
+  }
 
   ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();
