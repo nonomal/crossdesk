@@ -1,7 +1,8 @@
 #ifndef _RTCP_HEADER_H_
 #define _RTCP_HEADER_H_
 
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 #include "log.h"
 

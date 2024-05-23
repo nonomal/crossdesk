@@ -1,7 +1,7 @@
 #ifndef _RINGBUFFER_H_
 #define _RINGBUFFER_H_
 
-#include <string.h>
+#include <cstring>
 
 int RingBufferDummy();
 

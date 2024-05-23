@@ -1,6 +1,9 @@
 #ifndef _VIDEO_ENCODER_H_
 #define _VIDEO_ENCODER_H_
 
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 #include <functional>
 
 class VideoEncoder {

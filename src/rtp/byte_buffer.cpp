@@ -1,6 +1,6 @@
 #include "byte_buffer.h"
 
-#include <string.h>
+#include <cstring>
 
 ByteBufferReader::ByteBufferReader(const char* bytes, size_t len) {
   Construct(bytes, len);

@@ -1,8 +1,7 @@
 #include "audio_encoder.h"
 
-#include <stdlib.h>
-
 #include <chrono>
+#include <cstdlib>
 #include <cstring>
 
 #include "log.h"

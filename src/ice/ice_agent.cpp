@@ -1,7 +1,6 @@
 #include "ice_agent.h"
 
-#include <string.h>
-
+#include <cstring>
 #include <iostream>
 
 #include "log.h"

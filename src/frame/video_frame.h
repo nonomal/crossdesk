@@ -7,8 +7,8 @@
 #ifndef _VIDEO_FRAME_H_
 #define _VIDEO_FRAME_H_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 class VideoFrame {
  public:

@@ -9,8 +9,8 @@
 #define DLLAPI
 #endif
 
-#include <stdint.h>
-#include <stdlib.h>
+#include <cstddef>
+#include <cstdint>
 
 enum DATA_TYPE { VIDEO = 0, AUDIO, DATA };
 enum ConnectionStatus {

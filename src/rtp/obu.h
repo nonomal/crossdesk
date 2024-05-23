@@ -7,8 +7,8 @@
 #ifndef _OBU_H_
 #define _OBU_H_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 #include "aom/aom_codec.h"
 

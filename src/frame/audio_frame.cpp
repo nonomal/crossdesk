@@ -1,8 +1,7 @@
 #include "audio_frame.h"
 
-#include <string.h>
-
-#include <string>
+#include <cstring>
+#include <utility>
 
 AudioFrame::AudioFrame() {}
 

@@ -1,7 +1,8 @@
 #ifndef _RTCP_TYPEDEF_H_
 #define _RTCP_TYPEDEF_H_
 
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 #define DEFAULT_RTCP_VERSION 2
 #define DEFAULT_RTCP_HEADER_SIZE 4

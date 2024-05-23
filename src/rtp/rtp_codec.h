@@ -1,8 +1,8 @@
 #ifndef _RTP_CODEC_H_
 #define _RTP_CODEC_H_
 
-#include <stdint.h>
-
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include "fec_encoder.h"

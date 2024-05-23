@@ -7,8 +7,8 @@
 #ifndef _AUDIO_FRAME_H_
 #define _AUDIO_FRAME_H_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 class AudioFrame {
  public:

@@ -7,9 +7,8 @@
 #ifndef _OBU_PARSER_H_
 #define _OBU_PARSER_H_
 
-#include <stddef.h>
-#include <stdint.h>
-
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include "obu.h"

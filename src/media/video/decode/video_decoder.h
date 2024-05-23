@@ -7,6 +7,9 @@
 #ifndef _VIDEO_DECODER_H_
 #define _VIDEO_DECODER_H_
 
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 #include <functional>
 
 #include "video_frame.h"

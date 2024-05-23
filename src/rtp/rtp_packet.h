@@ -1,10 +1,9 @@
 #ifndef _RTP_PACKET_H_
 #define _RTP_PACKET_H_
 
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <vector>
 
 #include "log.h"

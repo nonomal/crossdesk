@@ -7,8 +7,8 @@
 #ifndef _BYTE_BUFFER_H_
 #define _BYTE_BUFFER_H_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 class ByteBufferReader {
  public:

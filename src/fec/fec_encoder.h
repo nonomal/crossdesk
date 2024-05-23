@@ -7,8 +7,8 @@
 #ifndef _FEC_ENCODER_H_
 #define _FEC_ENCODER_H_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 #ifdef __cplusplus
 extern "C" {
