@@ -35,7 +35,20 @@ HMONITOR GetPrimaryMonitor() {
 
 ScreenCapturerWgc::ScreenCapturerWgc() {}
 
-ScreenCapturerWgc::~ScreenCapturerWgc() {}
+ScreenCapturerWgc::~ScreenCapturerWgc() {
+  Stop();
+  CleanUp();
+
+  if (nv12_frame_) {
+    delete nv12_frame_;
+    nv12_frame_ = nullptr;
+  }
+
+  if (nv12_frame_scaled_) {
+    delete nv12_frame_scaled_;
+    nv12_frame_scaled_ = nullptr;
+  }
+}
 
 bool ScreenCapturerWgc::IsWgcSupported() {
   try {
@@ -91,22 +104,7 @@ int ScreenCapturerWgc::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
   return error;
 }
 
-int ScreenCapturerWgc::Destroy() {
-  if (nv12_frame_) {
-    delete nv12_frame_;
-    nv12_frame_ = nullptr;
-  }
-
-  if (nv12_frame_scaled_) {
-    delete nv12_frame_scaled_;
-    nv12_frame_scaled_ = nullptr;
-  }
-
-  Stop();
-  CleanUp();
-
-  return 0;
-}
+int ScreenCapturerWgc::Destroy() { return 0; }
 
 int ScreenCapturerWgc::Start() {
   if (_running == true) {

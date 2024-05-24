@@ -4,7 +4,12 @@
 
 MouseController::MouseController() {}
 
-MouseController::~MouseController() {}
+MouseController::~MouseController() {
+  if (uinput_fd_) {
+    ioctl(uinput_fd_, UI_DEV_DESTROY);
+    close(uinput_fd_);
+  }
+}
 
 int MouseController::Init(int screen_width, int screen_height) {
   screen_width_ = screen_width;
@@ -41,13 +46,7 @@ int MouseController::Init(int screen_width, int screen_height) {
   return 0;
 }
 
-int MouseController::Destroy() {
-  if (uinput_fd_) {
-    ioctl(uinput_fd_, UI_DEV_DESTROY);
-    close(uinput_fd_);
-  }
-  return 0;
-}
+int MouseController::Destroy() { return 0; }
 
 int MouseController::SendCommand(RemoteAction remote_action) {
   int mouse_pos_x = remote_action.m.x * screen_width_ / 1280;

@@ -9,7 +9,12 @@ unsigned char nv12_buffer_[NV12_BUFFER_SIZE];
 
 ScreenCapturerAvf::ScreenCapturerAvf() {}
 
-ScreenCapturerAvf::~ScreenCapturerAvf() {}
+ScreenCapturerAvf::~ScreenCapturerAvf() {
+  if (inited_ && capture_thread_->joinable()) {
+    capture_thread_->join();
+    inited_ = false;
+  }
+}
 
 int ScreenCapturerAvf::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
                             cb_desktop_data cb) {
@@ -97,14 +102,7 @@ int ScreenCapturerAvf::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
   return 0;
 }
 
-int ScreenCapturerAvf::Destroy() {
-  if (inited_ && capture_thread_->joinable()) {
-    capture_thread_->join();
-    inited_ = false;
-  }
-
-  return 0;
-}
+int ScreenCapturerAvf::Destroy() { return 0; }
 
 int ScreenCapturerAvf::Start() {
   capture_thread_.reset(new std::thread([this]() {
