@@ -11,7 +11,7 @@ add_defines("ASIO_STANDALONE", "ASIO_HAS_STD_TYPE_TRAITS", "ASIO_HAS_STD_SHARED_
     "ASIO_HAS_STD_ADDRESSOF", "ASIO_HAS_STD_ATOMIC", "ASIO_HAS_STD_CHRONO", 
     "ASIO_HAS_CSTDINT", "ASIO_HAS_STD_ARRAY",  "ASIO_HAS_STD_SYSTEM_ERROR")
 
-add_requires("asio 1.24.0", "nlohmann_json", "spdlog 1.14.1", "openfec", "libopus 1.4", "dav1d 1.1.0", "libyuv", "aom")
+add_requires("asio 1.24.0", "nlohmann_json", "spdlog 1.14.1", "openfec", "libopus 1.5.1", "dav1d 1.1.0", "libyuv", "aom", {system = false})
 add_packages("asio", "nlohmann_json", "spdlog", "openfec", "libopus", "dav1d", "libyuv", "aom")
 
 includes("thirdparty")
@@ -31,8 +31,8 @@ elseif is_os("linux") then
     add_syslinks("pthread")
 elseif is_os("macosx") then
     add_requires("vcpkg::libnice", {configs = {shared = false}})
-    add_requires("vcpkg::openh264", {configs = {shared = false}})
-    add_packages("vcpkg::libnice", "vcpkg::openh264")
+    add_requires("openh264 2.4.1", {configs = {shared = false}}, {system = false})
+    add_packages("vcpkg::libnice", "openh264")
     add_ldflags("-Wl,-ld_classic")
 end
 
