@@ -623,9 +623,14 @@ int main(int argc, char *argv[]) {
 #endif
 
 #if CHINESE_FONT
-      ImGui::Begin(u8"菜单", nullptr,
-                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                       ImGuiWindowFlags_NoMove);
+      if (!joined) {
+        ImGui::Begin(u8"菜单", nullptr,
+                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                         ImGuiWindowFlags_NoMove);
+      } else {
+        ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+        ImGui::Begin(u8"菜单", nullptr, ImGuiWindowFlags_None);
+      }
 #else
       ImGui::Begin("Menu", nullptr, ImGuiWindowFlags_NoResize);
 #endif
