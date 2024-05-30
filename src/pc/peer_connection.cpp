@@ -371,9 +371,9 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
         LOG_INFO("]");
 
         for (auto &remote_user_id : user_id_list_) {
-          if (remote_user_id == user_id_) {
-            continue;
-          }
+          // if (remote_user_id == user_id_) {
+          //   continue;
+          // }
           ice_transmission_list_[remote_user_id] =
               std::make_unique<IceTransmission>(true, transmission_id, user_id_,
                                                 remote_user_id, ws_transport_,
