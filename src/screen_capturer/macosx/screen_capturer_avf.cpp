@@ -134,11 +134,11 @@ int ScreenCapturerAvf::Start() {
   return 0;
 }
 
+int ScreenCapturerAvf::Stop() { return 0; }
+
 int ScreenCapturerAvf::Pause() { return 0; }
 
 int ScreenCapturerAvf::Resume() { return 0; }
-
-int ScreenCapturerAvf::Stop() { return 0; }
 
 void ScreenCapturerAvf::OnFrame() {}
 

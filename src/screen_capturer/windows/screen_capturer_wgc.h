@@ -27,7 +27,7 @@ class ScreenCapturerWgc : public ScreenCapturer,
 
   int Pause();
   int Resume();
-  int Stop();
+  virtual int Stop();
 
   void OnFrame(const WgcSession::wgc_session_frame &frame);
 

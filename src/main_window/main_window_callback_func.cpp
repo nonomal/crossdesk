@@ -153,12 +153,14 @@ void MainWindow::OnConnectionStatusCb(ConnectionStatus status,
   } else if (ConnectionStatus::Connected == status) {
     main_window->connection_status_str_ = "Connected";
     main_window->connection_established_ = true;
+    main_window->screen_capturer_->Start();
   } else if (ConnectionStatus::Disconnected == status) {
     main_window->connection_status_str_ = "Disconnected";
   } else if (ConnectionStatus::Failed == status) {
     main_window->connection_status_str_ = "Failed";
   } else if (ConnectionStatus::Closed == status) {
     main_window->connection_status_str_ = "Closed";
+    main_window->screen_capturer_->Stop();
   } else if (ConnectionStatus::IncorrectPassword == status) {
     main_window->connection_status_str_ = "Incorrect password";
     if (main_window->connect_button_pressed_) {

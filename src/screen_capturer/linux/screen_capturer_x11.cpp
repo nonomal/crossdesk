@@ -133,11 +133,11 @@ int ScreenCapturerX11::Start() {
   return 0;
 }
 
+int ScreenCapturerX11::Stop() { return 0; }
+
 int ScreenCapturerX11::Pause() { return 0; }
 
 int ScreenCapturerX11::Resume() { return 0; }
-
-int ScreenCapturerX11::Stop() { return 0; }
 
 void ScreenCapturerX11::OnFrame() {}
 

@@ -28,6 +28,8 @@ class ScreenCapturer {
   virtual int Destroy() = 0;
 
   virtual int Start() = 0;
+
+  virtual int Stop() = 0;
 };
 
 #endif

@@ -38,9 +38,10 @@ class ScreenCapturerAvf : public ScreenCapturer {
 
   virtual int Start();
 
+  virtual int Stop();
+
   int Pause();
   int Resume();
-  int Stop();
 
   void OnFrame();
 

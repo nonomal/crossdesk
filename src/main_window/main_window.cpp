@@ -225,11 +225,10 @@ int MainWindow::Run() {
                 }
               });
 
-          if (0 == screen_capturer_init_ret) {
-            screen_capturer_->Start();
-          } else {
+          if (0 != screen_capturer_init_ret) {
             screen_capturer_->Destroy();
             screen_capturer_ = nullptr;
+            LOG_ERROR("Create screen capturer failed");
           }
 
           // Mouse control
