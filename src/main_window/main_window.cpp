@@ -4,13 +4,15 @@
 #include <iostream>
 #include <string>
 
+#include "device_controller_factory.h"
 #include "localization.h"
 #include "log.h"
 #include "platform.h"
+#include "screen_capturer_factory.h"
 
 // Refresh Event
 #define REFRESH_EVENT (SDL_USEREVENT + 1)
-#define QUIT_EVENT (SDL_USEREVENT + 2)
+#define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 
 MainWindow::MainWindow() {}
 
@@ -111,6 +113,97 @@ int MainWindow::Run() {
 
   mac_addr_str_ = GetMac();
 
+  std::thread rtc_thread(
+      [this](int screen_width, int screen_height) {
+        std::string default_cfg_path = "../../../../config/config.ini";
+        std::ifstream f(default_cfg_path.c_str());
+
+        std::string mac_addr_str_ = GetMac();
+
+        params_.cfg_path =
+            f.good() ? "../../../../config/config.ini" : "config.ini";
+        params_.on_receive_video_buffer = OnReceiveVideoBufferCb;
+        params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
+        params_.on_receive_data_buffer = OnReceiveDataBufferCb;
+        params_.on_signal_status = OnSignalStatusCb;
+        params_.on_connection_status = OnConnectionStatusCb;
+        params_.user_data = this;
+
+        std::string transmission_id = "000001";
+
+        peer_ = CreatePeer(&params_);
+        LOG_INFO("Create peer");
+        std::string server_user_id = "S-" + mac_addr_str_;
+        Init(peer_, server_user_id.c_str());
+        LOG_INFO("peer_ init finish");
+
+        {
+          while (SignalStatus::SignalConnected != signal_status_ && !exit_) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+          }
+
+          if (exit_) {
+            return;
+          }
+
+          std::string user_id = "S-" + mac_addr_str_;
+          is_create_connection_ =
+              CreateConnection(peer_, mac_addr_str_.c_str(), input_password_)
+                  ? false
+                  : true;
+
+          nv12_buffer_ = new char[NV12_BUFFER_SIZE];
+
+          // Screen capture
+          screen_capturer_factory_ = new ScreenCapturerFactory();
+          screen_capturer_ =
+              (ScreenCapturer *)screen_capturer_factory_->Create();
+
+          last_frame_time_ = std::chrono::high_resolution_clock::now();
+          ScreenCapturer::RECORD_DESKTOP_RECT rect;
+          rect.left = 0;
+          rect.top = 0;
+          rect.right = screen_width_;
+          rect.bottom = screen_height_;
+
+          int screen_capturer_init_ret = screen_capturer_->Init(
+              rect, 60,
+              [this](unsigned char *data, int size, int width,
+                     int height) -> void {
+                auto now_time = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double> duration =
+                    now_time - last_frame_time_;
+                auto tc = duration.count() * 1000;
+
+                if (tc >= 0) {
+                  SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
+                           NV12_BUFFER_SIZE);
+                  last_frame_time_ = now_time;
+                }
+              });
+
+          if (0 == screen_capturer_init_ret) {
+            screen_capturer_->Start();
+          } else {
+            screen_capturer_->Destroy();
+            screen_capturer_ = nullptr;
+          }
+
+          // Mouse control
+          device_controller_factory_ = new DeviceControllerFactory();
+          mouse_controller_ =
+              (MouseController *)device_controller_factory_->Create(
+                  DeviceControllerFactory::Device::Mouse);
+          int mouse_controller_init_ret =
+              mouse_controller_->Init(screen_width_, screen_height_);
+          if (0 != mouse_controller_init_ret) {
+            mouse_controller_->Destroy();
+            mouse_controller_ = nullptr;
+          }
+        }
+      },
+      screen_width_, screen_height_);
+
   // Main loop
   while (!exit_) {
     localization_language_ = config_center_.GetLanguage();
@@ -122,9 +215,14 @@ int MainWindow::Run() {
       localization_language_index_last_ = localization_language_index_;
     }
 
-    connect_button_label_ = localization::connect[localization_language_index_];
+    connect_button_label_ =
+        connect_button_pressed_
+            ? localization::disconnect[localization_language_index_]
+            : localization::connect[localization_language_index_];
     fullscreen_button_label_ =
-        localization::fullscreen[localization_language_index_];
+        fullscreen_button_pressed_
+            ? localization::exit_fullscreen[localization_language_index_]
+            : localization::fullscreen[localization_language_index_];
 
     // Start the Dear ImGui frame
     ImGui_ImplSDLRenderer2_NewFrame();
@@ -257,18 +355,28 @@ int MainWindow::Run() {
           ImGui::Spacing();
 
           if (ImGui::Button(connect_button_label_.c_str())) {
-            LOG_ERROR("Click connect button");
             int ret = -1;
-            if ("ClientSignalConnected" == client_signal_status_str_) {
+            if ("SignalConnected" == signal_status_str_) {
               if (connect_button_label_ ==
                       localization::connect[localization_language_index_] &&
                   !connection_established_) {
                 std::string user_id = "C-" + mac_addr_str_;
+                ret = JoinConnection(peer_, remote_id_, client_password_);
+                if (0 == ret) {
+                }
 
               } else if (connect_button_label_ ==
                              localization::disconnect
                                  [localization_language_index_] &&
                          connection_established_) {
+                ret = LeaveConnection(peer_);
+                is_create_connection_ = CreateConnection(
+                    peer_, mac_addr_str_.c_str(), client_password_);
+                memset(audio_buffer_, 0, 960);
+                if (0 == ret) {
+                  connection_established_ = false;
+                  received_frame_ = false;
+                }
               }
 
               if (0 == ret) {
@@ -277,7 +385,6 @@ int MainWindow::Run() {
                 connect_button_label_ =
                     connect_button_pressed_
                         ? localization::disconnect[localization_language_index_]
-
                         : localization::connect[localization_language_index_];
               }
             }
@@ -294,17 +401,22 @@ int MainWindow::Run() {
       if (ImGui::Button(fullscreen_button_label_.c_str())) {
         if (fullscreen_button_label_ ==
             localization::fullscreen[localization_language_index_]) {
+          main_window_width_before_fullscreen_ = main_window_width_;
+          main_window_height_before_fullscreen_ = main_window_height_;
           SDL_SetWindowFullscreen(main_window_, SDL_WINDOW_FULLSCREEN_DESKTOP);
+          fullscreen_button_pressed_ = true;
         } else {
           SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
+          SDL_SetWindowSize(main_window_, main_window_width_before_fullscreen_,
+                            main_window_height_before_fullscreen_);
         }
         fullscreen_button_pressed_ = !fullscreen_button_pressed_;
-
         fullscreen_button_label_ =
             fullscreen_button_pressed_
                 ? localization::exit_fullscreen[localization_language_index_]
 
                 : localization::fullscreen[localization_language_index_];
+        fullscreen_button_pressed_ = false;
       }
       ImGui::End();
     }
@@ -343,18 +455,21 @@ int MainWindow::Run() {
                  event.window.windowID == SDL_GetWindowID(main_window_)) {
         exit_ = true;
       } else if (event.type == REFRESH_EVENT) {
-        sdlRect.x = 0;
-        sdlRect.y = 0;
-        sdlRect.w = main_window_width_;
-        sdlRect.h = main_window_height_;
+        sdl_rect_.x = 0;
+        sdl_rect_.y = 0;
+        sdl_rect_.w = main_window_width_;
+        sdl_rect_.h = main_window_height_;
 
-        // SDL_UpdateTexture(sdl_texture_, NULL, dst_buffer, pixel_w);
+        SDL_UpdateTexture(sdl_texture_, NULL, dst_buffer_, 1280);
       } else {
+        if (connection_established_) {
+          ProcessMouseKeyEven(event);
+        }
       }
     }
 
     SDL_RenderClear(sdl_renderer_);
-    SDL_RenderCopy(sdl_renderer_, sdl_texture_, NULL, &sdlRect);
+    SDL_RenderCopy(sdl_renderer_, sdl_texture_, NULL, &sdl_rect_);
 
     if (!connection_established_ || !received_frame_) {
       SDL_RenderClear(sdl_renderer_);
@@ -373,10 +488,8 @@ int MainWindow::Run() {
       fps_ = frame_count_ / (elapsed_time_ / 1000);
       frame_count_ = 0;
       window_title = "Remote Desk Client FPS [" + std::to_string(fps_) +
-                     "] status [" + server_signal_status_str_ + "|" +
-                     client_signal_status_str_ + "|" +
-                     server_connection_status_str_ + "|" +
-                     client_connection_status_str_ + "]";
+                     "] status [" + connection_status_str_ + "|" +
+                     connection_status_str_ + "]";
       // For MacOS, UI frameworks can only be called from the main thread
       SDL_SetWindowTitle(main_window_, window_title.c_str());
       start_time_ = end_time_;
@@ -384,6 +497,23 @@ int MainWindow::Run() {
   }
 
   // Cleanup
+
+  if (is_create_connection_) {
+    LeaveConnection(peer_);
+  }
+
+  rtc_thread.join();
+  SDL_CloseAudioDevice(output_dev_);
+  SDL_CloseAudioDevice(input_dev_);
+
+  if (screen_capturer_) {
+    screen_capturer_->Destroy();
+  }
+
+  if (mouse_controller_) {
+    mouse_controller_->Destroy();
+  }
+
   ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext();

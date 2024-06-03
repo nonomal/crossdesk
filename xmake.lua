@@ -99,50 +99,26 @@ target("localization")
     set_kind("headeronly")
     add_includedirs("src/localization", {public = true})
 
-target("connection")
+target("main_window")
     set_kind("object")
-    add_deps("log", "common", "screen_capturer", "device_controller")
+    add_deps("log", "common", "localization", "config_center", "projectx", "screen_capturer", "device_controller")
     if is_os("macosx") then
         add_packages("ffmpeg")
     elseif is_os("linux") then
         add_packages("ffmpeg")
     end
-    add_files("src/connection/*.cpp")
-    add_includedirs("src/connection", {public = true})
-
-target("main_window")
-    set_kind("object")
-    add_deps("log", "common", "localization", "config_center")
     add_files("src/main_window/*.cpp")
     add_includedirs("src/main_window", {public = true})
 
 target("remote_desk")
     set_kind("binary")
-    add_deps("log", "common", "projectx", "screen_capturer", "device_controller", "main_window", "connection")
+    add_deps("log", "common", "main_window")
     if is_os("macosx") then
         add_packages("ffmpeg")
     elseif is_os("linux") then
         add_packages("ffmpeg")
     end
     add_files("src/gui/main.cpp")
-
--- target("remote_desk")
---     set_kind("binary")
---     add_deps("log", "common", "projectx", "screen_capturer", "device_controller", "config_center")
---     if is_os("macosx") then
---         add_packages("ffmpeg")
---     elseif is_os("linux") then
---         add_packages("ffmpeg")
---     end
---     add_files("src/gui/main_single_peer.cpp")
-
-    -- after_install(function (target)
-    --     os.cp("$(projectdir)/thirdparty/nvcodec/Lib/x64/*.so", "$(projectdir)/out/bin")
-    --     os.cp("$(projectdir)/thirdparty/nvcodec/Lib/x64/*.so.1", "$(projectdir)/out/bin")
-    --     os.cp("$(projectdir)/out/lib/*.so", "$(projectdir)/out/bin")
-    --     os.rm("$(projectdir)/out/include")
-    --     os.rm("$(projectdir)/out/lib")
-    -- end)
 
 -- target("screen_capturer")
 --     set_kind("binary")

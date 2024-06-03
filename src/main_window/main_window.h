@@ -10,12 +10,16 @@
 #include <SDL.h>
 
 #include <atomic>
+#include <chrono>
 #include <string>
 
+#include "../../thirdparty/projectx/src/interface/x.h"
 #include "config_center.h"
+#include "device_controller_factory.h"
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
+#include "screen_capturer_factory.h"
 
 class MainWindow {
  public:
@@ -24,6 +28,28 @@ class MainWindow {
 
  public:
   int Run();
+
+ public:
+  static void OnReceiveVideoBufferCb(const char *data, size_t size,
+                                     const char *user_id, size_t user_id_size,
+                                     void *user_data);
+
+  static void OnReceiveAudioBufferCb(const char *data, size_t size,
+                                     const char *user_id, size_t user_id_size,
+                                     void *user_data);
+
+  static void OnReceiveDataBufferCb(const char *data, size_t size,
+                                    const char *user_id, size_t user_id_size,
+                                    void *user_data);
+
+  static void OnSignalStatusCb(SignalStatus status, void *user_data);
+
+  static void OnConnectionStatusCb(ConnectionStatus status, void *user_data);
+
+ private:
+  int ProcessMouseKeyEven(SDL_Event &ev);
+  void SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len);
+  void SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len);
 
  private:
   typedef struct {
@@ -43,45 +69,40 @@ class MainWindow {
   int localization_language_index_last_ = -1;
 
  private:
-  int default_main_window_width_ = 1280;
-  int default_main_window_height_ = 720;
-
- private:
   std::string window_title = "Remote Desk Client";
+  std::string mac_addr_str_ = "";
+  std::string connect_button_label_ = "Connect";
+  std::string fullscreen_button_label_ = "Fullscreen";
+  char input_password_tmp_[7] = "";
+  char input_password_[7] = "";
+  char remote_id_[20] = "";
+  char client_password_[20] = "";
 
  private:
   int screen_width_ = 1280;
   int screen_height_ = 720;
   int main_window_width_ = 1280;
   int main_window_height_ = 720;
+  int main_window_width_before_fullscreen_ = 1280;
+  int main_window_height_before_fullscreen_ = 720;
 
   int texture_width_ = 1280;
   int texture_height_ = 720;
 
   SDL_Texture *sdl_texture_ = nullptr;
   SDL_Renderer *sdl_renderer_ = nullptr;
-  SDL_Rect sdlRect;
+  SDL_Rect sdl_rect_;
   SDL_Window *main_window_;
   uint32_t pixformat_ = 0;
 
-  std::string mac_addr_str_ = "";
-
   bool exit_ = false;
-
-  std::string connect_button_label_ = "Connect";
-  std::string fullscreen_button_label_ = "Fullscreen";
-
   bool connection_established_ = false;
   bool menu_hovered_ = false;
-
-  char input_password_tmp_[7] = "";
-  char input_password_[7] = "";
-
-  char remote_id_[20] = "";
-  char client_password_[20] = "";
-
   bool connect_button_pressed_ = false;
   bool fullscreen_button_pressed_ = false;
+  bool received_frame_ = false;
+  bool is_create_connection_ = false;
+  bool audio_buffer_fresh_ = false;
 
   int fps_ = 0;
   uint32_t start_time_;
@@ -89,13 +110,35 @@ class MainWindow {
   uint32_t elapsed_time_;
   uint32_t frame_count_ = 0;
 
-  bool received_frame_ = false;
+ private:
+  ConnectionStatus connection_status_ = ConnectionStatus::Closed;
+  SignalStatus signal_status_ = SignalStatus::SignalClosed;
+  std::string signal_status_str_ = "";
+  std::string connection_status_str_ = "";
 
  private:
-  std::string server_connection_status_str_ = "-";
-  std::string client_connection_status_str_ = "-";
-  std::string server_signal_status_str_ = "-";
-  std::string client_signal_status_str_ = "-";
+  PeerPtr *peer_ = nullptr;
+  Params params_;
+
+ private:
+  SDL_AudioDeviceID input_dev_;
+  SDL_AudioDeviceID output_dev_;
+  unsigned char audio_buffer_[960];
+  int audio_len_ = 0;
+  char *nv12_buffer_ = nullptr;
+  unsigned char *dst_buffer_ = new unsigned char[1280 * 720 * 3];
+
+ private:
+  ScreenCapturerFactory *screen_capturer_factory_ = nullptr;
+  ScreenCapturer *screen_capturer_ = nullptr;
+  DeviceControllerFactory *device_controller_factory_ = nullptr;
+  MouseController *mouse_controller_ = nullptr;
+
+#ifdef __linux__
+  std::chrono::_V2::system_clock::time_point last_frame_time_;
+#else
+  std::chrono::steady_clock::time_point last_frame_time_;
+#endif
 };
 
 #endif
