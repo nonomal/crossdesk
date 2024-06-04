@@ -225,12 +225,24 @@ int MainWindow::Run() {
 
   mac_addr_str_ = GetMac();
 
+#if 0
   std::string default_cfg_path = "../../../../config/config.ini";
   std::ifstream f(default_cfg_path.c_str());
-
-  std::string mac_addr_str_ = GetMac();
-
+  params_.use_cfg_file = true;
   params_.cfg_path = f.good() ? "../../../../config/config.ini" : "config.ini";
+#else
+  params_.use_cfg_file = false;
+  params_.signal_server_ip = "150.158.81.30";
+  params_.signal_server_port = 9099;
+  params_.stun_server_ip = "150.158.81.30";
+  params_.stun_server_port = 3478;
+  params_.turn_server_ip = "150.158.81.30";
+  params_.turn_server_port = 3478;
+  params_.turn_server_username = "dijunkun";
+  params_.turn_server_password = "dijunkunpw";
+  params_.hardware_acceleration = false;
+  params_.av1_encoding = true;
+#endif
   params_.on_receive_video_buffer = OnReceiveVideoBufferCb;
   params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
   params_.on_receive_data_buffer = OnReceiveDataBufferCb;
@@ -242,24 +254,11 @@ int MainWindow::Run() {
 
   peer_ = CreatePeer(&params_);
   LOG_INFO("Create peer");
-  std::string server_user_id = "S-" + mac_addr_str_;
-  Init(peer_, server_user_id.c_str());
+  std::string user_id = "S-" + mac_addr_str_;
+  Init(peer_, user_id.c_str());
   LOG_INFO("Peer init finish");
 
   {
-    while (SignalStatus::SignalConnected != signal_status_ && !exit_) {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-
-    // if (exit_) {
-    //   return;
-    // }
-
-    std::string user_id = "S-" + mac_addr_str_;
-    is_create_connection_ =
-        CreateConnection(peer_, mac_addr_str_.c_str(), input_password_) ? false
-                                                                        : true;
-
     nv12_buffer_ = new char[NV12_BUFFER_SIZE];
 
     // Screen capture
@@ -271,6 +270,15 @@ int MainWindow::Run() {
 
   // Main loop
   while (!exit_) {
+    if (SignalStatus::SignalConnected == signal_status_ &&
+        !is_create_connection_) {
+      is_create_connection_ =
+          CreateConnection(peer_, mac_addr_str_.c_str(), input_password_)
+              ? false
+              : true;
+      LOG_INFO("Connected with signal server, create p2p connection");
+    }
+
     connect_button_label_ =
         connect_button_pressed_
             ? localization::disconnect[localization_language_index_]
@@ -427,7 +435,6 @@ int MainWindow::Run() {
               if (connect_button_label_ ==
                       localization::connect[localization_language_index_] &&
                   !connection_established_) {
-                std::string user_id = "C-" + mac_addr_str_;
                 ret = JoinConnection(peer_, remote_id_, client_password_);
                 if (0 == ret) {
                 }
@@ -437,13 +444,11 @@ int MainWindow::Run() {
                                  [localization_language_index_] &&
                          connection_established_) {
                 ret = LeaveConnection(peer_);
-                is_create_connection_ = CreateConnection(
-                    peer_, mac_addr_str_.c_str(), client_password_);
                 memset(audio_buffer_, 0, 960);
-                if (0 == ret) {
-                  connection_established_ = false;
-                  received_frame_ = false;
-                }
+
+                is_create_connection_ = false;
+                connection_established_ = false;
+                received_frame_ = false;
               }
 
               if (0 == ret) {
