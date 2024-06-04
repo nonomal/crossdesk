@@ -55,6 +55,12 @@ class MainWindow {
   int SaveSettingsIntoCacheFile();
   int LoadSettingsIntoCacheFile();
 
+  int StartScreenCapture();
+  int StopScreenCapture();
+
+  int StartMouseControl();
+  int StopMouseControl();
+
  private:
   typedef struct {
     char password[7];
@@ -157,6 +163,12 @@ class MainWindow {
   int video_quality_button_value_ = 0;
   int language_button_value_last_ = 0;
   int video_quality_button_value_last_ = 0;
+
+ private:
+  std::atomic<bool> start_screen_capture_{false};
+  std::atomic<bool> start_mouse_control_{false};
+  std::atomic<bool> screen_capture_is_started_{false};
+  std::atomic<bool> mouse_control_is_started_{false};
 };
 
 #endif

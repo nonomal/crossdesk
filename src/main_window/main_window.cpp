@@ -58,6 +58,75 @@ int MainWindow::LoadSettingsIntoCacheFile() {
   return 0;
 }
 
+int MainWindow::StartScreenCapture() {
+  screen_capturer_ = (ScreenCapturer *)screen_capturer_factory_->Create();
+  ScreenCapturer::RECORD_DESKTOP_RECT rect;
+  rect.left = 0;
+  rect.top = 0;
+  rect.right = screen_width_;
+  rect.bottom = screen_height_;
+  last_frame_time_ = std::chrono::high_resolution_clock::now();
+
+  int screen_capturer_init_ret = screen_capturer_->Init(
+      rect, 60,
+      [this](unsigned char *data, int size, int width, int height) -> void {
+        auto now_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration = now_time - last_frame_time_;
+        auto tc = duration.count() * 1000;
+
+        if (tc >= 0) {
+          SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
+                   NV12_BUFFER_SIZE);
+          last_frame_time_ = now_time;
+        }
+      });
+
+  if (0 == screen_capturer_init_ret) {
+    screen_capturer_->Start();
+  } else {
+    screen_capturer_->Destroy();
+    delete screen_capturer_;
+    screen_capturer_ = nullptr;
+  }
+
+  return 0;
+}
+
+int MainWindow::StopScreenCapture() {
+  if (screen_capturer_) {
+    LOG_INFO("Destroy screen capturer")
+    screen_capturer_->Destroy();
+    delete screen_capturer_;
+    screen_capturer_ = nullptr;
+  }
+
+  return 0;
+}
+
+int MainWindow::StartMouseControl() {
+  device_controller_factory_ = new DeviceControllerFactory();
+  mouse_controller_ = (MouseController *)device_controller_factory_->Create(
+      DeviceControllerFactory::Device::Mouse);
+  int mouse_controller_init_ret =
+      mouse_controller_->Init(screen_width_, screen_height_);
+  if (0 != mouse_controller_init_ret) {
+    LOG_INFO("Destroy mouse controller")
+    mouse_controller_->Destroy();
+    mouse_controller_ = nullptr;
+  }
+
+  return 0;
+}
+
+int MainWindow::StopMouseControl() {
+  if (mouse_controller_) {
+    mouse_controller_->Destroy();
+    delete mouse_controller_;
+    mouse_controller_ = nullptr;
+  }
+  return 0;
+}
+
 int MainWindow::Run() {
   LoadSettingsIntoCacheFile();
 
@@ -156,95 +225,49 @@ int MainWindow::Run() {
 
   mac_addr_str_ = GetMac();
 
-  std::thread rtc_thread(
-      [this](int screen_width, int screen_height) {
-        std::string default_cfg_path = "../../../../config/config.ini";
-        std::ifstream f(default_cfg_path.c_str());
+  std::string default_cfg_path = "../../../../config/config.ini";
+  std::ifstream f(default_cfg_path.c_str());
 
-        std::string mac_addr_str_ = GetMac();
+  std::string mac_addr_str_ = GetMac();
 
-        params_.cfg_path =
-            f.good() ? "../../../../config/config.ini" : "config.ini";
-        params_.on_receive_video_buffer = OnReceiveVideoBufferCb;
-        params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
-        params_.on_receive_data_buffer = OnReceiveDataBufferCb;
-        params_.on_signal_status = OnSignalStatusCb;
-        params_.on_connection_status = OnConnectionStatusCb;
-        params_.user_data = this;
+  params_.cfg_path = f.good() ? "../../../../config/config.ini" : "config.ini";
+  params_.on_receive_video_buffer = OnReceiveVideoBufferCb;
+  params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
+  params_.on_receive_data_buffer = OnReceiveDataBufferCb;
+  params_.on_signal_status = OnSignalStatusCb;
+  params_.on_connection_status = OnConnectionStatusCb;
+  params_.user_data = this;
 
-        std::string transmission_id = "000001";
+  std::string transmission_id = "000001";
 
-        peer_ = CreatePeer(&params_);
-        LOG_INFO("Create peer");
-        std::string server_user_id = "S-" + mac_addr_str_;
-        Init(peer_, server_user_id.c_str());
-        LOG_INFO("Peer init finish");
+  peer_ = CreatePeer(&params_);
+  LOG_INFO("Create peer");
+  std::string server_user_id = "S-" + mac_addr_str_;
+  Init(peer_, server_user_id.c_str());
+  LOG_INFO("Peer init finish");
 
-        {
-          while (SignalStatus::SignalConnected != signal_status_ && !exit_) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-          }
+  {
+    while (SignalStatus::SignalConnected != signal_status_ && !exit_) {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 
-          if (exit_) {
-            return;
-          }
+    // if (exit_) {
+    //   return;
+    // }
 
-          std::string user_id = "S-" + mac_addr_str_;
-          is_create_connection_ =
-              CreateConnection(peer_, mac_addr_str_.c_str(), input_password_)
-                  ? false
-                  : true;
+    std::string user_id = "S-" + mac_addr_str_;
+    is_create_connection_ =
+        CreateConnection(peer_, mac_addr_str_.c_str(), input_password_) ? false
+                                                                        : true;
 
-          nv12_buffer_ = new char[NV12_BUFFER_SIZE];
+    nv12_buffer_ = new char[NV12_BUFFER_SIZE];
 
-          // Screen capture
-          screen_capturer_factory_ = new ScreenCapturerFactory();
-          screen_capturer_ =
-              (ScreenCapturer *)screen_capturer_factory_->Create();
+    // Screen capture
+    screen_capturer_factory_ = new ScreenCapturerFactory();
 
-          last_frame_time_ = std::chrono::high_resolution_clock::now();
-          ScreenCapturer::RECORD_DESKTOP_RECT rect;
-          rect.left = 0;
-          rect.top = 0;
-          rect.right = screen_width_;
-          rect.bottom = screen_height_;
-
-          int screen_capturer_init_ret = screen_capturer_->Init(
-              rect, 60,
-              [this](unsigned char *data, int size, int width,
-                     int height) -> void {
-                auto now_time = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> duration =
-                    now_time - last_frame_time_;
-                auto tc = duration.count() * 1000;
-
-                if (tc >= 0) {
-                  SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
-                           NV12_BUFFER_SIZE);
-                  last_frame_time_ = now_time;
-                }
-              });
-
-          if (0 != screen_capturer_init_ret) {
-            screen_capturer_->Destroy();
-            screen_capturer_ = nullptr;
-            LOG_ERROR("Create screen capturer failed");
-          }
-
-          // Mouse control
-          device_controller_factory_ = new DeviceControllerFactory();
-          mouse_controller_ =
-              (MouseController *)device_controller_factory_->Create(
-                  DeviceControllerFactory::Device::Mouse);
-          int mouse_controller_init_ret =
-              mouse_controller_->Init(screen_width_, screen_height_);
-          if (0 != mouse_controller_init_ret) {
-            mouse_controller_->Destroy();
-            mouse_controller_ = nullptr;
-          }
-        }
-      },
-      screen_width_, screen_height_);
+    // Mouse control
+    device_controller_factory_ = new DeviceControllerFactory();
+  }
 
   // Main loop
   while (!exit_) {
@@ -259,6 +282,22 @@ int MainWindow::Run() {
 
     settings_button_label_ =
         localization::settings[localization_language_index_];
+
+    if (start_screen_capture_ && !screen_capture_is_started_) {
+      StartScreenCapture();
+      screen_capture_is_started_ = true;
+    } else if (!start_screen_capture_ && screen_capture_is_started_) {
+      StopScreenCapture();
+      screen_capture_is_started_ = false;
+    }
+
+    if (start_mouse_control_ && !mouse_control_is_started_) {
+      StartMouseControl();
+      mouse_control_is_started_ = true;
+    } else if (!start_mouse_control_ && mouse_control_is_started_) {
+      StopMouseControl();
+      mouse_control_is_started_ = false;
+    }
 
     // Start the Dear ImGui frame
     ImGui_ImplSDLRenderer2_NewFrame();
@@ -648,17 +687,17 @@ int MainWindow::Run() {
     LeaveConnection(peer_);
   }
 
-  rtc_thread.join();
+  // rtc_thread.join();
   SDL_CloseAudioDevice(output_dev_);
   SDL_CloseAudioDevice(input_dev_);
 
-  if (screen_capturer_) {
-    screen_capturer_->Destroy();
-  }
+  // if (screen_capturer_) {
+  //   screen_capturer_->Destroy();
+  // }
 
-  if (mouse_controller_) {
-    mouse_controller_->Destroy();
-  }
+  // if (mouse_controller_) {
+  //   mouse_controller_->Destroy();
+  // }
 
   ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();

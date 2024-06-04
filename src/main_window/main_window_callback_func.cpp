@@ -4,6 +4,7 @@
 
 // Refresh Event
 #define REFRESH_EVENT (SDL_USEREVENT + 1)
+#define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 
 int MainWindow::ProcessMouseKeyEven(SDL_Event &ev) {
   float ratio = (float)(1280.0 / main_window_width_);
@@ -153,14 +154,16 @@ void MainWindow::OnConnectionStatusCb(ConnectionStatus status,
   } else if (ConnectionStatus::Connected == status) {
     main_window->connection_status_str_ = "Connected";
     main_window->connection_established_ = true;
-    main_window->screen_capturer_->Start();
+    main_window->start_screen_capture_ = true;
+    main_window->start_mouse_control_ = true;
   } else if (ConnectionStatus::Disconnected == status) {
     main_window->connection_status_str_ = "Disconnected";
   } else if (ConnectionStatus::Failed == status) {
     main_window->connection_status_str_ = "Failed";
   } else if (ConnectionStatus::Closed == status) {
     main_window->connection_status_str_ = "Closed";
-    main_window->screen_capturer_->Stop();
+    main_window->start_screen_capture_ = false;
+    main_window->start_mouse_control_ = false;
   } else if (ConnectionStatus::IncorrectPassword == status) {
     main_window->connection_status_str_ = "Incorrect password";
     if (main_window->connect_button_pressed_) {
