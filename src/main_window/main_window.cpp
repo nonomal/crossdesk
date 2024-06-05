@@ -522,23 +522,13 @@ int MainWindow::Run() {
       }
 
       if (settings_button_pressed_) {
-        const ImGuiViewport *viewport = ImGui::GetMainViewport();
-
-        ImGui::SetNextWindowPos(
-            ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
-                    localization::settings_window_width
-                        [localization_language_index_]) /
-                       2,
-                   (viewport->WorkSize.y - viewport->WorkPos.y - 190) / 2));
         ImGui::SetNextWindowSize(ImVec2(
             localization::settings_window_width[localization_language_index_],
             190));
 
         ImGui::Begin(
             localization::settings[localization_language_index_].c_str(),
-            nullptr,
-            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                ImGuiWindowFlags_NoMove);
+            nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
         {
           const char *language_items[] = {
