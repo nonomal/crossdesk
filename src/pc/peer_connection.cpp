@@ -179,15 +179,15 @@ int PeerConnection::Init(PeerConnectionParams params,
 
   nv12_data_ = new char[1280 * 720 * 3 / 2];
 
-  if (0 != CreateVideoCodec(hardware_acceleration_)) {
-    LOG_ERROR("Create video codec failed");
-    return -1;
-  }
+  // if (0 != CreateVideoCodec(hardware_acceleration_)) {
+  //   LOG_ERROR("Create video codec failed");
+  //   return -1;
+  // }
 
-  if (0 != CreateAudioCodec()) {
-    LOG_ERROR("Create audio codec failed");
-    return -1;
-  }
+  // if (0 != CreateAudioCodec()) {
+  //   LOG_ERROR("Create audio codec failed");
+  //   return -1;
+  // }
 
   inited_ = true;
   return 0;
@@ -396,6 +396,14 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
         }
         LOG_INFO("]");
 
+        if (0 != CreateVideoCodec(hardware_acceleration_)) {
+          LOG_ERROR("Create video codec failed");
+        }
+
+        if (0 != CreateAudioCodec()) {
+          LOG_ERROR("Create audio codec failed");
+        }
+
         for (auto &remote_user_id : user_id_list_) {
           // if (remote_user_id == user_id_) {
           //   continue;
@@ -454,6 +462,14 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
         std::string sdp = j["sdp"].get<std::string>();
         std::string remote_user_id = j["remote_user_id"].get<std::string>();
         LOG_INFO("[{}] receive offer from [{}]", user_id_, remote_user_id);
+
+        if (0 != CreateVideoCodec(hardware_acceleration_)) {
+          LOG_ERROR("Create video codec failed");
+        }
+
+        if (0 != CreateAudioCodec()) {
+          LOG_ERROR("Create audio codec failed");
+        }
 
         ice_transmission_list_[remote_user_id] =
             std::make_unique<IceTransmission>(false, transmission_id, user_id_,
@@ -529,7 +545,14 @@ int PeerConnection::RequestTransmissionMemberList(
   return 0;
 }
 
-int PeerConnection::Destroy() { return 0; }
+int PeerConnection::Destroy() {
+  ice_transmission_list_.clear();
+  if (nv12_data_) {
+    delete nv12_data_;
+    nv12_data_ = nullptr;
+  }
+  return 0;
+}
 
 SignalStatus PeerConnection::GetSignalStatus() {
   std::lock_guard<std::mutex> l(signal_status_mutex_);

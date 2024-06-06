@@ -73,6 +73,8 @@ typedef struct {
 
 DLLAPI PeerPtr* CreatePeer(const Params* params);
 
+DLLAPI void DestroyPeer(PeerPtr* peer_ptr);
+
 DLLAPI int Init(PeerPtr* peer_ptr, const char* user_id);
 
 DLLAPI int CreateConnection(PeerPtr* peer_ptr, const char* transmission_id,
