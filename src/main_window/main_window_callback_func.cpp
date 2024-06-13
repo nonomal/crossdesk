@@ -166,6 +166,7 @@ void MainWindow::OnConnectionStatusCb(ConnectionStatus status,
     main_window->connection_status_str_ = "Closed";
     main_window->start_screen_capture_ = false;
     main_window->start_mouse_control_ = false;
+    main_window->connection_established_ = false;
   } else if (ConnectionStatus::IncorrectPassword == status) {
     main_window->connection_status_str_ = "Incorrect password";
     if (main_window->connect_button_pressed_) {
