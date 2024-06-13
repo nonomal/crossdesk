@@ -96,6 +96,7 @@ class MainWindow {
   std::string settings_button_label_ = "Setting";
   char input_password_tmp_[7] = "";
   char input_password_[7] = "";
+  std::string local_id_ = "";
   char remote_id_[20] = "";
   char client_password_[20] = "";
   bool is_client_mode_ = false;
@@ -126,6 +127,7 @@ class MainWindow {
   bool received_frame_ = false;
   bool is_create_connection_ = false;
   bool audio_buffer_fresh_ = false;
+  bool rejoin_ = false;
 
   int fps_ = 0;
   uint32_t start_time_;
@@ -141,6 +143,7 @@ class MainWindow {
 
  private:
   PeerPtr *peer_ = nullptr;
+  PeerPtr *peer_reserved_ = nullptr;
   Params params_;
 
  private:

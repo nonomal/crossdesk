@@ -185,8 +185,8 @@ int MainWindow::CreateConnectionPeer() {
   peer_ = CreatePeer(&params_);
   if (peer_) {
     LOG_INFO("Create peer instance successful");
-    std::string user_id = mac_addr_str_;
-    Init(peer_, user_id.c_str());
+    local_id_ = mac_addr_str_;
+    Init(peer_, local_id_.c_str());
     LOG_INFO("Peer init finish");
   } else {
     LOG_INFO("Create peer instance failed");
@@ -464,32 +464,51 @@ int MainWindow::Run() {
           ImGui::Separator();
           ImGui::Spacing();
 
-          if (ImGui::Button(connect_button_label_.c_str())) {
+          if (ImGui::Button(connect_button_label_.c_str()) || rejoin_) {
             int ret = -1;
             if ("SignalConnected" == signal_status_str_) {
               if (connect_button_label_ ==
                       localization::connect[localization_language_index_] &&
                   !connection_established_) {
-                ret = JoinConnection(peer_, remote_id_, client_password_);
+                if (remote_id_ == local_id_ && !peer_reserved_) {
+                  peer_reserved_ = CreatePeer(&params_);
+                  if (peer_reserved_) {
+                    LOG_INFO("Create peer[reserved] instance successful");
+                    std::string local_id = "C-" + mac_addr_str_;
+                    Init(peer_reserved_, local_id.c_str());
+                    LOG_INFO("Peer[reserved] init finish");
+                  } else {
+                    LOG_INFO("Create peer[reserved] instance failed");
+                  }
+                }
+                ret = JoinConnection(peer_reserved_ ? peer_reserved_ : peer_,
+                                     remote_id_, client_password_);
                 if (0 == ret) {
-                  is_client_mode_ = true;
+                  if (!peer_reserved_) {
+                    is_client_mode_ = true;
+                  }
+                  rejoin_ = false;
+                } else {
+                  rejoin_ = true;
                 }
 
               } else if (connect_button_label_ ==
                              localization::disconnect
                                  [localization_language_index_] &&
                          connection_established_) {
-                ret = LeaveConnection(peer_);
-                memset(audio_buffer_, 0, 960);
+                ret = LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_);
 
-                connection_established_ = false;
-                received_frame_ = false;
-                is_client_mode_ = false;
+                if (0 == ret) {
+                  rejoin_ = false;
+                  memset(audio_buffer_, 0, 960);
+                  connection_established_ = false;
+                  received_frame_ = false;
+                  is_client_mode_ = false;
+                }
               }
 
               if (0 == ret) {
                 connect_button_pressed_ = !connect_button_pressed_;
-
                 connect_button_label_ =
                     connect_button_pressed_
                         ? localization::disconnect[localization_language_index_]
@@ -821,6 +840,10 @@ int MainWindow::Run() {
 
   if (peer_) {
     DestroyPeer(peer_);
+  }
+
+  if (peer_reserved_) {
+    DestroyPeer(peer_reserved_);
   }
 
   SDL_CloseAudioDevice(output_dev_);
