@@ -5,7 +5,7 @@
 #include <string>
 
 #include "device_controller_factory.h"
-#include "element_style.h"
+#include "layout_style.h"
 #include "localization.h"
 #include "log.h"
 #include "platform.h"
@@ -649,9 +649,9 @@ int MainWindow::Run() {
                   .c_str());
 
           if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-            ImGui::SetCursorPosX(VIDEO_ENCODE_FORMAT_SELECT_WINDOW_CN);
+            ImGui::SetCursorPosX(VIDEO_ENCODE_FORMAT_SELECT_WINDOW_PADDING_CN);
           } else {
-            ImGui::SetCursorPosX(VIDEO_ENCODE_FORMAT_SELECT_WINDOW_EN);
+            ImGui::SetCursorPosX(VIDEO_ENCODE_FORMAT_SELECT_WINDOW_PADDING_EN);
           }
           ImGui::SetCursorPosY(90);
           ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
@@ -672,10 +672,10 @@ int MainWindow::Run() {
 
           if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
             ImGui::SetCursorPosX(
-                ENABLE_HARDWARE_VIDEO_CODEC_CHECK_WINDOW_PADDING_CN);
+                ENABLE_HARDWARE_VIDEO_CODEC_CHECKBOX_PADDING_CN);
           } else {
             ImGui::SetCursorPosX(
-                ENABLE_HARDWARE_VIDEO_CODEC_CHECK_WINDOW_PADDING_EN);
+                ENABLE_HARDWARE_VIDEO_CODEC_CHECKBOX_PADDING_EN);
           }
           ImGui::SetCursorPosY(120);
           ImGui::Checkbox("##enable_hardware_video_codec",

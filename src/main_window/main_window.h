@@ -70,10 +70,6 @@ class MainWindow {
     int video_quality;
     int video_encode_format;
     bool enable_hardware_video_codec;
-    float settings_language_pos;
-    float settings_video_quality_pos;
-    float settings_video_encode_format_pos;
-    float settings_enable_hardware_video_codec_pos;
   } CDCache;
 
  private:
