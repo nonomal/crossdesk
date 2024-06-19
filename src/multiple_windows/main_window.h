@@ -101,8 +101,8 @@ class MainWindow {
  private:
   int screen_width_ = 1280;
   int screen_height_ = 720;
-  int main_window_width_ = 640;
-  int main_window_height_ = 360;
+  int main_window_width_ = 1280;
+  int main_window_height_ = 720;
   int main_window_width_before_fullscreen_ = 1280;
   int main_window_height_before_fullscreen_ = 720;
 
