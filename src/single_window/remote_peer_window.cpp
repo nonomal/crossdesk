@@ -8,12 +8,12 @@ int Render::RemoteWindow() {
   ImGui::SetNextWindowPos(ImVec2(local_window_width_ - 1, menu_window_height_),
                           ImGuiCond_Always);
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(255, 255, 255, 1));
-  ImGui::BeginChild(
-      "RemoteDesktopWindow",
-      ImVec2(main_window_width_ - local_window_width_, main_window_height_),
-      ImGuiChildFlags_Border,
-      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-          ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
+  ImGui::BeginChild("RemoteDesktopWindow",
+                    ImVec2(main_window_width_ - local_window_width_,
+                           main_window_height_ - menu_window_height_),
+                    ImGuiChildFlags_Border,
+                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
 
   ImGui::SetWindowFontScale(1.0f);
   ImGui::Text(
