@@ -5,7 +5,7 @@
 #include <string>
 
 #include "IconsFontAwesome6.h"
-#include "OPPOSans-Regular.h"
+#include "OPPOSans_Regular.h"
 #include "device_controller_factory.h"
 #include "fa-solid-900.h"
 #include "layout_style.h"
