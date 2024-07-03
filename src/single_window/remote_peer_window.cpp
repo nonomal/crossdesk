@@ -45,6 +45,7 @@ int Render::RemoteWindow() {
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG, ImVec2(55, 38)) || rejoin_) {
       connect_button_pressed_ = true;
+      connection_status_ = ConnectionStatus::Connecting;
       int ret = -1;
       if (signal_connected_) {
         if (!connection_established_) {

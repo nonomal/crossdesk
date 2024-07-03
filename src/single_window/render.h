@@ -128,6 +128,8 @@ class Render {
   int status_bar_height_ = 20;
   int connection_status_window_width_ = 200;
   int connection_status_window_height_ = 150;
+  int notification_window_width_ = 200;
+  int notification_window_height_ = 80;
 
   int main_window_width_real_ = 960;
   int main_window_height_real_ = 540;
@@ -159,10 +161,12 @@ class Render {
   bool audio_buffer_fresh_ = false;
   bool rejoin_ = false;
   bool control_mouse_ = false;
+  bool local_id_copied_ = false;
   bool show_password_ = true;
   bool regenerate_password_ = false;
   bool streaming_ = false;
 
+  double copy_start_time_ = 0;
   int regenerate_password_frame_count_ = 0;
 
   int fps_ = 0;

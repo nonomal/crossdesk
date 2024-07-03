@@ -12,6 +12,8 @@ namespace localization {
 
 static std::vector<std::string> local_desktop = {u8"本桌面", "Local Desktop"};
 static std::vector<std::string> local_id = {u8"本机ID", "Local ID"};
+static std::vector<std::string> local_id_copied_to_clipboard = {
+    u8"已复制到剪贴板", "Copied to clipboard"};
 static std::vector<std::string> password = {u8"密码", "Password"};
 static std::vector<std::string> max_password_len = {u8"最大6个字符",
                                                     "Max 6 chars"};

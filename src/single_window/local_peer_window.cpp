@@ -1,6 +1,7 @@
 #include "IconsFontAwesome6.h"
 #include "layout_style.h"
 #include "localization.h"
+#include "log.h"
 #include "render.h"
 
 int Render::LocalWindow() {
@@ -41,6 +42,62 @@ int Render::LocalWindow() {
           "##local_id", (char *)mac_addr_str_.c_str(),
           mac_addr_str_.length() + 1,
           ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_ReadOnly);
+
+      ImGui::SameLine();
+      ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+      ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
+      ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+      ImGui::SetWindowFontScale(0.5f);
+
+      if (ImGui::Button(ICON_FA_COPY, ImVec2(35, 38))) {
+        local_id_copied_ = true;
+        ImGui::SetClipboardText(mac_addr_str_.c_str());
+        copy_start_time_ = ImGui::GetTime();
+      }
+
+      auto time_duration = ImGui::GetTime() - copy_start_time_;
+      if (local_id_copied_ && time_duration < 1.0f) {
+        const ImGuiViewport *viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(
+            ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
+                    notification_window_width_) /
+                       2,
+                   (viewport->WorkSize.y - viewport->WorkPos.y -
+                    notification_window_height_) /
+                       2));
+
+        ImGui::SetNextWindowSize(
+            ImVec2(notification_window_width_, notification_window_height_));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg,
+                              ImVec4(1.0, 1.0, 1.0, 1.0 - time_duration));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
+        ImGui::Begin("ConnectionStatusWindow", nullptr,
+                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+                         ImGuiWindowFlags_NoSavedSettings);
+
+        auto window_width = ImGui::GetWindowSize().x;
+        auto window_height = ImGui::GetWindowSize().y;
+        ImGui::SetWindowFontScale(0.8f);
+        std::string text = localization::local_id_copied_to_clipboard
+            [localization_language_index_];
+        auto text_width = ImGui::CalcTextSize(text.c_str()).x;
+        ImGui::SetCursorPosX((window_width - text_width) * 0.5f);
+        ImGui::SetCursorPosY(window_height * 0.5f);
+        ImGui::PushStyleColor(ImGuiCol_Text,
+                              ImVec4(0, 0, 0, 1.0 - time_duration));
+        ImGui::Text("%s", text.c_str());
+        ImGui::PopStyleColor();
+        ImGui::SetWindowFontScale(1.0f);
+
+        ImGui::End();
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor();
+      }
+
+      ImGui::SetWindowFontScale(1.0f);
+      ImGui::PopStyleColor(3);
+
       ImGui::Spacing();
       ImGui::Separator();
       ImGui::Spacing();
