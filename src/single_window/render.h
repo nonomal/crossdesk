@@ -105,6 +105,9 @@ class Render {
   std::string settings_button_label_ = "Setting";
   char input_password_tmp_[7] = "";
   char input_password_[7] = "";
+  std::string random_password_ = "";
+  std::string password_saved_ = "";
+  std::string remote_password_ = "";
   std::string local_id_ = "";
   char remote_id_[20] = "";
   char client_password_[20] = "";
@@ -163,11 +166,12 @@ class Render {
   bool control_mouse_ = false;
   bool local_id_copied_ = false;
   bool show_password_ = true;
+  bool password_inited_ = false;
   bool regenerate_password_ = false;
   bool streaming_ = false;
 
   double copy_start_time_ = 0;
-  int regenerate_password_frame_count_ = 0;
+  double regenerate_password_start_time_ = 0;
 
   int fps_ = 0;
   uint32_t start_time_;

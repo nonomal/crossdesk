@@ -1,3 +1,5 @@
+#include <random>
+
 #include "IconsFontAwesome6.h"
 #include "layout_style.h"
 #include "localization.h"
@@ -107,14 +109,32 @@ int Render::LocalWindow() {
       ImGui::Text("%s",
                   localization::password[localization_language_index_].c_str());
 
-      strncpy(input_password_tmp_, input_password_, sizeof(input_password_));
       ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
       ImGui::Spacing();
+
+      if (!password_inited_) {
+        char a[] = {
+            "1234567890QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm"};
+        std::mt19937 generator(
+            std::chrono::system_clock::now().time_since_epoch().count());
+        std::uniform_int_distribution<int> distribution(0, strlen(a) - 1);
+
+        random_password_.clear();
+        for (int i = 0, len = strlen(a); i < 6; i++) {
+          random_password_ += a[distribution(generator)];
+        }
+        password_inited_ = true;
+        if (random_password_ != password_saved_) {
+          password_saved_ = random_password_;
+          SaveSettingsIntoCacheFile();
+        }
+      }
+
       ImGui::SetWindowFontScale(1.0f);
       ImGui::InputTextWithHint(
           "##server_pwd",
           localization::max_password_len[localization_language_index_].c_str(),
-          input_password_, IM_ARRAYSIZE(input_password_),
+          (char *)random_password_.c_str(), random_password_.length() + 1,
           show_password_ ? ImGuiInputTextFlags_CharsNoBlank
                          : ImGuiInputTextFlags_CharsNoBlank |
                                ImGuiInputTextFlags_Password);
@@ -135,25 +155,22 @@ int Render::LocalWindow() {
       ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
       ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-      if (!regenerate_password_) {
-        if (ImGui::Button(ICON_FA_ARROWS_ROTATE, ImVec2(35, 38))) {
-          regenerate_password_ = true;
-        }
-      } else {
-        regenerate_password_frame_count_++;
-        if (ImGui::Button(ICON_FA_SPINNER, ImVec2(35, 38))) {
-        }
-        if (regenerate_password_frame_count_ == 15) {
-          regenerate_password_frame_count_ = 0;
-          regenerate_password_ = false;
-        }
+
+      if (ImGui::Button(
+              regenerate_password_ ? ICON_FA_SPINNER : ICON_FA_ARROWS_ROTATE,
+              ImVec2(35, 38))) {
+        regenerate_password_ = true;
+        password_inited_ = false;
+        regenerate_password_start_time_ = ImGui::GetTime();
+        LeaveConnection(peer_);
+        is_create_connection_ = false;
       }
+      if (ImGui::GetTime() - regenerate_password_start_time_ > 0.3f) {
+        regenerate_password_ = false;
+      }
+
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PopStyleColor(3);
-
-      if (strcmp(input_password_tmp_, input_password_)) {
-        SaveSettingsIntoCacheFile();
-      }
     }
     ImGui::PopStyleColor();
     ImGui::EndChild();

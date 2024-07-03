@@ -29,7 +29,8 @@ int Render::SaveSettingsIntoCacheFile() {
   }
 
   fseek(cd_cache_file_, 0, SEEK_SET);
-  strncpy(cd_cache_.password, input_password_, sizeof(input_password_));
+  strncpy(cd_cache_.password, password_saved_.c_str(),
+          password_saved_.length());
   memcpy(&cd_cache_.language, &language_button_value_,
          sizeof(language_button_value_));
   memcpy(&cd_cache_.video_quality, &video_quality_button_value_,
@@ -53,7 +54,7 @@ int Render::LoadSettingsIntoCacheFile() {
   fseek(cd_cache_file_, 0, SEEK_SET);
   fread(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
   fclose(cd_cache_file_);
-  strncpy(input_password_, cd_cache_.password, sizeof(cd_cache_.password));
+  password_saved_ = cd_cache_.password;
   language_button_value_ = cd_cache_.language;
   video_quality_button_value_ = cd_cache_.video_quality;
   video_encode_format_button_value_ = cd_cache_.video_encode_format;
@@ -274,10 +275,10 @@ int Render::Run() {
   while (!exit_) {
     if (SignalStatus::SignalConnected == signal_status_ &&
         !is_create_connection_) {
-      is_create_connection_ =
-          CreateConnection(peer_, mac_addr_str_.c_str(), input_password_)
-              ? false
-              : true;
+      is_create_connection_ = CreateConnection(peer_, mac_addr_str_.c_str(),
+                                               password_saved_.c_str())
+                                  ? false
+                                  : true;
       LOG_INFO("Connected with signal server, create p2p connection");
     }
 

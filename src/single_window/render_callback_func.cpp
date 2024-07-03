@@ -194,6 +194,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
     render->connection_established_ = false;
     render->control_mouse_ = false;
     render->exit_video_window_ = false;
+    render->remote_password_.clear();
     if (render->dst_buffer_) {
       memset(render->dst_buffer_, 0, 1280 * 720 * 3);
       SDL_UpdateTexture(render->stream_texture_, NULL, render->dst_buffer_,
