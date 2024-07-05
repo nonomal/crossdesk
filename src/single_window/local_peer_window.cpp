@@ -26,11 +26,11 @@ int Render::LocalWindow() {
   {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0.05));
-    ImGui::BeginChild(
-        "LocalDesktopWindow_1", ImVec2(330, 180), ImGuiChildFlags_Border,
-        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-            ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::BeginChild("LocalDesktopWindow_1", ImVec2(330, 180),
+                      ImGuiChildFlags_Border,
+                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                          ImGuiWindowFlags_NoTitleBar |
+                          ImGuiWindowFlags_NoBringToFrontOnFocus);
     {
       ImGui::SetWindowFontScale(0.5f);
       ImGui::Text("%s",

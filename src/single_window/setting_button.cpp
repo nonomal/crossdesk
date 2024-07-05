@@ -11,7 +11,7 @@ int Render::SettingButton() {
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
 
   std::string gear = ICON_FA_GEAR;
-  if (ImGui::Button(gear.c_str(), ImVec2(40, 35))) {
+  if (ImGui::Button(gear.c_str(), ImVec2(40, 30))) {
     settings_button_pressed_ = !settings_button_pressed_;
     settings_window_pos_reset_ = true;
   }

@@ -325,15 +325,18 @@ int Render::Run() {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(
         ImVec2(main_window_width_,
-               streaming_ ? menu_window_height_ : main_window_height_),
+               streaming_ ? control_window_height_ : main_window_height_),
         ImGuiCond_Always);
     ImGui::Begin("Render", nullptr,
                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
-
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
     if (!streaming_) {
       MainWindow();
     } else {

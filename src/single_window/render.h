@@ -127,6 +127,8 @@ class Render {
   int main_window_width_before_fullscreen_ = 1280;
   int main_window_height_before_fullscreen_ = 720;
   int menu_window_height_ = 30;
+  int control_window_min_width_ = 40;
+  int control_window_height_ = 40;
   int local_window_width_ = 350;
   int status_bar_height_ = 20;
   int connection_status_window_width_ = 200;
@@ -156,6 +158,7 @@ class Render {
   bool connection_established_ = false;
   bool subwindow_hovered_ = false;
   bool connect_button_pressed_ = false;
+  bool control_bar_button_pressed_ = false;
   bool fullscreen_button_pressed_ = false;
   bool mouse_control_button_pressed_ = false;
   bool settings_button_pressed_ = false;
@@ -172,6 +175,7 @@ class Render {
 
   double copy_start_time_ = 0;
   double regenerate_password_start_time_ = 0;
+  double control_bar_button_pressed_time_ = 0;
 
   int fps_ = 0;
   uint32_t start_time_;
