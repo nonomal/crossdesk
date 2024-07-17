@@ -59,6 +59,8 @@ static std::vector<std::string> p2p_disconnected = {u8"对等连接已断开",
 static std::vector<std::string> p2p_connecting = {u8"正在建立对等连接",
                                                   "P2P Connecting"};
 
+static std::vector<std::string> about = {u8"关于", "About"};
+
 }  // namespace localization
 
 #endif
