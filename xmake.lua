@@ -128,12 +128,14 @@ target("single_window")
 target("remote_desk")
     set_kind("binary")
     add_deps("rd_log", "common", "single_window")
-    if is_os("macosx") then
+    if is_os("windows") then
+        add_files("icon/app_icon.ico")
+    elseif is_os("macosx") then
         add_packages("ffmpeg")
     elseif is_os("linux") then
         add_packages("ffmpeg")
     end
-    add_files("src/gui/main.cpp", "icon/app.rc")
+    add_files("src/gui/main.cpp")
 
 -- target("screen_capturer")
 --     set_kind("binary")

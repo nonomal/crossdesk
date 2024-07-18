@@ -2,7 +2,7 @@
 
 #include <ApplicationServices/ApplicationServices.h>
 
-#include "log.h"
+#include "rd_log.h"
 
 MouseController::MouseController() {}
 

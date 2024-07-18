@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "log.h"
+#include "rd_log.h"
 
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 unsigned char nv12_buffer_[NV12_BUFFER_SIZE];
