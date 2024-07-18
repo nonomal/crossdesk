@@ -133,7 +133,7 @@ target("remote_desk")
     elseif is_os("linux") then
         add_packages("ffmpeg")
     end
-    add_files("src/gui/main.cpp")
+    add_files("src/gui/main.cpp", "icon/app.rc")
 
 -- target("screen_capturer")
 --     set_kind("binary")

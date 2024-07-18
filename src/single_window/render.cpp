@@ -424,19 +424,19 @@ int Render::Run() {
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(main_renderer_);
 
-    frame_count_++;
-    end_time_ = SDL_GetTicks();
-    elapsed_time_ = end_time_ - start_time_;
-    if (elapsed_time_ >= 1000) {
-      fps_ = frame_count_ / (elapsed_time_ / 1000);
-      frame_count_ = 0;
-      window_title = "Remote Desk Client FPS [" + std::to_string(fps_) +
-                     "] status [" + connection_status_str_ + "|" +
-                     connection_status_str_ + "]";
-      // For MacOS, UI frameworks can only be called from the main thread
-      SDL_SetWindowTitle(main_window_, window_title.c_str());
-      start_time_ = end_time_;
-    }
+    // frame_count_++;
+    // end_time_ = SDL_GetTicks();
+    // elapsed_time_ = end_time_ - start_time_;
+    // if (elapsed_time_ >= 1000) {
+    //   fps_ = frame_count_ / (elapsed_time_ / 1000);
+    //   frame_count_ = 0;
+    //   window_title = "Remote Desk Client FPS [" + std::to_string(fps_) +
+    //                  "] status [" + connection_status_str_ + "|" +
+    //                  connection_status_str_ + "]";
+    //   // For MacOS, UI frameworks can only be called from the main thread
+    //   SDL_SetWindowTitle(main_window_, window_title.c_str());
+    //   start_time_ = end_time_;
+    // }
   }
 
   // Cleanup
