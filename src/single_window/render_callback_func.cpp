@@ -180,13 +180,15 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
     render->connection_status_str_ = "Connected";
     render->connection_established_ = true;
     render->streaming_ = true;
-    SDL_SetWindowSize(render->main_window_, render->stream_window_width_,
-                      render->stream_window_height_);
-    SDL_SetWindowPosition(render->main_window_, SDL_WINDOWPOS_CENTERED,
-                          SDL_WINDOWPOS_CENTERED);
+
     if (!render->is_client_mode_) {
       render->start_screen_capture_ = true;
       render->start_mouse_control_ = true;
+    } else {
+      SDL_SetWindowSize(render->main_window_, render->stream_window_width_,
+                        render->stream_window_height_);
+      SDL_SetWindowPosition(render->main_window_, SDL_WINDOWPOS_CENTERED,
+                            SDL_WINDOWPOS_CENTERED);
     }
   } else if (ConnectionStatus::Disconnected == status) {
     render->connection_status_str_ = "Disconnected";

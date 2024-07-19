@@ -372,10 +372,10 @@ int Render::Run() {
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
-    if (!streaming_) {
-      MainWindow();
-    } else {
+    if (streaming_ && is_client_mode_) {
       ControlWindow();
+    } else {
+      MainWindow();
     }
 
     ImGui::End();
@@ -438,7 +438,7 @@ int Render::Run() {
         }
       } else if (event.type == REFRESH_EVENT) {
         if (stream_texture_)
-          SDL_UpdateTexture(stream_texture_, NULL, dst_buffer_, 1280 * 720 * 3);
+          SDL_UpdateTexture(stream_texture_, NULL, dst_buffer_, 1280);
       } else {
         if (connection_established_) {
           ProcessMouseKeyEven(event);
