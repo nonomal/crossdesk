@@ -24,12 +24,15 @@ IceAgent::~IceAgent() {
 }
 
 int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
-                             nice_cb_candidate_t on_candidate,
+                             nice_cb_new_candidate_t on_new_candidate,
                              nice_cb_gathering_done_t on_gathering_done,
+                             nice_cb_new_selected_pair_t on_new_selected_pair,
                              nice_cb_recv_t on_recv, void *user_ptr) {
   destroyed_ = false;
   on_state_changed_ = on_state_changed;
-  on_candidate_ = on_candidate;
+  on_new_selected_pair_ = on_new_selected_pair;
+  on_new_candidate_ = on_new_candidate;
+
   on_gathering_done_ = on_gathering_done;
   on_recv_ = on_recv;
   user_ptr_ = user_ptr;
@@ -41,9 +44,9 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
   nice_thread_.reset(new std::thread([this]() {
     gloop_ = g_main_loop_new(nullptr, false);
 
-    agent_ = nice_agent_new_full(g_main_loop_get_context(gloop_),
-                                 NICE_COMPATIBILITY_RFC5245,
-                                 (NiceAgentOption)(NICE_AGENT_OPTION_RELIABLE));
+    agent_ = nice_agent_new_full(
+        g_main_loop_get_context(gloop_), NICE_COMPATIBILITY_RFC5245,
+        (NiceAgentOption)(NICE_AGENT_OPTION_ICE_TRICKLE));
 
     if (agent_ == nullptr) {
       LOG_ERROR("Failed to create agent_");
@@ -51,30 +54,37 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
 
     g_object_set(agent_, "stun-server", stun_ip_.c_str(), nullptr);
     g_object_set(agent_, "stun-server-port", stun_port_, nullptr);
-
     g_object_set(agent_, "controlling-mode", controlling_, nullptr);
+    // g_object_set(agent_, "ice-trickle", true, nullptr);
 
     g_signal_connect(agent_, "candidate-gathering-done",
                      G_CALLBACK(on_gathering_done_), user_ptr_);
-    g_signal_connect(agent_, "new-selected-pair", G_CALLBACK(on_candidate_),
+    g_signal_connect(agent_, "new-selected-pair",
+                     G_CALLBACK(on_new_selected_pair_), user_ptr_);
+    g_signal_connect(agent_, "new-candidate", G_CALLBACK(on_new_candidate_),
                      user_ptr_);
     g_signal_connect(agent_, "component-state-changed",
                      G_CALLBACK(on_state_changed_), user_ptr_);
 
-    stream_id_ = nice_agent_add_stream(agent_, 1);
+    stream_id_ = nice_agent_add_stream(agent_, n_components_);
     if (stream_id_ == 0) {
       LOG_ERROR("Failed to add stream");
     }
 
     nice_agent_set_stream_name(agent_, stream_id_, "video");
 
-    nice_agent_set_relay_info(agent_, stream_id_, 1, turn_ip_.c_str(),
-                              turn_port_, turn_username_.c_str(),
-                              turn_password_.c_str(), NICE_RELAY_TYPE_TURN_UDP);
+    nice_agent_set_relay_info(agent_, stream_id_, n_components_,
+                              turn_ip_.c_str(), turn_port_,
+                              turn_username_.c_str(), turn_password_.c_str(),
+                              NICE_RELAY_TYPE_TURN_UDP);
 
-    // g_object_set(agent_, "force-relay", true, NULL);
+    // g_object_set(agent_, "ice-tcp", false, "ice-udp", true, "force-relay",
+    // true,
+    //              NULL);
 
-    nice_agent_attach_recv(agent_, stream_id_, 1,
+    // nice_agent_set_remote_credentials(agent_, stream_id_, ufrag, password);
+
+    nice_agent_attach_recv(agent_, stream_id_, NICE_COMPONENT_TYPE_RTP,
                            g_main_loop_get_context(gloop_), on_recv_,
                            user_ptr_);
 
@@ -120,6 +130,32 @@ int IceAgent::DestroyIceAgent() {
   return 0;
 }
 
+int IceAgent::GetLocalCredentials() {
+  if (!nice_inited_) {
+    LOG_ERROR("Nice agent has not been initialized");
+    return -1;
+  }
+
+  if (nullptr == agent_) {
+    LOG_ERROR("Nice agent is nullptr");
+    return -1;
+  }
+
+  if (destroyed_) {
+    LOG_ERROR("Nice agent is destroyed");
+    return -1;
+  }
+
+  nice_agent_get_local_credentials(agent_, stream_id_, &ice_ufrag_,
+                                   &ice_password_);
+
+  return 0;
+}
+
+char *IceAgent::GetLocalUfrag() { return ufrag_; }
+
+char *IceAgent::GetLocalPassword() { return password_; }
+
 char *IceAgent::GenerateLocalSdp() {
   if (!nice_inited_) {
     LOG_ERROR("Nice agent has not been initialized");
@@ -162,9 +198,36 @@ int IceAgent::SetRemoteSdp(const char *remote_sdp) {
   if (ret > 0) {
     return 0;
   } else {
-    LOG_ERROR("Failed to parse remote data");
+    LOG_ERROR("Failed to parse remote data: [{}]", remote_sdp);
     return -1;
   }
+}
+
+int IceAgent::AddCandidate(const char *candidate) {
+  if (!nice_inited_) {
+    LOG_ERROR("Nice agent has not been initialized");
+    return -1;
+  }
+
+  if (nullptr == agent_) {
+    LOG_ERROR("Nice agent is nullptr");
+    return -1;
+  }
+
+  if (destroyed_) {
+    LOG_ERROR("Nice agent is destroyed");
+    return -1;
+  }
+
+  int ret = nice_agent_parse_remote_sdp(agent_, candidate);
+  if (ret > 0) {
+    return 0;
+  } else {
+    LOG_ERROR("Failed to parse remote candidate: [{}]", candidate);
+    return -1;
+  }
+
+  return 0;
 }
 
 int IceAgent::GatherCandidates() {

@@ -13,9 +13,14 @@ typedef void (*nice_cb_state_changed_t)(NiceAgent* agent, guint stream_id,
                                         guint component_id,
                                         NiceComponentState state,
                                         gpointer data);
-typedef void (*nice_cb_candidate_t)(NiceAgent* agent, guint stream_id,
-                                    guint component_id, const char* sdp,
-                                    gpointer data);
+typedef void (*nice_cb_new_candidate_t)(NiceAgent* agent, guint stream_id,
+                                        guint component_id, gchar* foundation,
+                                        gpointer data);
+typedef void (*nice_cb_new_selected_pair_t)(NiceAgent* agent, guint stream_id,
+                                            guint component_id,
+                                            const char* lfoundation,
+                                            const char* rfoundation,
+                                            gpointer data);
 typedef void (*nice_cb_gathering_done_t)(NiceAgent* agent, guint stream_id,
                                          gpointer data);
 typedef void (*nice_cb_recv_t)(NiceAgent* agent, guint stream_id,
@@ -30,15 +35,24 @@ class IceAgent {
   ~IceAgent();
 
   int CreateIceAgent(nice_cb_state_changed_t on_state_changed,
-                     nice_cb_candidate_t on_candidate,
+                     nice_cb_new_candidate_t on_new_candidate,
                      nice_cb_gathering_done_t on_gathering_done,
+                     nice_cb_new_selected_pair_t on_new_selected_pair,
                      nice_cb_recv_t on_recv, void* user_ptr);
 
   int DestroyIceAgent();
 
+  int GetLocalCredentials();
+
+  char* GetLocalIceUfrag();
+
+  char* GetLocalIcePassword();
+
   char* GenerateLocalSdp();
 
   int SetRemoteSdp(const char* remote_sdp);
+
+  int AddCandidate(const char* candidate);
 
   int GatherCandidates();
 
@@ -63,14 +77,18 @@ class IceAgent {
 
   gboolean exit_nice_thread_ = false;
   bool controlling_ = false;
+  gchar* ice_ufrag_ = nullptr;
+  gchar* ice_password_ = nullptr;
   uint32_t stream_id_ = 0;
+  uint32_t n_components_ = 1;
   char* local_sdp_ = nullptr;
   NiceComponentState state_ = NiceComponentState::NICE_COMPONENT_STATE_LAST;
   bool destroyed_ = false;
   gboolean agent_closed_ = false;
 
   nice_cb_state_changed_t on_state_changed_;
-  nice_cb_candidate_t on_candidate_;
+  nice_cb_new_selected_pair_t on_new_selected_pair_;
+  nice_cb_new_candidate_t on_new_candidate_;
   nice_cb_gathering_done_t on_gathering_done_;
   nice_cb_recv_t on_recv_;
   void* user_ptr_;

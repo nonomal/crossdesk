@@ -525,6 +525,25 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
       }
       break;
     }
+    case "offer_candidate"_H: {
+      std::string transmission_id = j["transmission_id"].get<std::string>();
+      std::string new_candidate = j["sdp"].get<std::string>();
+      std::string remote_user_id = j["remote_user_id"].get<std::string>();
+
+      LOG_INFO("[{}] receive new candidate from [{}]", user_id_,
+               remote_user_id);
+
+      if (ice_transmission_list_.find(remote_user_id) !=
+          ice_transmission_list_.end()) {
+        ice_transmission_list_[remote_user_id]->AddCandidate(new_candidate);
+      }
+      break;
+    }
+    case "answer_candidate"_H: {
+      std::string transmission_id = j["transmission_id"].get<std::string>();
+      std::string new_candidate = j["sdp"].get<std::string>();
+      break;
+    }
     default: {
       break;
     }

@@ -167,24 +167,59 @@ int IceTransmission::InitIceTransmission(
           LOG_INFO("state_change: {}", nice_component_state_to_string(state));
         }
       },
-      [](NiceAgent *agent, guint stream_id, guint component_id, const char *sdp,
-         gpointer user_ptr) { LOG_INFO("candadite: {}", sdp); },
-      [](NiceAgent *agent, guint stream_id, gpointer user_ptr) {
-        // non-trickle
+      [](NiceAgent *agent, guint stream_id, guint component_id,
+         gchar *foundation, gpointer user_ptr) {
         if (user_ptr) {
           IceTransmission *ice_transmission_obj =
               static_cast<IceTransmission *>(user_ptr);
-          LOG_INFO("[{}] gather_done", ice_transmission_obj->user_id_);
 
-          if (ice_transmission_obj->offer_peer_) {
-            ice_transmission_obj->GetLocalSdp();
-            ice_transmission_obj->SendOffer();
+          GSList *cands =
+              nice_agent_get_local_candidates(agent, stream_id, component_id);
+          NiceCandidate *cand;
+          for (GSList *i = cands; i; i = i->next) {
+            cand = (NiceCandidate *)i->data;
+            if (g_strcmp0(cand->foundation, foundation) == 0) {
+              ice_transmission_obj->new_local_candidate_ =
+                  nice_agent_generate_local_sdp(agent);
 
-          } else {
-            ice_transmission_obj->CreateAnswer();
-            ice_transmission_obj->SendAnswer();
+              json message = {
+                  {"type", "offer_candidate"},
+                  {"transmission_id", ice_transmission_obj->transmission_id_},
+                  {"user_id", ice_transmission_obj->user_id_},
+                  {"remote_user_id", ice_transmission_obj->remote_user_id_},
+                  {"sdp", ice_transmission_obj->new_local_candidate_}};
+              LOG_INFO("Send new local candidate sdp:[{}]",
+                       ice_transmission_obj->new_local_candidate_);
+
+              if (ice_transmission_obj->ice_ws_transport_) {
+                ice_transmission_obj->ice_ws_transport_->Send(message.dump());
+              }
+            }
           }
+
+          g_slist_free_full(cands, (GDestroyNotify)nice_candidate_free);
         }
+      },
+      [](NiceAgent *agent, guint stream_id, gpointer user_ptr) {
+        // non-trickle
+        // if (user_ptr) {
+        //   IceTransmission *ice_transmission_obj =
+        //       static_cast<IceTransmission *>(user_ptr);
+        //   LOG_INFO("[{}] gather_done", ice_transmission_obj->user_id_);
+
+        //   if (ice_transmission_obj->offer_peer_) {
+        //     ice_transmission_obj->GetLocalSdp();
+        //     ice_transmission_obj->SendOffer();
+
+        //   } else {
+        //     ice_transmission_obj->CreateAnswer();
+        //     ice_transmission_obj->SendAnswer();
+        //   }
+        // }
+      },
+      [](NiceAgent *agent, guint stream_id, guint component_id,
+         const char *lfoundation, const char *rfoundation, gpointer user_ptr) {
+        LOG_INFO("new selected pair: [{}] [{}]", lfoundation, rfoundation);
       },
       [](NiceAgent *agent, guint stream_id, guint component_id, guint size,
          gchar *buffer, gpointer user_ptr) {
@@ -257,9 +292,37 @@ int IceTransmission::SetRemoteSdp(const std::string &remote_sdp) {
   return 0;
 }
 
+int IceTransmission::AddCandidate(const std::string &candidate) {
+  ice_agent_->AddCandidate(candidate.c_str());
+  LOG_INFO("[{}] add candidate", user_id_);
+  return 0;
+}
+
 int IceTransmission::CreateOffer() {
   LOG_INFO("[{}] create offer", user_id_);
   GatherCandidates();
+
+  if (trickle_ice_) {
+    SendLocalCredentials();
+  }
+  return 0;
+}
+
+int IceTransmission::SendLocalCredentials() {
+  ice_agent_->GetLocalIceUfrag();
+  ice_agent_->GetLocalIcePassword();
+
+  json message = {{"type", "credentials"},
+                  {"transmission_id", transmission_id_},
+                  {"user_id", user_id_},
+                  {"remote_user_id", remote_user_id_},
+                  {"ufrag", ice_agent_->GetLocalIceUfrag()},
+                  {"password", ice_agent_->GetLocalIcePassword()}};
+  LOG_INFO("Send credentials:\n{}", message.dump());
+
+  if (ice_ws_transport_) {
+    ice_ws_transport_->Send(message.dump());
+  }
   return 0;
 }
 

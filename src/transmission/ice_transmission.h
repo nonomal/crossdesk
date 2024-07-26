@@ -80,9 +80,13 @@ class IceTransmission {
  public:
   int GatherCandidates();
 
+  int SendLocalCredentials();
+
   int GetLocalSdp();
 
   int SetRemoteSdp(const std::string &remote_sdp);
+
+  int AddCandidate(const std::string &candidate);
 
   int CreateOffer();
 
@@ -99,8 +103,10 @@ class IceTransmission {
   uint8_t CheckIsDataPacket(const char *buffer, size_t size);
 
  private:
+  bool trickle_ice_ = true;
   std::string local_sdp_;
   std::string remote_sdp_;
+  std::string new_local_candidate_;
   std::string local_candidates_;
   std::string remote_candidates_;
   unsigned int connection_id_ = 0;
