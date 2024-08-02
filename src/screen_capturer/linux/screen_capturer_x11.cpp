@@ -101,11 +101,14 @@ int ScreenCapturerX11::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
   return 0;
 }
 
-int ScreenCapturerX11::Destroy() { return 0; }
+int ScreenCapturerX11::Destroy() {
+  running_ = false;
+  return 0;
+}
 
 int ScreenCapturerX11::Start() {
   capture_thread_.reset(new std::thread([this]() {
-    while (1) {
+    while (running_) {
       if (av_read_frame(pFormatCtx_, packet_) >= 0) {
         if (packet_->stream_index == videoindex_) {
           avcodec_send_packet(pCodecCtx_, packet_);
@@ -133,7 +136,10 @@ int ScreenCapturerX11::Start() {
   return 0;
 }
 
-int ScreenCapturerX11::Stop() { return 0; }
+int ScreenCapturerX11::Stop() {
+  running_ = false;
+  return 0;
+}
 
 int ScreenCapturerX11::Pause() { return 0; }
 

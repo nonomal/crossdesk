@@ -78,6 +78,7 @@ class ScreenCapturerX11 : public ScreenCapturer {
 
   // thread
   std::unique_ptr<std::thread> capture_thread_ = nullptr;
+  std::atomic_bool running_;
 };
 
 #endif

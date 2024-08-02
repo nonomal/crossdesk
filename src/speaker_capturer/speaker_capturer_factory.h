@@ -24,7 +24,9 @@ class SpeakerCapturerFactory {
 #ifdef _WIN32
     return new SpeakerCapturerWasapi();
 #elif __linux__
+    return new SpeakerCapturerLinux();
 #elif __APPLE__
+    return new SpeakerCapturerMacosx();
 #else
     return nullptr;
 #endif

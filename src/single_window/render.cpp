@@ -143,7 +143,8 @@ int Render::StartScreenCapture() {
 
 int Render::StopScreenCapture() {
   if (screen_capturer_) {
-    LOG_INFO("Destroy screen capturer")
+    LOG_INFO("Stop screen capturer")
+    screen_capturer_->Stop();
     screen_capturer_->Destroy();
     delete screen_capturer_;
     screen_capturer_ = nullptr;
@@ -483,7 +484,7 @@ int Render::Run() {
         if (streaming_) {
           LOG_INFO("Return to main interface");
           streaming_ = false;
-          LeaveConnection(peer_reserved_);
+          LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_);
           rejoin_ = false;
           memset(audio_buffer_, 0, 960);
           connection_established_ = false;
@@ -506,10 +507,9 @@ int Render::Run() {
 
         if (video_width * 9 < video_height * 16) {
           stream_render_rect_.x = 0;
-          stream_render_rect_.y = abs(video_height - video_width * 9 / 16) / 2 +
-                                          fullscreen_button_pressed_
-                                      ? 0
-                                      : title_bar_height_;
+          stream_render_rect_.y =
+              abs(video_height - video_width * 9 / 16) / 2 +
+              (fullscreen_button_pressed_ ? 0 : title_bar_height_);
           stream_render_rect_.w = video_width;
           stream_render_rect_.h = video_width * 9 / 16;
         } else if (video_width * 9 > video_height * 16) {

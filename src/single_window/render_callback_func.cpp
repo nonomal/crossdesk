@@ -124,6 +124,7 @@ void Render::OnReceiveVideoBufferCb(const char *data, size_t size,
     event.type = REFRESH_EVENT;
     SDL_PushEvent(&event);
     render->received_frame_ = true;
+    render->streaming_ = true;
   }
 }
 
@@ -180,7 +181,6 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
   } else if (ConnectionStatus::Connected == status) {
     render->connection_status_str_ = "Connected";
     render->connection_established_ = true;
-    render->streaming_ = true;
 
     if (render->peer_reserved_ || !render->is_client_mode_) {
       render->start_screen_capture_ = true;
