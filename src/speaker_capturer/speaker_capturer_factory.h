@@ -10,7 +10,9 @@
 #ifdef _WIN32
 #include "speaker_capturer_wasapi.h"
 #elif __linux__
+#include "speaker_capturer_linux.h"
 #elif __APPLE__
+#include "speaker_capturer_macosx.h"
 #endif
 
 class SpeakerCapturerFactory {

@@ -86,11 +86,9 @@ target("speaker_capturer")
         add_files("src/speaker_capturer/windows/*.cpp")
         add_includedirs("src/speaker_capturer/windows", {public = true})
     elseif is_os("macosx") then
-        add_packages("ffmpeg")
         add_files("src/speaker_capturer/macosx/*.cpp")
         add_includedirs("src/speaker_capturer/macosx", {public = true})
     elseif is_os("linux") then
-        add_packages("ffmpeg")
         add_files("src/speaker_capturer/linux/*.cpp")
         add_includedirs("src/speaker_capturer/linux", {public = true})
     end
