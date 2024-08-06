@@ -16,11 +16,11 @@
 typedef void (*OnReceiveBuffer)(const char *, size_t, const char *,
                                 const size_t, void *);
 
-typedef void (*OnSignalStatus)(SignalStatus status, void *);
+typedef void (*OnSignalStatus)(SignalStatus, void *);
 
-typedef void (*OnConnectionStatus)(ConnectionStatus status, void *);
+typedef void (*OnConnectionStatus)(ConnectionStatus, void *);
 
-typedef void (*NetStatusReport)(TraversalMode mode, const unsigned short,
+typedef void (*NetStatusReport)(int, TraversalMode, const unsigned short,
                                 const unsigned short, void *);
 
 typedef struct {
@@ -123,7 +123,7 @@ class PeerConnection {
   std::function<void(const char *, size_t, const char *, size_t)>
       on_receive_data_ = nullptr;
   std::function<void(std::string)> on_ice_status_change_ = nullptr;
-  std::function<void(IceTransmission::TraversalType, const unsigned short,
+  std::function<void(int, IceTransmission::TraversalType, const unsigned short,
                      const unsigned short, void *)>
       on_net_status_report_ = nullptr;
   bool ice_ready_ = false;

@@ -171,11 +171,13 @@ int PeerConnection::Init(PeerConnectionParams params,
     }
   };
 
-  on_net_status_report_ = [this](IceTransmission::TraversalType mode,
+  on_net_status_report_ = [this](int TransmissionId,
+                                 IceTransmission::TraversalType mode,
                                  const unsigned short send,
                                  const unsigned short receive, void *user_ptr) {
     if (net_status_report_) {
-      net_status_report_(TraversalMode(mode), send, receive, user_ptr);
+      net_status_report_(atoi(transmission_id_.c_str()), TraversalMode(mode),
+                         send, receive, user_ptr);
     }
   };
 
@@ -381,6 +383,9 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
     case "transmission_id"_H: {
       if (j["status"].get<std::string>() == "success") {
         transmission_id_ = j["transmission_id"].get<std::string>();
+        user_id_ = transmission_id_;
+        net_status_report_(atoi(transmission_id_.c_str()),
+                           TraversalMode::UnknownMode, 0, 0, user_data_);
         LOG_INFO("Create transmission success with id [{}]", transmission_id_);
       } else if (j["status"].get<std::string>() == "fail") {
         LOG_WARN("Create transmission failed with id [{}], due to [{}]",

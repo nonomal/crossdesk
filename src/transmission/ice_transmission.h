@@ -31,7 +31,7 @@ class IceTransmission {
     kVideoFrameDelta = 4,
   };
 
-  enum TraversalType { TP2P = 0, TRelay = 1 };
+  enum TraversalType { TP2P = 0, TRelay = 1, TUnknown = 2 };
 
  public:
   IceTransmission(bool trickle_ice, bool offer_peer,
@@ -69,7 +69,7 @@ class IceTransmission {
   }
 
   void SetOnReceiveNetStatusReportFunc(
-      std::function<void(TraversalType, const unsigned short,
+      std::function<void(int, TraversalType, const unsigned short,
                          const unsigned short, void *)>
           on_receive_net_status_report) {
     on_receive_net_status_report_ = on_receive_net_status_report;
@@ -131,8 +131,8 @@ class IceTransmission {
   std::function<void(const char *, size_t, const char *, size_t)>
       on_receive_data_ = nullptr;
   std::function<void(std::string)> on_ice_status_change_ = nullptr;
-  std::function<void(TraversalType, const unsigned short, const unsigned short,
-                     void *)>
+  std::function<void(int, TraversalType, const unsigned short,
+                     const unsigned short, void *)>
       on_receive_net_status_report_ = nullptr;
 
  private:

@@ -240,6 +240,7 @@ int IceTransmission::InitIceTransmission(
             ice_transmission_obj->traversal_type_ = TraversalType::TP2P;
           }
           ice_transmission_obj->on_receive_net_status_report_(
+              atoi(ice_transmission_obj->transmission_id_.c_str()),
               ice_transmission_obj->traversal_type_, 0, 0, nullptr);
         }
       },

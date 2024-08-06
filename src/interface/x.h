@@ -31,7 +31,7 @@ enum SignalStatus {
   SignalReconnecting
 };
 
-enum TraversalMode { P2P = 0, Relay };
+enum TraversalMode { P2P = 0, Relay, UnknownMode };
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +46,7 @@ typedef void (*OnSignalStatus)(SignalStatus, void*);
 
 typedef void (*OnConnectionStatus)(ConnectionStatus, void*);
 
-typedef void (*NetStatusReport)(TraversalMode mode, const unsigned short,
+typedef void (*NetStatusReport)(int, TraversalMode, const unsigned short,
                                 const unsigned short, void*);
 
 typedef struct {
