@@ -10,7 +10,8 @@ int Render::ControlBar() {
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
   if (control_bar_button_pressed_) {
-    ImGui::SetCursorPosX(control_window_width_ + 2);
+    ImGui::SetCursorPosX(is_control_bar_in_left_ ? (control_window_width_ + 5)
+                                                 : 87);
     // Mouse control
     std::string mouse = ICON_FA_COMPUTER_MOUSE;
     if (ImGui::Button(mouse.c_str(), ImVec2(25, 25))) {
@@ -45,8 +46,8 @@ int Render::ControlBar() {
     ImGui::SameLine();
   }
 
-  ImGui::SetCursorPosX(is_control_bar_in_left_ ? control_window_width_ * 2 - 18
-                                               : 2);
+  ImGui::SetCursorPosX(
+      is_control_bar_in_left_ ? (control_window_width_ * 2 - 18) : 3);
 
   std::string control_bar =
       control_bar_button_pressed_
@@ -56,6 +57,7 @@ int Render::ControlBar() {
   if (ImGui::Button(control_bar.c_str(), ImVec2(15, 25))) {
     control_bar_button_pressed_ = !control_bar_button_pressed_;
     control_bar_button_pressed_time_ = ImGui::GetTime();
+    control_window_width_is_changing_ = true;
   }
 
   ImGui::PopStyleVar();

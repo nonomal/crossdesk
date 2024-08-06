@@ -143,7 +143,7 @@ class Render {
   int main_window_height_before_maximized_ = 570;
   int control_window_min_width_ = 20;
   int control_window_max_width_ = 150;
-  int control_window_width_ = 0;
+  int control_window_width_ = 20;
   int control_window_height_ = 40;
   int local_window_width_ = 350;
   int status_bar_height_ = 20;
@@ -198,8 +198,8 @@ class Render {
   bool show_about_window_ = false;
   bool show_connection_status_window_ = false;
   bool window_maximized_ = false;
-  bool streaming_ = true;
-  bool is_client_mode_ = true;
+  bool streaming_ = false;
+  bool is_client_mode_ = false;
   bool is_control_bar_in_left_ = true;
   bool control_window_width_is_changing_ = false;
 
