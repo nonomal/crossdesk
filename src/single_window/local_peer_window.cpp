@@ -131,7 +131,7 @@ int Render::LocalWindow() {
 
       if (!password_inited_) {
         char a[] = {
-            "1234567890QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm"};
+            "123456789QWERTYUPASDFGHJKLZXCVBNMqwertyupasdfghijkzxcvbnm"};
         std::mt19937 generator(
             std::chrono::system_clock::now().time_since_epoch().count());
         std::uniform_int_distribution<int> distribution(0, strlen(a) - 1);
@@ -143,6 +143,7 @@ int Render::LocalWindow() {
         password_inited_ = true;
         if (random_password_ != password_saved_) {
           password_saved_ = random_password_;
+          LOG_INFO("Generate new password and save into cache file");
           SaveSettingsIntoCacheFile();
         }
       }
