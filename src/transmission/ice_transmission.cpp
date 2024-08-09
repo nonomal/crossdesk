@@ -54,7 +54,10 @@ int IceTransmission::InitIceTransmission(
           return -1;
         }
 
-        if (state_ != NICE_COMPONENT_STATE_READY) {
+        if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
+            state_ != NICE_COMPONENT_STATE_READY) {
+          LOG_ERROR("Ice is not connected, state = [{}]",
+                    nice_component_state_to_string(state_));
           return -2;
         }
 
@@ -78,8 +81,10 @@ int IceTransmission::InitIceTransmission(
           return -1;
         }
 
-        if (state_ != NICE_COMPONENT_STATE_READY) {
-          LOG_ERROR("Ice is not ready");
+        if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
+            state_ != NICE_COMPONENT_STATE_READY) {
+          LOG_ERROR("Ice is not connected, state = [{}]",
+                    nice_component_state_to_string(state_));
           return -2;
         }
 
@@ -103,7 +108,10 @@ int IceTransmission::InitIceTransmission(
           return -1;
         }
 
-        if (state_ != NICE_COMPONENT_STATE_READY) {
+        if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
+            state_ != NICE_COMPONENT_STATE_READY) {
+          LOG_ERROR("Ice is not connected, state = [{}]",
+                    nice_component_state_to_string(state_));
           return -2;
         }
 
@@ -120,7 +128,10 @@ int IceTransmission::InitIceTransmission(
           return -1;
         }
 
-        if (state_ != NICE_COMPONENT_STATE_READY) {
+        if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
+            state_ != NICE_COMPONENT_STATE_READY) {
+          LOG_ERROR("Ice is not connected, state = [{}]",
+                    nice_component_state_to_string(state_));
           return -2;
         }
 
@@ -137,7 +148,10 @@ int IceTransmission::InitIceTransmission(
           return -1;
         }
 
-        if (state_ != NICE_COMPONENT_STATE_READY) {
+        if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
+            state_ != NICE_COMPONENT_STATE_READY) {
+          LOG_ERROR("Ice is not connected, state = [{}]",
+                    nice_component_state_to_string(state_));
           return -2;
         }
 
@@ -345,49 +359,61 @@ int IceTransmission::SendAnswer() {
 }
 
 int IceTransmission::SendData(DATA_TYPE type, const char *data, size_t size) {
-  if (NiceComponentState::NICE_COMPONENT_STATE_READY == state_) {
-    std::vector<RtpPacket> packets;
+  if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
+      state_ != NICE_COMPONENT_STATE_READY) {
+    LOG_ERROR("Ice is not connected, state = [{}]",
+              nice_component_state_to_string(state_));
+    return -2;
+  }
 
-    if (DATA_TYPE::VIDEO == type) {
-      if (rtp_video_sender_) {
-        if (video_rtp_codec_) {
-          video_rtp_codec_->Encode((uint8_t *)data, size, packets);
-        }
-        rtp_video_sender_->Enqueue(packets);
+  std::vector<RtpPacket> packets;
+
+  if (DATA_TYPE::VIDEO == type) {
+    if (rtp_video_sender_) {
+      if (video_rtp_codec_) {
+        video_rtp_codec_->Encode((uint8_t *)data, size, packets);
       }
-    } else if (DATA_TYPE::AUDIO == type) {
-      if (rtp_audio_sender_) {
-        if (audio_rtp_codec_) {
-          audio_rtp_codec_->Encode((uint8_t *)data, size, packets);
-          rtp_audio_sender_->Enqueue(packets);
-        }
+      rtp_video_sender_->Enqueue(packets);
+    }
+  } else if (DATA_TYPE::AUDIO == type) {
+    if (rtp_audio_sender_) {
+      if (audio_rtp_codec_) {
+        audio_rtp_codec_->Encode((uint8_t *)data, size, packets);
+        rtp_audio_sender_->Enqueue(packets);
       }
-    } else if (DATA_TYPE::DATA == type) {
-      if (rtp_data_sender_) {
-        if (data_rtp_codec_) {
-          data_rtp_codec_->Encode((uint8_t *)data, size, packets);
-          rtp_data_sender_->Enqueue(packets);
-        }
+    }
+  } else if (DATA_TYPE::DATA == type) {
+    if (rtp_data_sender_) {
+      if (data_rtp_codec_) {
+        data_rtp_codec_->Encode((uint8_t *)data, size, packets);
+        rtp_data_sender_->Enqueue(packets);
       }
     }
   }
+
   return 0;
 }
 
 int IceTransmission::SendVideoData(VideoFrameType frame_type, const char *data,
                                    size_t size) {
-  if (NiceComponentState::NICE_COMPONENT_STATE_READY == state_) {
-    std::vector<RtpPacket> packets;
-
-    if (rtp_video_sender_) {
-      if (video_rtp_codec_) {
-        video_rtp_codec_->Encode(
-            static_cast<RtpCodec::VideoFrameType>(frame_type), (uint8_t *)data,
-            size, packets);
-      }
-      rtp_video_sender_->Enqueue(packets);
-    }
+  if (state_ != NICE_COMPONENT_STATE_CONNECTED &&
+      state_ != NICE_COMPONENT_STATE_READY) {
+    LOG_ERROR("Ice is not connected, state = [{}]",
+              nice_component_state_to_string(state_));
+    return -2;
   }
+
+  std::vector<RtpPacket> packets;
+
+  if (rtp_video_sender_) {
+    if (video_rtp_codec_) {
+      video_rtp_codec_->Encode(
+          static_cast<RtpCodec::VideoFrameType>(frame_type), (uint8_t *)data,
+          size, packets);
+    }
+    rtp_video_sender_->Enqueue(packets);
+  }
+
   return 0;
 }
 

@@ -51,8 +51,8 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
     agent_ = nice_agent_new_full(
         g_main_loop_get_context(gloop_), NICE_COMPATIBILITY_RFC5245,
         (NiceAgentOption)(trickle_ice_ ? NICE_AGENT_OPTION_ICE_TRICKLE |
-                                             NICE_AGENT_OPTION_RELIABLE
-                                       : NICE_AGENT_OPTION_RELIABLE));
+                                             NICE_AGENT_OPTION_NONE
+                                       : NICE_AGENT_OPTION_NONE));
 
     if (agent_ == nullptr) {
       LOG_ERROR("Failed to create agent_");
@@ -250,6 +250,6 @@ int IceAgent::Send(const char *data, size_t size) {
   //   return -1;
   // }
 
-  nice_agent_send(agent_, stream_id_, 1, size, data);
+  int ret = nice_agent_send(agent_, stream_id_, 1, size, data);
   return 0;
 }
