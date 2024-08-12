@@ -10,6 +10,7 @@
 #endif
 
 #include "log.h"
+#include "nvcodec_api.h"
 
 VideoDecoderFactory::VideoDecoderFactory() {}
 
@@ -44,9 +45,8 @@ bool VideoDecoderFactory::CheckIsHardwareAccerlerationSupported() {
   return false;
 #else
   CUresult cuResult;
-
   CUvideoctxlock cudaCtxLock;
-  cuResult = cuvidCtxLockCreate(&cudaCtxLock, 0);
+  cuResult = cuvidCtxLockCreate_ld(&cudaCtxLock, 0);
   if (cuResult != CUDA_SUCCESS) {
     LOG_WARN(
         "System not support hardware accelerated decode, use default software "

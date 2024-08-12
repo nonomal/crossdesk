@@ -6,6 +6,7 @@
 #include "common.h"
 #include "log.h"
 #include "nlohmann/json.hpp"
+#include "nvcodec_api.h"
 
 using nlohmann::json;
 
@@ -227,6 +228,7 @@ int PeerConnection::CreateVideoCodec(bool hardware_acceleration) {
         "MacOS not support hardware acceleration, use default software codec");
   }
 #else
+  InitNvCodecApi();
 #endif
 
   if (av1_encoding_) {

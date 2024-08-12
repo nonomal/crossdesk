@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "log.h"
+#include "nvcodec_api.h"
 
 #define SAVE_RECEIVED_NV12_STREAM 0
 #define SAVE_ENCODED_H264_STREAM 0
@@ -32,11 +33,12 @@ int NvidiaVideoEncoder::Init() {
   int num_of_GPUs = 0;
   CUdevice cuda_device;
   bool cuda_ctx_succeed =
-      (index_of_GPU >= 0 && cuInit(0) == CUresult::CUDA_SUCCESS &&
-       cuDeviceGetCount(&num_of_GPUs) == CUresult::CUDA_SUCCESS &&
+      (index_of_GPU >= 0 && cuInit_ld(0) == CUresult::CUDA_SUCCESS &&
+       cuDeviceGetCount_ld(&num_of_GPUs) == CUresult::CUDA_SUCCESS &&
        (num_of_GPUs > 0 && index_of_GPU < num_of_GPUs) &&
-       cuDeviceGet(&cuda_device, index_of_GPU) == CUresult::CUDA_SUCCESS &&
-       cuCtxCreate(&cuda_context_, 0, cuda_device) == CUresult::CUDA_SUCCESS);
+       cuDeviceGet_ld(&cuda_device, index_of_GPU) == CUresult::CUDA_SUCCESS &&
+       cuCtxCreate_ld(&cuda_context_, 0, cuda_device) ==
+           CUresult::CUDA_SUCCESS);
   if (!cuda_ctx_succeed) {
   }
 

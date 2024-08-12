@@ -192,7 +192,6 @@ target("projectx")
         "pcre2-8", "pcre2-16", "pcre2-32", "pcre2-posix", 
         "zlib", "ffi", "libcrypto", "libssl", "intl", "iconv", 
         "Shell32", "Advapi32", "Dnsapi", "Shlwapi", "Crypt32", 
-        "cuda", "nvencodeapi", "nvcuvid",
         "ws2_32", "Bcrypt", "windowsapp", "User32", "Strmiids", "Mfuuid",
         "Secur32", "Bcrypt")
     elseif is_os(("linux")) then

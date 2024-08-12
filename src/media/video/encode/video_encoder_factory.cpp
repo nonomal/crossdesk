@@ -10,6 +10,7 @@
 #endif
 
 #include "log.h"
+#include "nvcodec_api.h"
 
 VideoEncoderFactory::VideoEncoderFactory() {}
 
@@ -46,7 +47,7 @@ bool VideoEncoderFactory::CheckIsHardwareAccerlerationSupported() {
   CUresult cuResult;
   NV_ENCODE_API_FUNCTION_LIST functionList = {NV_ENCODE_API_FUNCTION_LIST_VER};
 
-  cuResult = cuInit(0);
+  cuResult = cuInit_ld(0);
   if (cuResult != CUDA_SUCCESS) {
     LOG_WARN(
         "System not support hardware accelerated encode, use default software "
@@ -54,7 +55,7 @@ bool VideoEncoderFactory::CheckIsHardwareAccerlerationSupported() {
     return false;
   }
 
-  NVENCSTATUS nvEncStatus = NvEncodeAPICreateInstance(&functionList);
+  NVENCSTATUS nvEncStatus = NvEncodeAPICreateInstance_ld(&functionList);
   if (nvEncStatus != NV_ENC_SUCCESS) {
     LOG_WARN(
         "System not support hardware accelerated encode, use default software "

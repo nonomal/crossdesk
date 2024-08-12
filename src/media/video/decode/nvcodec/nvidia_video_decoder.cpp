@@ -1,6 +1,7 @@
 #include "nvidia_video_decoder.h"
 
 #include "log.h"
+#include "nvcodec_api.h"
 
 #define SAVE_RECEIVED_H264_STREAM 0
 #define SAVE_DECODED_NV12_STREAM 0
@@ -21,20 +22,20 @@ NvidiaVideoDecoder::~NvidiaVideoDecoder() {
 }
 
 int NvidiaVideoDecoder::Init() {
-  ck(cuInit(0));
+  ck(cuInit_ld(0));
   int nGpu = 0;
   int iGpu = 0;
 
-  ck(cuDeviceGetCount(&nGpu));
+  ck(cuDeviceGetCount_ld(&nGpu));
   if (nGpu < 1) {
     return -1;
   }
 
   CUdevice cuDevice;
-  cuDeviceGet(&cuDevice, iGpu);
+  cuDeviceGet_ld(&cuDevice, iGpu);
 
   CUcontext cuContext = NULL;
-  cuCtxCreate(&cuContext, 0, cuDevice);
+  cuCtxCreate_ld(&cuContext, 0, cuDevice);
   if (!cuContext) {
     return -1;
   }
