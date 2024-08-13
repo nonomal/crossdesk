@@ -20,6 +20,7 @@ PeerConnection::~PeerConnection() {
 
   video_codec_inited_ = false;
   audio_codec_inited_ = false;
+  load_nvcodec_dll_success = false;
 }
 
 int PeerConnection::Init(PeerConnectionParams params,
@@ -201,16 +202,6 @@ int PeerConnection::Init(PeerConnectionParams params,
 
   LOG_INFO("[{}] Init finish", user_id);
 
-  // if (0 != CreateVideoCodec(hardware_acceleration_)) {
-  //   LOG_ERROR("Create video codec failed");
-  //   return -1;
-  // }
-
-  // if (0 != CreateAudioCodec()) {
-  //   LOG_ERROR("Create audio codec failed");
-  //   return -1;
-  // }
-
   inited_ = true;
   return 0;
 }
@@ -237,6 +228,7 @@ int PeerConnection::CreateVideoCodec(bool hardware_acceleration) {
   } else {
     if (hardware_acceleration_) {
       if (0 == LoadNvCodecDll()) {
+        load_nvcodec_dll_success = true;
         video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(true, false);
         video_decoder_ = VideoDecoderFactory::CreateVideoDecoder(true, false);
       } else {
@@ -614,7 +606,7 @@ int PeerConnection::Destroy() {
     nv12_data_ = nullptr;
   }
 
-  if (hardware_acceleration_) {
+  if (hardware_acceleration_ && load_nvcodec_dll_success) {
     ReleaseNvCodecDll();
   }
   return 0;

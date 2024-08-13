@@ -150,6 +150,7 @@ class PeerConnection {
   bool hardware_accelerated_decode_ = false;
   bool b_force_i_frame_ = false;
   bool video_codec_inited_ = false;
+  bool load_nvcodec_dll_success = false;
 
  private:
   std::unique_ptr<AudioEncoder> audio_encoder_ = nullptr;
