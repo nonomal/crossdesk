@@ -74,7 +74,9 @@ int Render::SaveSettingsIntoCacheFile() {
   }
 
   fseek(cd_cache_file_, 0, SEEK_SET);
+  memset(&cd_cache_.client_id, 0, sizeof(cd_cache_.client_id));
   strncpy(cd_cache_.client_id, client_id_, sizeof(client_id_));
+  memset(&cd_cache_.password, 0, sizeof(cd_cache_.password));
   strncpy(cd_cache_.password, password_saved_.c_str(),
           password_saved_.length());
   memcpy(&cd_cache_.language, &language_button_value_,
@@ -125,6 +127,7 @@ int Render::LoadSettingsFromCacheFile() {
   fread(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
   fclose(cd_cache_file_);
 
+  memset(&cd_cache_.client_id, 0, sizeof(cd_cache_.client_id));
   strncpy(client_id_, cd_cache_.client_id, sizeof(client_id_));
   password_saved_ = cd_cache_.password;
   language_button_value_ = cd_cache_.language;
