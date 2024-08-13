@@ -527,8 +527,7 @@ int Render::Run() {
           connection_established_ = false;
           received_frame_ = false;
           is_client_mode_ = false;
-          SDL_SetWindowSize(main_window_, main_window_width_default_,
-                            main_window_height_default_);
+          SDL_RestoreWindow(main_window_);
           continue;
         } else {
           LOG_INFO("Quit program");
