@@ -1,7 +1,9 @@
 #ifndef _WS_CORE_H_
 #define _WS_CORE_H_
 
+#include <condition_variable>
 #include <map>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -23,7 +25,9 @@ class WsCore {
 
   int Connect(std::string const &uri);
 
-  void Close(websocketpp::close::status::value code, std::string reason);
+  void Close(websocketpp::close::status::value code =
+                 websocketpp::close::status::going_away,
+             std::string reason = "");
 
   void Send(std::string message);
 
@@ -55,10 +59,15 @@ class WsCore {
   websocketpp::connection_hdl connection_handle_;
   std::thread m_thread_;
   std::thread ping_thread_;
+  bool running_ = true;
+  std::mutex mtx_;
+  unsigned int interval_ = 3;
+  std::condition_variable cond_var_;
 
   WsStatus ws_status_ = WsStatus::WsClosed;
   int timeout_count_ = 0;
   std::string uri_;
+  bool destructed_ = false;
 };
 
 #endif

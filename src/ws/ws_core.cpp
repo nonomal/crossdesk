@@ -13,31 +13,22 @@ WsCore::WsCore() {
   m_endpoint_.init_asio();
   m_endpoint_.start_perpetual();
 
-  std::thread t(&client::run, &m_endpoint_);
-  m_thread_ = std::move(t);
+  m_thread_ = std::thread(&client::run, &m_endpoint_);
 }
 
 WsCore::~WsCore() {
+  destructed_ = true;
+  running_ = false;
+
+  cond_var_.notify_one();
+  if (ping_thread_.joinable()) {
+    ping_thread_.join();
+  }
+
   m_endpoint_.stop_perpetual();
-
-  if (GetStatus() != WsStatus::WsOpened) {
-    // Only close open connections
-    return;
-  }
-
-  websocketpp::lib::error_code ec;
-  m_endpoint_.close(connection_handle_, websocketpp::close::status::going_away,
-                    "", ec);
-  if (ec) {
-    LOG_INFO("Closing connection error: {}", ec.message());
-  }
 
   if (m_thread_.joinable()) {
     m_thread_.join();
-  }
-
-  if (ping_thread_.joinable()) {
-    ping_thread_.join();
   }
 }
 
@@ -51,7 +42,7 @@ int WsCore::Connect(std::string const &uri) {
   connection_handle_ = con->get_handle();
 
   if (ec) {
-    LOG_INFO("Connect initialization error: {}", ec.message());
+    LOG_ERROR("Connect initialization error: {}", ec.message());
     return -1;
   }
 
@@ -94,7 +85,7 @@ void WsCore::Close(websocketpp::close::status::value code, std::string reason) {
 
   m_endpoint_.close(connection_handle_, code, reason, ec);
   if (ec) {
-    LOG_INFO("Initiating close error: {}", ec.message());
+    LOG_ERROR("Initiating close error: {}", ec.message());
   }
 }
 
@@ -104,22 +95,30 @@ void WsCore::Send(std::string message) {
   m_endpoint_.send(connection_handle_, message,
                    websocketpp::frame::opcode::text, ec);
   if (ec) {
-    LOG_INFO("Sending message error: {}", ec.message());
+    LOG_ERROR("Sending message error: {}", ec.message());
     return;
   }
 }
 
 void WsCore::Ping(websocketpp::connection_hdl hdl) {
-  auto con = m_endpoint_.get_con_from_hdl(hdl);
-  while (con->get_state() == websocketpp::session::state::open) {
-    websocketpp::lib::error_code ec;
-    m_endpoint_.ping(hdl, "", ec);
-    if (ec) {
-      LOG_ERROR("Ping error: {}", ec.message());
-      break;
+  while (running_) {
+    {
+      std::unique_lock<std::mutex> lock(mtx_);
+      cond_var_.wait_for(lock, std::chrono::seconds(interval_),
+                         [this] { return !running_; });
     }
 
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    auto con = m_endpoint_.get_con_from_hdl(hdl);
+    if (con && con->get_state() == websocketpp::session::state::open) {
+      websocketpp::lib::error_code ec;
+      m_endpoint_.ping(hdl, "", ec);
+      if (ec) {
+        LOG_ERROR("Ping error: {}", ec.message());
+        break;
+      }
+    }
+
+    if (!running_) break;
   }
 }
 
@@ -129,8 +128,7 @@ void WsCore::OnOpen(client *c, websocketpp::connection_hdl hdl) {
   ws_status_ = WsStatus::WsOpened;
   OnWsStatus(WsStatus::WsOpened);
 
-  std::thread t(&WsCore::Ping, this, hdl);
-  ping_thread_ = std::move(t);
+  ping_thread_ = std::thread(&WsCore::Ping, this, hdl);
 }
 
 void WsCore::OnFail(client *c, websocketpp::connection_hdl hdl) {
@@ -142,7 +140,9 @@ void WsCore::OnFail(client *c, websocketpp::connection_hdl hdl) {
 
 void WsCore::OnClose(client *c, websocketpp::connection_hdl hdl) {
   ws_status_ = WsStatus::WsClosed;
-  OnWsStatus(WsStatus::WsClosed);
+  if (running_) {
+    OnWsStatus(WsStatus::WsClosed);
+  }
 }
 
 bool WsCore::OnPing(websocketpp::connection_hdl hdl, std::string msg) {
