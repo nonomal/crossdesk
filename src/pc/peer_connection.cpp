@@ -172,10 +172,14 @@ int PeerConnection::Init(PeerConnectionParams params,
       on_connection_status_(ConnectionStatus::Connecting, user_data_);
     } else if ("disconnected" == ice_status) {
       on_connection_status_(ConnectionStatus::Disconnected, user_data_);
-    } else if ("ready" == ice_status) {
+    } else if ("connected" == ice_status) {
       ice_ready_ = true;
       on_connection_status_(ConnectionStatus::Connected, user_data_);
       b_force_i_frame_ = true;
+      LOG_INFO("Ice connected");
+    } else if ("ready" == ice_status) {
+      ice_ready_ = true;
+      on_connection_status_(ConnectionStatus::Connected, user_data_);
       LOG_INFO("Ice finish");
     } else if ("closed" == ice_status) {
       ice_ready_ = false;
