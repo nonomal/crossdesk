@@ -249,12 +249,7 @@ class Render {
   SpeakerCapturer *speaker_capturer_ = nullptr;
   DeviceControllerFactory *device_controller_factory_ = nullptr;
   MouseController *mouse_controller_ = nullptr;
-
-#ifdef __linux__
-  std::chrono::_V2::system_clock::time_point last_frame_time_;
-#else
-  std::chrono::steady_clock::time_point last_frame_time_;
-#endif
+  uint32_t last_frame_time_;
 
  private:
   char client_id_[10] = "";

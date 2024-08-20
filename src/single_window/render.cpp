@@ -159,16 +159,18 @@ int Render::StartScreenCapture() {
   rect.top = 0;
   rect.right = screen_width_;
   rect.bottom = screen_height_;
-  last_frame_time_ = std::chrono::steady_clock::now();
+  last_frame_time_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         std::chrono::steady_clock::now().time_since_epoch())
+                         .count();
 
   int screen_capturer_init_ret = screen_capturer_->Init(
       rect, 60,
       [this](unsigned char *data, int size, int width, int height) -> void {
-        auto now_time = std::chrono::steady_clock::now();
-        std::chrono::duration<double> duration = now_time - last_frame_time_;
-        auto tc = duration.count() * 1000;
-
-        if (tc >= 0 && connection_established_) {
+        auto now_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now().time_since_epoch())
+                            .count();
+        auto duration = now_time - last_frame_time_;
+        if (duration >= 0 && connection_established_) {
           SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
                    NV12_BUFFER_SIZE);
           last_frame_time_ = now_time;
