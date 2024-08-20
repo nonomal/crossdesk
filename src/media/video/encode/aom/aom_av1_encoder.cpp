@@ -120,8 +120,7 @@ int AomAv1Encoder::Init() {
   // Overwrite default config with input encoder settings & RTC-relevant values.
   aom_av1_encoder_config_.g_w = frame_width_;
   aom_av1_encoder_config_.g_h = frame_height_;
-  aom_av1_encoder_config_.g_threads =
-      NumberOfThreads(frame_width_, frame_height_, number_of_cores_);
+  aom_av1_encoder_config_.g_threads = 8;
   aom_av1_encoder_config_.g_timebase.num = 1;
   aom_av1_encoder_config_.g_timebase.den = kRtpTicksPerSecond;
   aom_av1_encoder_config_.rc_target_bitrate = target_bitrate_;  // kilobits/sec.
@@ -162,7 +161,7 @@ int AomAv1Encoder::Init() {
   inited_ = true;
 
   // Set control parameters
-  SET_ENCODER_PARAM_OR_RETURN_ERROR(AOME_SET_CPUUSED, 4);
+  SET_ENCODER_PARAM_OR_RETURN_ERROR(AOME_SET_CPUUSED, 10);  // 6 - 10
   SET_ENCODER_PARAM_OR_RETURN_ERROR(AV1E_SET_ENABLE_CDEF, 1);
   SET_ENCODER_PARAM_OR_RETURN_ERROR(AV1E_SET_ENABLE_TPL_MODEL, 0);
   SET_ENCODER_PARAM_OR_RETURN_ERROR(AV1E_SET_DELTAQ_MODE, 0);
