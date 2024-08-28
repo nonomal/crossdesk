@@ -130,6 +130,9 @@ int Render::LoadSettingsFromCacheFile() {
   memset(&client_id_, 0, sizeof(client_id_));
   strncpy(client_id_, cd_cache_.client_id, sizeof(client_id_));
   password_saved_ = cd_cache_.password;
+  if (!password_saved_.empty() && 6 == password_saved_.length()) {
+    password_inited_ = true;
+  }
   language_button_value_ = cd_cache_.language;
   video_quality_button_value_ = cd_cache_.video_quality;
   video_encode_format_button_value_ = cd_cache_.video_encode_format;

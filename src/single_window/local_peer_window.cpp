@@ -154,7 +154,7 @@ int Render::LocalWindow() {
       ImGui::InputTextWithHint(
           "##server_pwd",
           localization::max_password_len[localization_language_index_].c_str(),
-          (char *)random_password_.c_str(), random_password_.length() + 1,
+          (char *)password_saved_.c_str(), password_saved_.length() + 1,
           show_password_ ? ImGuiInputTextFlags_CharsNoBlank
                          : ImGuiInputTextFlags_CharsNoBlank |
                                ImGuiInputTextFlags_Password);
