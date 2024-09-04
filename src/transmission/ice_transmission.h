@@ -11,6 +11,7 @@
 
 #include "congestion_control.h"
 #include "ice_agent.h"
+#include "receiver_statistics.h"
 #include "ringbuffer.h"
 #include "rtp_audio_receiver.h"
 #include "rtp_audio_sender.h"
@@ -20,6 +21,7 @@
 #include "rtp_packet.h"
 #include "rtp_video_receiver.h"
 #include "rtp_video_sender.h"
+#include "sender_statistics.h"
 #include "ws_transmission.h"
 
 class IceTransmission {
@@ -150,6 +152,10 @@ class IceTransmission {
   bool start_send_packet_ = false;
 
   uint32_t last_complete_frame_ts_ = 0;
+
+ private:
+  std::unique_ptr<SenderStatistics> sender_statistics_ = nullptr;
+  std::unique_ptr<ReceiverStatistics> receiver_statistics_ = nullptr;
 };
 
 #endif

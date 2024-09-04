@@ -170,9 +170,15 @@ target("qos")
     add_files("src/qos/kcp/*.c")
     add_includedirs("src/qos/kcp", {public = true})
 
+target("statistics")
+    set_kind("object")
+    add_deps("log")
+    add_files("src/statistics/*.cpp")
+    add_includedirs("src/statistics", {public = true})
+
 target("transmission")
     set_kind("object")
-    add_deps("log", "ws", "ice", "qos", "rtp", "rtcp")
+    add_deps("log", "ws", "ice", "qos", "rtp", "rtcp", "statistics")
     add_files("src/transmission/*.cpp")
     add_includedirs("src/ws", "src/ice", "src/qos", {public = true})
 
