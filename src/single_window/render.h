@@ -171,6 +171,7 @@ class Render {
 
   int video_width_ = 1280;
   int video_height_ = 720;
+  int video_size_ = 1280 * 720 * 3;
 
   SDL_Window *main_window_;
   SDL_Renderer *main_renderer_ = nullptr;

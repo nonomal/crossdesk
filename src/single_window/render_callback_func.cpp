@@ -134,6 +134,7 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
     memcpy(render->dst_buffer_, video_frame->data, video_frame->size);
     render->video_width_ = video_frame->width;
     render->video_height_ = video_frame->height;
+    render->video_size_ = video_frame->size;
 
     SDL_Event event;
     event.type = REFRESH_EVENT;
@@ -233,9 +234,9 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
       memset(render->remote_password_, 0, sizeof(render->remote_password_));
     }
     if (render->dst_buffer_) {
-      memset(render->dst_buffer_, 0, 1280 * 720 * 3);
+      memset(render->dst_buffer_, 0, render->dst_buffer_capacity_);
       SDL_UpdateTexture(render->stream_texture_, NULL, render->dst_buffer_,
-                        1280);
+                        render->texture_width_);
     }
   } else if (ConnectionStatus::IncorrectPassword == status) {
     render->connection_status_str_ = "Incorrect password";
