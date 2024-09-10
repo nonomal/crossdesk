@@ -10,7 +10,7 @@
 #include "ice_transmission.h"
 #include "video_decoder_factory.h"
 #include "video_encoder_factory.h"
-#include "ws_transmission.h"
+#include "ws_client.h"
 #include "x.h"
 
 typedef void (*OnReceiveBuffer)(const char *, size_t, const char *,
@@ -140,7 +140,7 @@ class PeerConnection {
   bool try_rejoin_with_turn_ = true;
 
  private:
-  std::shared_ptr<WsTransmission> ws_transport_ = nullptr;
+  std::shared_ptr<WsClient> ws_transport_ = nullptr;
   std::function<void(const std::string &)> on_receive_ws_msg_ = nullptr;
   std::function<void(WsStatus)> on_ws_status_ = nullptr;
   unsigned int ws_connection_id_ = 0;

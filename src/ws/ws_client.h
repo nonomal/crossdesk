@@ -1,5 +1,11 @@
-#ifndef _WS_CORE_H_
-#define _WS_CORE_H_
+/*
+ * @Author: DI JUNKUN
+ * @Date: 2024-09-10
+ * Copyright (c) 2023 by DI JUNKUN, All Rights Reserved.
+ */
+
+#ifndef _WS_CLIENT_H_
+#define _WS_CLIENT_H_
 
 #include <condition_variable>
 #include <map>
@@ -24,12 +30,14 @@ enum WsStatus {
   WsServerClosed
 };
 
-class WsCore {
+class WsClient {
  public:
-  WsCore();
+  WsClient(std::function<void(const std::string &)> on_receive_msg_cb,
+           std::function<void(WsStatus)> on_ws_status_cb);
 
-  virtual ~WsCore();
+  ~WsClient();
 
+ public:
   int Connect(std::string const &uri);
 
   void Close(websocketpp::close::status::value code =
@@ -57,10 +65,6 @@ class WsCore {
 
   void OnMessage(websocketpp::connection_hdl hdl, client::message_ptr msg);
 
-  virtual void OnReceiveMessage(const std::string &msg) = 0;
-
-  virtual void OnWsStatus(WsStatus ws_status) = 0;
-
  private:
   client m_endpoint_;
   websocketpp::connection_hdl connection_handle_;
@@ -76,6 +80,9 @@ class WsCore {
   int timeout_count_ = 0;
   std::string uri_;
   bool destructed_ = false;
+
+  std::function<void(const std::string &)> on_receive_msg_ = nullptr;
+  std::function<void(WsStatus)> on_ws_status_ = nullptr;
 };
 
 #endif

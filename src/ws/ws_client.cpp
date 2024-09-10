@@ -1,4 +1,4 @@
-#include "ws_core.h"
+#include "ws_client.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -6,7 +6,9 @@
 
 #include "log.h"
 
-WsCore::WsCore() {
+WsClient::WsClient(std::function<void(const std::string &)> on_receive_msg_cb,
+                   std::function<void(WsStatus)> on_ws_status_cb)
+    : on_receive_msg_(on_receive_msg_cb), on_ws_status_(on_ws_status_cb) {
   m_endpoint_.clear_access_channels(websocketpp::log::alevel::all);
   m_endpoint_.clear_error_channels(websocketpp::log::elevel::all);
 
@@ -16,7 +18,7 @@ WsCore::WsCore() {
   m_thread_ = std::thread(&client::run, &m_endpoint_);
 }
 
-WsCore::~WsCore() {
+WsClient::~WsClient() {
   destructed_ = true;
   running_ = false;
 
@@ -33,7 +35,7 @@ WsCore::~WsCore() {
   }
 }
 
-int WsCore::Connect(std::string const &uri) {
+int WsClient::Connect(std::string const &uri) {
   uri_ = uri;
 
   websocketpp::lib::error_code ec;
@@ -47,51 +49,53 @@ int WsCore::Connect(std::string const &uri) {
     return -1;
   }
 
-  con->set_open_handler(websocketpp::lib::bind(
-      &WsCore::OnOpen, this, &m_endpoint_, websocketpp::lib::placeholders::_1));
-  con->set_fail_handler(websocketpp::lib::bind(
-      &WsCore::OnFail, this, &m_endpoint_, websocketpp::lib::placeholders::_1));
+  con->set_open_handler(
+      websocketpp::lib::bind(&WsClient::OnOpen, this, &m_endpoint_,
+                             websocketpp::lib::placeholders::_1));
+  con->set_fail_handler(
+      websocketpp::lib::bind(&WsClient::OnFail, this, &m_endpoint_,
+                             websocketpp::lib::placeholders::_1));
   con->set_close_handler(
-      websocketpp::lib::bind(&WsCore::OnClose, this, &m_endpoint_,
+      websocketpp::lib::bind(&WsClient::OnClose, this, &m_endpoint_,
                              websocketpp::lib::placeholders::_1));
 
   con->set_ping_handler(websocketpp::lib::bind(
-      &WsCore::OnPing, this, websocketpp::lib::placeholders::_1,
+      &WsClient::OnPing, this, websocketpp::lib::placeholders::_1,
       websocketpp::lib::placeholders::_2));
 
   con->set_pong_handler(websocketpp::lib::bind(
-      &WsCore::OnPong, this, websocketpp::lib::placeholders::_1,
+      &WsClient::OnPong, this, websocketpp::lib::placeholders::_1,
       websocketpp::lib::placeholders::_2));
 
   con->set_pong_timeout(1000);
 
   con->set_pong_timeout_handler(websocketpp::lib::bind(
-      &WsCore::OnPongTimeout, this, websocketpp::lib::placeholders::_1,
+      &WsClient::OnPongTimeout, this, websocketpp::lib::placeholders::_1,
       websocketpp::lib::placeholders::_2));
 
   con->set_message_handler(websocketpp::lib::bind(
-      &WsCore::OnMessage, this, websocketpp::lib::placeholders::_1,
+      &WsClient::OnMessage, this, websocketpp::lib::placeholders::_1,
       websocketpp::lib::placeholders::_2));
 
   m_endpoint_.connect(con);
 
   ws_status_ = WsStatus::WsOpening;
-  OnWsStatus(WsStatus::WsOpening);
+  on_ws_status_(WsStatus::WsOpening);
 
   return 0;
 }
 
-void WsCore::Close(websocketpp::close::status::value code, std::string reason) {
+void WsClient::Close(websocketpp::close::status::value code,
+                     std::string reason) {
   websocketpp::lib::error_code ec;
-
+  running_ = false;
   m_endpoint_.close(connection_handle_, code, reason, ec);
   if (ec) {
     LOG_ERROR("Initiating close error: {}", ec.message());
   }
-  OnWsStatus(WsStatus::WsClosed);
 }
 
-void WsCore::Send(std::string message) {
+void WsClient::Send(std::string message) {
   websocketpp::lib::error_code ec;
 
   m_endpoint_.send(connection_handle_, message,
@@ -102,12 +106,16 @@ void WsCore::Send(std::string message) {
   }
 }
 
-void WsCore::Ping(websocketpp::connection_hdl hdl) {
+void WsClient::Ping(websocketpp::connection_hdl hdl) {
   while (running_) {
     {
       std::unique_lock<std::mutex> lock(mtx_);
       cond_var_.wait_for(lock, std::chrono::seconds(interval_),
                          [this] { return !running_; });
+    }
+
+    if (!running_) {
+      break;
     }
 
     if (hdl.expired()) {
@@ -126,52 +134,52 @@ void WsCore::Ping(websocketpp::connection_hdl hdl) {
   }
 }
 
-WsStatus WsCore::GetStatus() { return ws_status_; }
+WsStatus WsClient::GetStatus() { return ws_status_; }
 
-void WsCore::OnOpen(client *c, websocketpp::connection_hdl hdl) {
+void WsClient::OnOpen(client *c, websocketpp::connection_hdl hdl) {
   ws_status_ = WsStatus::WsOpened;
-  OnWsStatus(WsStatus::WsOpened);
+  on_ws_status_(WsStatus::WsOpened);
 
   if (!heartbeat_started_) {
     heartbeat_started_ = true;
     running_ = true;
-    ping_thread_ = std::thread(&WsCore::Ping, this, hdl);
+    ping_thread_ = std::thread(&WsClient::Ping, this, hdl);
   } else {
     running_ = false;
     cond_var_.notify_one();
     if (ping_thread_.joinable()) {
       ping_thread_.join();
       running_ = true;
-      ping_thread_ = std::thread(&WsCore::Ping, this, hdl);
+      ping_thread_ = std::thread(&WsClient::Ping, this, hdl);
     }
   }
 }
 
-void WsCore::OnFail(client *c, websocketpp::connection_hdl hdl) {
+void WsClient::OnFail(client *c, websocketpp::connection_hdl hdl) {
   ws_status_ = WsStatus::WsFailed;
-  OnWsStatus(WsStatus::WsFailed);
-
+  on_ws_status_(WsStatus::WsFailed);
   Connect(uri_);
 }
 
-void WsCore::OnClose(client *c, websocketpp::connection_hdl hdl) {
+void WsClient::OnClose(client *c, websocketpp::connection_hdl hdl) {
   ws_status_ = WsStatus::WsServerClosed;
+  on_ws_status_(WsStatus::WsServerClosed);
+
   if (running_) {
-    OnWsStatus(WsStatus::WsServerClosed);
     // try to reconnect
     Connect(uri_);
   }
 }
 
-bool WsCore::OnPing(websocketpp::connection_hdl hdl, std::string msg) {
+bool WsClient::OnPing(websocketpp::connection_hdl hdl, std::string msg) {
   return true;
 }
 
-bool WsCore::OnPong(websocketpp::connection_hdl hdl, std::string msg) {
+bool WsClient::OnPong(websocketpp::connection_hdl hdl, std::string msg) {
   return true;
 }
 
-void WsCore::OnPongTimeout(websocketpp::connection_hdl hdl, std::string msg) {
+void WsClient::OnPongTimeout(websocketpp::connection_hdl hdl, std::string msg) {
   if (timeout_count_ < 2) {
     timeout_count_++;
     return;
@@ -181,10 +189,10 @@ void WsCore::OnPongTimeout(websocketpp::connection_hdl hdl, std::string msg) {
   // m_endpoint_.close(hdl, websocketpp::close::status::normal,
   // "OnPongTimeout");
   ws_status_ = WsStatus::WsReconnecting;
-  OnWsStatus(WsStatus::WsReconnecting);
+  on_ws_status_(WsStatus::WsReconnecting);
   m_endpoint_.reset();
 }
 
-void WsCore::OnMessage(websocketpp::connection_hdl, client::message_ptr msg) {
-  OnReceiveMessage(msg->get_payload());
+void WsClient::OnMessage(websocketpp::connection_hdl, client::message_ptr msg) {
+  on_receive_msg_(msg->get_payload());
 }

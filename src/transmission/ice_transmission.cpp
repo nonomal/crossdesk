@@ -14,8 +14,7 @@ using nlohmann::json;
 IceTransmission::IceTransmission(
     bool enable_turn, bool trickle_ice, bool offer_peer,
     std::string &transmission_id, std::string &user_id,
-    std::string &remote_user_id,
-    std::shared_ptr<WsTransmission> ice_ws_transmission,
+    std::string &remote_user_id, std::shared_ptr<WsClient> ice_ws_transmission,
     std::function<void(std::string)> on_ice_status_change)
     : enable_turn_(enable_turn),
       trickle_ice_(trickle_ice),

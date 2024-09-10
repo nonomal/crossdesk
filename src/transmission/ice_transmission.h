@@ -21,7 +21,7 @@
 #include "rtp_packet.h"
 #include "rtp_video_receiver.h"
 #include "rtp_video_sender.h"
-#include "ws_transmission.h"
+#include "ws_client.h"
 
 class IceTransmission {
  public:
@@ -38,7 +38,7 @@ class IceTransmission {
   IceTransmission(bool enable_turn, bool trickle_ice, bool offer_peer,
                   std::string &transmission_id, std::string &user_id,
                   std::string &remote_user_id,
-                  std::shared_ptr<WsTransmission> ice_ws_transmission,
+                  std::shared_ptr<WsClient> ice_ws_transmission,
                   std::function<void(std::string)> on_ice_status_change);
   ~IceTransmission();
 
@@ -124,7 +124,7 @@ class IceTransmission {
 
  private:
   std::unique_ptr<IceAgent> ice_agent_ = nullptr;
-  std::shared_ptr<WsTransmission> ice_ws_transport_ = nullptr;
+  std::shared_ptr<WsClient> ice_ws_transport_ = nullptr;
   CongestionControl *congestion_control_ = nullptr;
   std::function<void(const char *, size_t, const char *, size_t)>
       on_receive_video_ = nullptr;
