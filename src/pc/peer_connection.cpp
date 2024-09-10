@@ -491,8 +491,8 @@ int PeerConnection::SendVideoData(const char *data, size_t size) {
   }
 
   if (b_force_i_frame_) {
-    video_encoder_->ForceIdr();
     LOG_INFO("Force I frame");
+    video_encoder_->ForceIdr();
     b_force_i_frame_ = false;
   }
 

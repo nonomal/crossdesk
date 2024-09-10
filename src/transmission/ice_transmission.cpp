@@ -49,14 +49,14 @@ int IceTransmission::InitIceTransmission(
          uint32_t audio_inbound_bitrate, uint32_t audio_outbound_bitrate,
          uint32_t data_inbound_bitrate, uint32_t data_outbound_bitrate,
          uint32_t total_inbound_bitrate, uint32_t total_outbound_bitrate) {
-        LOG_ERROR(
-            "video in: [{}] kbps, video out: [{}] kbps, audio in: [{}] kbps, "
-            "audio out: [{}] kbps, data in: [{}] kbps, data out: [{}] kbps, "
-            "total in: [{}] kbps, total out: [{}] kbps",
-            video_inbound_bitrate / 1000, video_outbound_bitrate / 1000,
-            audio_inbound_bitrate / 1000, audio_outbound_bitrate / 1000,
-            data_inbound_bitrate / 1000, data_outbound_bitrate / 1000,
-            total_inbound_bitrate / 1000, total_outbound_bitrate / 1000);
+        // LOG_ERROR(
+        //     "video in: [{}] kbps, video out: [{}] kbps, audio in: [{}] kbps,
+        //     " "audio out: [{}] kbps, data in: [{}] kbps, data out: [{}] kbps,
+        //     " "total in: [{}] kbps, total out: [{}] kbps",
+        //     video_inbound_bitrate / 1000, video_outbound_bitrate / 1000,
+        //     audio_inbound_bitrate / 1000, audio_outbound_bitrate / 1000,
+        //     data_inbound_bitrate / 1000, data_outbound_bitrate / 1000,
+        //     total_inbound_bitrate / 1000, total_outbound_bitrate / 1000);
       });
   video_rtp_codec_ = std::make_unique<RtpCodec>(video_codec_payload_type);
   audio_rtp_codec_ = std::make_unique<RtpCodec>(RtpPacket::PAYLOAD_TYPE::OPUS);

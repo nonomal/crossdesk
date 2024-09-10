@@ -50,7 +50,7 @@ class AomAv1Encoder : public VideoEncoder {
 
   int OnEncodedImage(char* encoded_packets, size_t size);
 
-  void ForceIdr();
+  int ForceIdr();
 
  private:
   template <typename P>

@@ -358,10 +358,12 @@ int OpenH264Encoder::OnEncodedImage(char *encoded_packets, size_t size) {
   return 0;
 }
 
-void OpenH264Encoder::ForceIdr() {
+int OpenH264Encoder::ForceIdr() {
   if (openh264_encoder_) {
-    openh264_encoder_->ForceIntraFrame(true);
+    return openh264_encoder_->ForceIntraFrame(true);
   }
+
+  return 0;
 }
 
 int OpenH264Encoder::Release() {

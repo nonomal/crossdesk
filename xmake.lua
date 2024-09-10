@@ -24,7 +24,7 @@ if is_os("windows") then
     add_defines("_WEBSOCKETPP_CPP11_INTERNAL_")
 elseif is_os("linux") then
     add_requires("glib", {system = true})
-    add_packages("glib", "cuda")
+    add_packages("glib")
     add_cxflags("-fPIC") 
     add_syslinks("pthread")
 elseif is_os("macosx") then
@@ -122,8 +122,8 @@ target("media")
         "src/media/video/encode/aom",
         "src/media/video/decode/dav1d",
         "src/media/nvcodec",
-        "thirdparty/nvcodec/Interface",
-        "thirdparty/nvcodec/Samples", {public = true})
+        "thirdparty/nvcodec/interface", {public = true})
+        add_includedirs(path.join(os.getenv("CUDA_PATH"), "include"), {public = true})
     elseif is_os(("linux")) then
         add_files("src/media/video/encode/*.cpp",
         "src/media/video/decode/*.cpp",
@@ -143,8 +143,8 @@ target("media")
         "src/media/video/encode/aom",
         "src/media/video/decode/dav1d",
         "src/media/nvcodec",
-        "thirdparty/nvcodec/Interface",
-        "thirdparty/nvcodec/Samples", {public = true})
+        "thirdparty/nvcodec/interface", {public = true})
+        add_includedirs(path.join(os.getenv("CUDA_PATH"), "include"), {public = true})
     elseif is_os("macosx") then
         add_files("src/media/video/encode/*.cpp",
         "src/media/video/decode/*.cpp",
@@ -195,15 +195,18 @@ target("projectx")
     add_includedirs("src/rtc", "src/pc", "src/interface")
 
     if is_os("windows") then
-        add_linkdirs("thirdparty/nvcodec/Lib/x64")
+        add_linkdirs("thirdparty/nvcodec/lib/x64")
+        add_linkdirs(path.join(os.getenv("CUDA_PATH"), "lib/x64"))
         add_links("nice", "glib-2.0", "gio-2.0", "gmodule-2.0", "gobject-2.0",
         "pcre2-8", "pcre2-16", "pcre2-32", "pcre2-posix", 
         "zlib", "ffi", "libcrypto", "libssl", "intl", "iconv", 
         "Shell32", "Advapi32", "Dnsapi", "Shlwapi", "Crypt32", 
         "ws2_32", "Bcrypt", "windowsapp", "User32", "Strmiids", "Mfuuid",
         "Secur32", "Bcrypt")
+        add_links("cuda", "nvencodeapi", "nvcuvid")
     elseif is_os(("linux")) then
-        add_linkdirs("thirdparty/nvcodec/Lib/x64")
+        add_linkdirs("thirdparty/nvcodec/lib/x64")
+        add_linkdirs(path.join(os.getenv("CUDA_PATH"), "lib/x64"))
         add_links("cuda", "nvidia-encode", "nvcuvid")
     elseif is_os("macosx") then
 

@@ -362,7 +362,10 @@ int AomAv1Encoder::OnEncodedImage(char *encoded_packets, size_t size) {
   return 0;
 }
 
-void AomAv1Encoder::ForceIdr() { force_i_frame_flags_ = AOM_EFLAG_FORCE_KF; }
+int AomAv1Encoder::ForceIdr() {
+  force_i_frame_flags_ = AOM_EFLAG_FORCE_KF;
+  return 0;
+}
 
 int AomAv1Encoder::Release() {
   if (frame_for_encode_ != nullptr) {

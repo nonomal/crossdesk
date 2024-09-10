@@ -15,29 +15,47 @@ class NvidiaVideoEncoder : public VideoEncoder {
   int Encode(const uint8_t* pData, int nSize,
              std::function<int(char* encoded_packets, size_t size,
                                VideoFrameType frame_type)>
-                 on_encoded_image);
-
-  int Encode(const XVideoFrame* video_frame,
-             std::function<int(char* encoded_packets, size_t size,
-                               VideoFrameType frame_type)>
                  on_encoded_image) {
     return 0;
   }
 
+  int Encode(const XVideoFrame* video_frame,
+             std::function<int(char* encoded_packets, size_t size,
+                               VideoFrameType frame_type)>
+                 on_encoded_image);
+
   virtual int OnEncodedImage(char* encoded_packets, size_t size);
 
-  void ForceIdr();
+  int ForceIdr();
 
  private:
-  int index_of_GPU = 0;
-  GUID codec_guid = NV_ENC_CODEC_H264_GUID;
-  GUID preset_guid = NV_ENC_PRESET_P2_GUID;
-  NV_ENC_TUNING_INFO tuning_info =
+  int ResetEncodeResolution(unsigned int width, unsigned int height);
+
+ private:
+  int index_of_gpu_ = 0;
+  CUdevice cuda_device_ = 0;
+
+  GUID codec_guid_ = NV_ENC_CODEC_H264_GUID;
+  GUID preset_guid_ = NV_ENC_PRESET_P3_GUID;
+  NV_ENC_TUNING_INFO tuning_info_ =
       NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY;
-  int frame_width_ = 1280;
-  int frame_height_ = 720;
-  int keyFrameInterval_ = 3000;
-  int maxBitrate_ = 1000;
+  NV_ENC_BUFFER_FORMAT buffer_format_ =
+      NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_NV12;
+
+  uint32_t frame_width_max_ = 0;
+  uint32_t frame_height_max_ = 0;
+  uint32_t frame_width_min_ = 0;
+  uint32_t frame_height_min_ = 0;
+  uint32_t encode_level_max_ = 0;
+  uint32_t encode_level_min_ = 0;
+  bool support_dynamic_resolution_ = false;
+  bool support_dynamic_bitrate_ = false;
+
+  uint32_t frame_width_ = 1280;
+  uint32_t frame_height_ = 720;
+  uint32_t key_frame_interval_ = 3000;
+  uint32_t average_bitrate_ = 2000000;
+  uint32_t max_bitrate_ = 10000000;
   int max_payload_size_ = 3000;
   NvEncoder* encoder_ = nullptr;
   CUcontext cuda_context_ = nullptr;
