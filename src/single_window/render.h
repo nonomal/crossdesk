@@ -146,8 +146,8 @@ class Render {
   int main_window_width_before_maximized_ = 960;
   int main_window_height_before_maximized_ = 570;
   int control_window_min_width_ = 20;
-  int control_window_max_width_ = 150;
-  int control_window_width_ = 150;
+  int control_window_max_width_ = 170;
+  int control_window_width_ = 170;
   int control_window_height_ = 40;
   int local_window_width_ = 350;
   int status_bar_height_ = 20;

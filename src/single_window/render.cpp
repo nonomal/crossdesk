@@ -24,6 +24,9 @@
 SDL_HitTestResult Render::HitTestCallback(SDL_Window *window,
                                           const SDL_Point *area, void *data) {
   Render *render = (Render *)data;
+  if (!render) {
+    return SDL_HITTEST_NORMAL;
+  }
 
   int window_width, window_height;
   SDL_GetWindowSize(window, &window_width, &window_height);
@@ -387,7 +390,8 @@ int Render::Run() {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
-
+  // Master keyboard navigation enable flag. Enable full Tabbing + directional
+  // arrows + space/enter to activate.
   io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
   io.ConfigFlags |=

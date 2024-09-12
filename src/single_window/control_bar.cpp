@@ -10,7 +10,7 @@ int Render::ControlBar() {
   if (control_bar_expand_) {
     ImGui::SetCursorPosX(
         is_control_bar_in_left_ ? (control_window_width_ + 5.0f) : 53.0f);
-    // Mouse control
+    // mouse control button
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
     if (is_control_bar_in_left_) {
@@ -50,7 +50,7 @@ int Render::ControlBar() {
     }
 
     ImGui::SameLine();
-    // Audio capture
+    // audio capture button
     float disable_audio_x = ImGui::GetCursorScreenPos().x + 4;
     float disable_audio_y = ImGui::GetCursorScreenPos().y + 4.0f;
     // std::string audio = audio_capture_button_pressed_ ? ICON_FA_VOLUME_HIGH
@@ -87,7 +87,7 @@ int Render::ControlBar() {
     }
 
     ImGui::SameLine();
-    // Fullscreen
+    // fullscreen button
     std::string fullscreen =
         fullscreen_button_pressed_ ? ICON_FA_COMPRESS : ICON_FA_EXPAND;
     if (ImGui::Button(fullscreen.c_str(), ImVec2(25, 25))) {
@@ -101,6 +101,15 @@ int Render::ControlBar() {
       } else {
         SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
       }
+    }
+
+    ImGui::SameLine();
+    // close button
+    std::string close_button = ICON_FA_XMARK;
+    if (ImGui::Button(close_button.c_str(), ImVec2(25, 25))) {
+      SDL_Event event;
+      event.type = SDL_QUIT;
+      SDL_PushEvent(&event);
     }
 
     ImGui::SameLine();
