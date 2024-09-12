@@ -325,6 +325,8 @@ int IceTransmission::InitIceTransmission(
               ice_transmission_obj->rtp_data_receiver_->InsertRtpPacket(packet);
             } else if (ice_transmission_obj->CheckIsRtcpPacket(buffer, size)) {
               // LOG_ERROR("Rtcp packet [{}]", (uint8_t)(buffer[1]));
+            } else {
+              LOG_ERROR("Unknown packet");
             }
           }
         }
@@ -469,6 +471,11 @@ uint8_t IceTransmission::CheckIsRtcpPacket(const char *buffer, size_t size) {
     return 0;
   }
 
+  uint8_t v = (buffer[0] >> 6) & 0x03;
+  if (2 != v) {
+    return 0;
+  }
+
   uint8_t pt = buffer[1];
 
   switch (pt) {
@@ -498,6 +505,11 @@ uint8_t IceTransmission::CheckIsVideoPacket(const char *buffer, size_t size) {
     return 0;
   }
 
+  uint8_t v = (buffer[0] >> 6) & 0x03;
+  if (2 != v) {
+    return 0;
+  }
+
   uint8_t pt = buffer[1] & 0x7F;
   if (RtpPacket::PAYLOAD_TYPE::H264 == pt ||
       RtpPacket::PAYLOAD_TYPE::H264_FEC_SOURCE == pt ||
@@ -514,6 +526,11 @@ uint8_t IceTransmission::CheckIsAudioPacket(const char *buffer, size_t size) {
     return 0;
   }
 
+  uint8_t v = (buffer[0] >> 6) & 0x03;
+  if (2 != v) {
+    return 0;
+  }
+
   uint8_t pt = buffer[1] & 0x7F;
   if (RtpPacket::PAYLOAD_TYPE::OPUS == pt) {
     return pt;
@@ -524,6 +541,11 @@ uint8_t IceTransmission::CheckIsAudioPacket(const char *buffer, size_t size) {
 
 uint8_t IceTransmission::CheckIsDataPacket(const char *buffer, size_t size) {
   if (size < 4) {
+    return 0;
+  }
+
+  uint8_t v = (buffer[0] >> 6) & 0x03;
+  if (2 != v) {
     return 0;
   }
 

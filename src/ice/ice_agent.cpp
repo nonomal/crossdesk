@@ -59,6 +59,11 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
                               : (enable_turn_ ? NICE_AGENT_OPTION_NONE
                                               : NICE_AGENT_OPTION_RELIABLE)));
 
+    LOG_INFO(
+        "Nice agent init with [trickle ice|{}], [reliable mode|{}], [turn "
+        "support|{}]]",
+        trickle_ice_, !enable_turn_, enable_turn_);
+
     if (agent_ == nullptr) {
       LOG_ERROR("Failed to create agent_");
     }
