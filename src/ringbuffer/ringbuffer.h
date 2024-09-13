@@ -47,7 +47,7 @@ class Data {
 template <typename T>
 class RingBuffer {
  public:
-  RingBuffer(unsigned size = 128) : m_size(size), m_front(0), m_rear(0) {
+  RingBuffer(unsigned size = 1280) : m_size(size), m_front(0), m_rear(0) {
     m_data = new T[size];
   }
 
