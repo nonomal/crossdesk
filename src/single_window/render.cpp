@@ -28,6 +28,10 @@ SDL_HitTestResult Render::HitTestCallback(SDL_Window *window,
     return SDL_HITTEST_NORMAL;
   }
 
+  if (render->fullscreen_button_pressed_) {
+    return SDL_HITTEST_NORMAL;
+  }
+
   int window_width, window_height;
   SDL_GetWindowSize(window, &window_width, &window_height);
 
@@ -497,23 +501,22 @@ int Render::Run() {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::PushStyleColor(
-        ImGuiCol_WindowBg,
-        ImVec4(1.0f, 1.0f, 1.0f, fullscreen_button_pressed_ ? 0 : 1.0f));
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(
-        ImVec2(main_window_width_,
-               (connection_established_ && streaming_ && is_client_mode_)
-                   ? (fullscreen_button_pressed_ ? 0 : title_bar_height_)
-                   : main_window_height_default_),
-        ImGuiCond_Always);
-    ImGui::Begin("Render", nullptr,
-                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
-                     ImGuiWindowFlags_NoBringToFrontOnFocus);
-    ImGui::PopStyleColor();
-
     if (!fullscreen_button_pressed_) {
+      ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+      ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+      ImGui::SetNextWindowSize(
+          ImVec2(main_window_width_,
+                 (connection_established_ && streaming_ && is_client_mode_)
+                     ? (fullscreen_button_pressed_ ? 0 : title_bar_height_)
+                     : main_window_height_default_),
+          ImGuiCond_Always);
+      ImGui::Begin("Render", nullptr,
+                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                       ImGuiWindowFlags_NoResize |
+                       ImGuiWindowFlags_NoScrollbar |
+                       ImGuiWindowFlags_NoBringToFrontOnFocus);
+      ImGui::PopStyleColor();
+
       TitleBar();
     }
 
@@ -532,7 +535,9 @@ int Render::Run() {
       MainWindow();
     }
 
-    ImGui::End();
+    if (!fullscreen_button_pressed_) {
+      ImGui::End();
+    }
 
     // create connection
     if (SignalStatus::SignalConnected == signal_status_ &&
