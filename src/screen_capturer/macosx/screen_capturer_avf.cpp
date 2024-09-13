@@ -6,6 +6,8 @@
 
 #include "rd_log.h"
 
+#define USE_SCALE_FACTOR 0
+
 ScreenCapturerAvf::ScreenCapturerAvf() {}
 
 ScreenCapturerAvf::~ScreenCapturerAvf() {
@@ -44,7 +46,7 @@ ScreenCapturerAvf::~ScreenCapturerAvf() {
     packet_ = nullptr;
   }
 
-#if 1
+#if USE_SCALE_FACTOR
   if (img_convert_ctx_) {
     sws_freeContext(img_convert_ctx_);
     img_convert_ctx_ = nullptr;
@@ -122,7 +124,7 @@ int ScreenCapturerAvf::Init(const int fps, cb_desktop_data cb) {
   pFrame_->width = screen_w;
   pFrame_->height = screen_h;
 
-#if 1
+#if USE_SCALE_FACTOR
   pFrame_resized_ = av_frame_alloc();
   pFrame_resized_->width = CGDisplayPixelsWide(CGMainDisplayID());
   pFrame_resized_->height = CGDisplayPixelsHigh(CGMainDisplayID());
@@ -164,17 +166,7 @@ int ScreenCapturerAvf::Start() {
           got_picture_ = avcodec_receive_frame(pCodecCtx_, pFrame_);
 
           if (!got_picture_) {
-#if 0 
-              memcpy(nv12_frame_, pFrame_->data[0],
-                     pFrame_->linesize[0] * pFrame_->height);
-              memcpy(nv12_frame_ + pFrame_->linesize[0] * pFrame_->height,
-                     pFrame_->data[1],
-                     pFrame_->linesize[1] * pFrame_->height / 2);
-              LOG_ERROR("size {} {}", pFrame_->width, pFrame_->height);
-              _on_data((unsigned char *)nv12_frame_,
-                       pFrame_->width * pFrame_->height * 3 / 2, pFrame_->width,
-                       pFrame_->height);
-#else
+#if USE_SCALE_FACTOR
             av_image_fill_arrays(pFrame_resized_->data,
                                  pFrame_resized_->linesize, nv12_frame_,
                                  AV_PIX_FMT_NV12, pFrame_resized_->width,
@@ -187,6 +179,15 @@ int ScreenCapturerAvf::Start() {
             _on_data((unsigned char *)nv12_frame_,
                      pFrame_resized_->width * pFrame_resized_->height * 3 / 2,
                      pFrame_resized_->width, pFrame_resized_->height);
+#else
+            memcpy(nv12_frame_, pFrame_->data[0],
+                   pFrame_->linesize[0] * pFrame_->height);
+            memcpy(nv12_frame_ + pFrame_->linesize[0] * pFrame_->height,
+                   pFrame_->data[1],
+                   pFrame_->linesize[1] * pFrame_->height / 2);
+            _on_data((unsigned char *)nv12_frame_,
+                     pFrame_->width * pFrame_->height * 3 / 2, pFrame_->width,
+                     pFrame_->height);
 #endif
           }
         }

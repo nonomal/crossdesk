@@ -22,6 +22,9 @@ class MouseController : public DeviceController {
  private:
   int screen_width_ = 0;
   int screen_height_ = 0;
+
+  int pixel_width_ = 0;
+  int pixel_height_ = 0;
 };
 
 #endif

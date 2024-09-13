@@ -30,6 +30,10 @@
     <key>NSCameraUseContinuityCameraDeviceType</key>
     <string>Your usage description here</string>
 
+    <!-- High DPI -->>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
     <!-- 其他权限和配置可以在这里添加 -->
 </dict>
 </plist>
