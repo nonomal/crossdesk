@@ -35,14 +35,18 @@ class IceTransmission {
   enum TraversalType { TP2P = 0, TRelay = 1, TUnknown = 2 };
 
  public:
-  IceTransmission(bool enable_turn, bool trickle_ice, bool offer_peer,
-                  std::string &transmission_id, std::string &user_id,
-                  std::string &remote_user_id,
+  IceTransmission(bool offer_peer, std::string &transmission_id,
+                  std::string &user_id, std::string &remote_user_id,
                   std::shared_ptr<WsClient> ice_ws_transmission,
                   std::function<void(std::string)> on_ice_status_change);
   ~IceTransmission();
 
  public:
+  int SetLocalCapabilities(bool use_trickle_ice, bool use_reliable_ice,
+                           bool enable_turn, bool force_turn,
+                           std::vector<int> &video_payload_types,
+                           std::vector<int> &audio_payload_types);
+
   int InitIceTransmission(std::string &stun_ip, int stun_port,
                           std::string &turn_ip, int turn_port,
                           std::string &turn_username,
@@ -100,14 +104,25 @@ class IceTransmission {
   int SendAnswer();
 
  private:
+  RtpPacket::PAYLOAD_TYPE GetAceptedVideoPayloadType(
+      const std::string &remote_sdp);
+  RtpPacket::PAYLOAD_TYPE GetAceptedAudioPayloadType(
+      const std::string &remote_sdp);
+
+ private:
   uint8_t CheckIsRtcpPacket(const char *buffer, size_t size);
   uint8_t CheckIsVideoPacket(const char *buffer, size_t size);
   uint8_t CheckIsAudioPacket(const char *buffer, size_t size);
   uint8_t CheckIsDataPacket(const char *buffer, size_t size);
 
  private:
+  bool use_trickle_ice_ = true;
   bool enable_turn_ = false;
-  bool trickle_ice_ = true;
+  bool use_reliable_ice_ = false;
+  bool force_turn_ = false;
+  std::vector<int> video_payload_types_;
+  std::vector<int> audio_payload_types_;
+
   std::string local_sdp_;
   std::string remote_sdp_;
   std::string new_local_candidate_;
@@ -154,6 +169,10 @@ class IceTransmission {
 
  private:
   std::unique_ptr<IOStatistics> ice_io_statistics_ = nullptr;
+
+ private:
+  std::string video_pt_;
+  std::string audio_pt_;
 };
 
 #endif

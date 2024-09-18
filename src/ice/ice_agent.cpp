@@ -1,17 +1,21 @@
 #include "ice_agent.h"
 
+#include <glib.h>
+
 #include <cstring>
 #include <iostream>
 
 #include "log.h"
 
-IceAgent::IceAgent(bool enable_turn, bool trickle_ice, bool offer_peer,
-                   std::string &stun_ip, uint16_t stun_port,
-                   std::string &turn_ip, uint16_t turn_port,
+IceAgent::IceAgent(bool offer_peer, bool use_trickle_ice, bool use_reliable_ice,
+                   bool enable_turn, bool force_turn, std::string &stun_ip,
+                   uint16_t stun_port, std::string &turn_ip, uint16_t turn_port,
                    std::string &turn_username, std::string &turn_password)
-    : enable_turn_(enable_turn),
-      trickle_ice_(trickle_ice),
-      stun_ip_(stun_ip),
+    : stun_ip_(stun_ip),
+      use_trickle_ice_(use_trickle_ice),
+      use_reliable_ice_(use_reliable_ice),
+      enable_turn_(enable_turn),
+      force_turn_(force_turn),
       stun_port_(stun_port),
       turn_ip_(turn_ip),
       turn_port_(turn_port),
@@ -26,7 +30,6 @@ IceAgent::~IceAgent() {
   g_object_unref(agent_);
   g_free(ice_ufrag_);
   g_free(ice_password_);
-  g_free(stream_sdp_);
 }
 
 int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
@@ -52,17 +55,17 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
 
     agent_ = nice_agent_new_full(
         g_main_loop_get_context(gloop_), NICE_COMPATIBILITY_RFC5245,
-        (NiceAgentOption)(trickle_ice_
-                              ? NICE_AGENT_OPTION_ICE_TRICKLE |
-                                    (enable_turn_ ? NICE_AGENT_OPTION_NONE
-                                                  : NICE_AGENT_OPTION_RELIABLE)
-                              : (enable_turn_ ? NICE_AGENT_OPTION_NONE
-                                              : NICE_AGENT_OPTION_RELIABLE)));
+        (NiceAgentOption)(use_trickle_ice_
+                              ? (NICE_AGENT_OPTION_ICE_TRICKLE |
+                                 (use_reliable_ice_ ? NICE_AGENT_OPTION_RELIABLE
+                                                    : NICE_AGENT_OPTION_NONE))
+                              : (use_reliable_ice_ ? NICE_AGENT_OPTION_RELIABLE
+                                                   : NICE_AGENT_OPTION_NONE)));
 
     LOG_INFO(
         "Nice agent init with [trickle ice|{}], [reliable mode|{}], [turn "
-        "support|{}]]",
-        trickle_ice_, !enable_turn_, enable_turn_);
+        "support|{}], [force turn|{}]]",
+        use_trickle_ice_, use_reliable_ice_, enable_turn_, force_turn_);
 
     if (agent_ == nullptr) {
       LOG_ERROR("Failed to create agent_");
@@ -95,7 +98,9 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
                                 NICE_RELAY_TYPE_TURN_TCP);
     }
 
-    // g_object_set(agent_, "force-relay", true, NULL);
+    if (force_turn_) {
+      g_object_set(agent_, "force-relay", true, NULL);
+    }
 
     nice_agent_attach_recv(agent_, stream_id_, NICE_COMPONENT_TYPE_RTP,
                            g_main_loop_get_context(gloop_), on_recv_,
@@ -142,12 +147,12 @@ int IceAgent::DestroyIceAgent() {
   return 0;
 }
 
-char *IceAgent::GetLocalStreamSdp() {
-  stream_sdp_ = nice_agent_generate_local_stream_sdp(agent_, stream_id_, true);
-  return stream_sdp_;
+const char *IceAgent::GetLocalStreamSdp() {
+  local_sdp_ = nice_agent_generate_local_stream_sdp(agent_, stream_id_, true);
+  return local_sdp_.c_str();
 }
 
-char *IceAgent::GenerateLocalSdp() {
+const char *IceAgent::GenerateLocalSdp() {
   if (!nice_inited_) {
     LOG_ERROR("Nice agent has not been initialized");
     return nullptr;
@@ -164,9 +169,9 @@ char *IceAgent::GenerateLocalSdp() {
   }
 
   local_sdp_ = nice_agent_generate_local_sdp(agent_);
-  LOG_INFO("Generate local sdp:[\n{}]", local_sdp_);
+  LOG_INFO("Generate local sdp:[\n{}]", local_sdp_.c_str());
 
-  return local_sdp_;
+  return local_sdp_.c_str();
 }
 
 int IceAgent::SetRemoteSdp(const char *remote_sdp) {

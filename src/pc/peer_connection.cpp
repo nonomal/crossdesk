@@ -51,6 +51,7 @@ int PeerConnection::Init(PeerConnectionParams params,
     cfg_hardware_acceleration_ =
         reader.Get("hardware acceleration", "turn_on", "false");
     cfg_av1_encoding_ = reader.Get("av1 encoding", "turn_on", "false");
+    cfg_enable_turn_ = reader.Get("enable turn", "turn_on", "false");
 
     std::regex regex("\n");
 
@@ -61,6 +62,7 @@ int PeerConnection::Init(PeerConnectionParams params,
     hardware_acceleration_ =
         cfg_hardware_acceleration_ == "true" ? true : false;
     av1_encoding_ = cfg_av1_encoding_ == "true" ? true : false;
+    enable_turn_ = cfg_enable_turn_ == "true" ? true : false;
 
   } else {
     cfg_signal_server_ip_ = params.signal_server_ip;
@@ -777,9 +779,13 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
 
       for (auto &remote_user_id : user_id_list) {
         ice_transmission_list_[remote_user_id] =
-            std::make_unique<IceTransmission>(
-                enable_turn_, trickle_ice_, true, transmission_id, user_id_,
-                remote_user_id, ws_transport_, on_ice_status_change_);
+            std::make_unique<IceTransmission>(true, transmission_id, user_id_,
+                                              remote_user_id, ws_transport_,
+                                              on_ice_status_change_);
+
+        ice_transmission_list_[remote_user_id]->SetLocalCapabilities(
+            trickle_ice_, false, enable_turn_, false, video_payload_types_,
+            audio_payload_types_);
 
         ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
             on_receive_video_);
@@ -820,9 +826,13 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
           ice_transmission_list_.find(remote_user_id)) {
         // Enable TURN for answer peer by default
         ice_transmission_list_[remote_user_id] =
-            std::make_unique<IceTransmission>(
-                true, trickle_ice_, false, transmission_id, user_id_,
-                remote_user_id, ws_transport_, on_ice_status_change_);
+            std::make_unique<IceTransmission>(false, transmission_id, user_id_,
+                                              remote_user_id, ws_transport_,
+                                              on_ice_status_change_);
+
+        ice_transmission_list_[remote_user_id]->SetLocalCapabilities(
+            trickle_ice_, false, enable_turn_, false, std::vector<int>(),
+            std::vector<int>());
 
         ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
             on_receive_video_);

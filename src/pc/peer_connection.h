@@ -129,6 +129,7 @@ class PeerConnection {
   std::string cfg_turn_server_password_;
   std::string cfg_hardware_acceleration_;
   std::string cfg_av1_encoding_;
+  std::string cfg_enable_turn_;
   int signal_server_port_ = 0;
   int stun_server_port_ = 0;
   int turn_server_port_ = 0;
@@ -138,6 +139,9 @@ class PeerConnection {
   bool trickle_ice_ = true;
   TraversalMode mode_ = TraversalMode::P2P;
   bool try_rejoin_with_turn_ = true;
+  std::vector<int> video_payload_types_ = {RtpPacket::PAYLOAD_TYPE::H264,
+                                           RtpPacket::PAYLOAD_TYPE::AV1};
+  std::vector<int> audio_payload_types_ = {RtpPacket::PAYLOAD_TYPE::OPUS};
 
  private:
   std::shared_ptr<WsClient> ws_transport_ = nullptr;

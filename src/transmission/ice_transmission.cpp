@@ -12,13 +12,10 @@
 using nlohmann::json;
 
 IceTransmission::IceTransmission(
-    bool enable_turn, bool trickle_ice, bool offer_peer,
-    std::string &transmission_id, std::string &user_id,
+    bool offer_peer, std::string &transmission_id, std::string &user_id,
     std::string &remote_user_id, std::shared_ptr<WsClient> ice_ws_transmission,
     std::function<void(std::string)> on_ice_status_change)
-    : enable_turn_(enable_turn),
-      trickle_ice_(trickle_ice),
-      offer_peer_(offer_peer),
+    : offer_peer_(offer_peer),
       transmission_id_(transmission_id),
       user_id_(user_id),
       remote_user_id_(remote_user_id),
@@ -37,6 +34,19 @@ IceTransmission::~IceTransmission() {
   if (rtp_data_sender_) {
     rtp_data_sender_->Stop();
   }
+}
+
+int IceTransmission::SetLocalCapabilities(
+    bool use_trickle_ice, bool use_reliable_ice, bool enable_turn,
+    bool force_turn, std::vector<int> &video_payload_types,
+    std::vector<int> &audio_payload_types) {
+  use_trickle_ice_ = use_trickle_ice;
+  use_reliable_ice_ = use_reliable_ice;
+  enable_turn_ = force_turn;
+  force_turn_ = force_turn;
+  video_payload_types_ = video_payload_types;
+  audio_payload_types_ = audio_payload_types;
+  return 0;
 }
 
 int IceTransmission::InitIceTransmission(
@@ -204,8 +214,9 @@ int IceTransmission::InitIceTransmission(
   rtp_data_sender_->Start();
 
   ice_agent_ = std::make_unique<IceAgent>(
-      enable_turn_, trickle_ice_, offer_peer_, stun_ip, stun_port, turn_ip,
-      turn_port, turn_username, turn_password);
+      offer_peer_, use_trickle_ice_, use_reliable_ice_, enable_turn_,
+      force_turn_, stun_ip, stun_port, turn_ip, turn_port, turn_username,
+      turn_password);
 
   ice_agent_->CreateIceAgent(
       [](NiceAgent *agent, guint stream_id, guint component_id,
@@ -235,7 +246,7 @@ int IceTransmission::InitIceTransmission(
           IceTransmission *ice_transmission_obj =
               static_cast<IceTransmission *>(user_ptr);
 
-          if (ice_transmission_obj->trickle_ice_) {
+          if (ice_transmission_obj->use_trickle_ice_) {
             GSList *cands =
                 nice_agent_get_local_candidates(agent, stream_id, component_id);
             NiceCandidate *cand;
@@ -274,7 +285,7 @@ int IceTransmission::InitIceTransmission(
           LOG_INFO("[{}->{}] gather_done", ice_transmission_obj->user_id_,
                    ice_transmission_obj->remote_user_id_);
 
-          if (!ice_transmission_obj->trickle_ice_) {
+          if (!ice_transmission_obj->use_trickle_ice_) {
             if (ice_transmission_obj->offer_peer_) {
               ice_transmission_obj->SendOffer();
             } else {
@@ -352,7 +363,7 @@ int IceTransmission::SetTransmissionId(const std::string &transmission_id) {
 int IceTransmission::JoinTransmission() {
   LOG_INFO("[{}] Join transmission", user_id_);
 
-  if (trickle_ice_) {
+  if (use_trickle_ice_) {
     SendOffer();
   } else {
     GatherCandidates();
@@ -371,19 +382,33 @@ int IceTransmission::GatherCandidates() {
 int IceTransmission::SetRemoteSdp(const std::string &remote_sdp) {
   ice_agent_->SetRemoteSdp(remote_sdp.c_str());
   // LOG_INFO("[{}] set remote sdp", user_id_);
+
+  // GetAceptedVideoPayloadType(remote_sdp);
+  // GetAceptedAudioPayloadType(remote_sdp);
+
   remote_ice_username_ = GetIceUsername(remote_sdp);
   return 0;
 }
 
 int IceTransmission::SendOffer() {
+  local_sdp_ = use_trickle_ice_ ? ice_agent_->GetLocalStreamSdp()
+                                : ice_agent_->GenerateLocalSdp();
+
+  std::string toReplace = "ICE/SDP";
+  std::string replacement = "UDP/TLS/RTP/SAVPF 111 114 115 116 123 124 125";
+
+  size_t pos = 0;
+  while ((pos = local_sdp_.find(toReplace, pos)) != std::string::npos) {
+    local_sdp_.replace(pos, toReplace.length(), replacement);
+    pos += replacement.length();
+  }
+
   json message = {{"type", "offer"},
                   {"transmission_id", transmission_id_},
                   {"user_id", user_id_},
                   {"remote_user_id", remote_user_id_},
-                  {"sdp", trickle_ice_ ? ice_agent_->GetLocalStreamSdp()
-                                       : ice_agent_->GenerateLocalSdp()}};
-  // LOG_INFO("Send offer with sdp:[{}]", message.dump());
-
+                  {"sdp", local_sdp_.c_str()}};
+  LOG_INFO("Send offer with sdp:\n[\n{}]", local_sdp_.c_str());
   if (ice_ws_transport_) {
     ice_ws_transport_->Send(message.dump());
     LOG_INFO("[{}->{}] send offer", user_id_, remote_user_id_);
@@ -392,19 +417,75 @@ int IceTransmission::SendOffer() {
 }
 
 int IceTransmission::SendAnswer() {
+  local_sdp_ = use_trickle_ice_ ? ice_agent_->GetLocalStreamSdp()
+                                : ice_agent_->GenerateLocalSdp();
   json message = {{"type", "answer"},
                   {"transmission_id", transmission_id_},
                   {"user_id", user_id_},
                   {"remote_user_id", remote_user_id_},
-                  {"sdp", trickle_ice_ ? ice_agent_->GetLocalStreamSdp()
-                                       : ice_agent_->GenerateLocalSdp()}};
-  // LOG_INFO("Send answer with sdp:[{}]", message.dump());
+                  {"sdp", local_sdp_.c_str()}};
+  LOG_INFO("Send answer with sdp:\n[\n{}]", local_sdp_.c_str());
   if (ice_ws_transport_) {
     ice_ws_transport_->Send(message.dump());
     LOG_INFO("[{}->{}] send answer", user_id_, remote_user_id_);
   }
 
   return 0;
+}
+
+// int IceTransmission::AppendLocalCapabilitiesToSdp() {
+//   std::string toReplace = "ICE/SDP";
+//   std::string replacement = "UDP/TLS/RTP/SAVPF 111 114 115 116 123 124 125";
+
+//   size_t pos = 0;
+//   while ((pos = local_sdp_.find(toReplace, pos)) != std::string::npos) {
+//     local_sdp_.replace(pos, toReplace.length(), replacement);
+//     pos += replacement.length();
+//   }
+
+//   return 0;
+// }
+
+RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedVideoPayloadType(
+    const std::string &remote_sdp) {
+  if (!video_pt_.empty()) {
+    return RtpPacket::PAYLOAD_TYPE::H264;
+  }
+  std::size_t start =
+      remote_sdp.find("m=video ") + std::string("m=video ").length();
+  if (start != std::string::npos) {
+    std::size_t end = remote_sdp.find("\n", start);
+    std::string::size_type pos1 = remote_sdp.find(' ', start);
+    std::string::size_type pos2 = remote_sdp.find(' ', pos1 + 1);
+    std::string::size_type pos3 = remote_sdp.find(' ', pos2 + 1);
+    if (end != std::string::npos && pos1 != std::string::npos &&
+        pos2 != std::string::npos && pos3 != std::string::npos) {
+      video_pt_ = remote_sdp.substr(pos3 + 1, end - pos3 - 1);
+    }
+  }
+  LOG_INFO("video pt [{}]", video_pt_.c_str());
+  return RtpPacket::PAYLOAD_TYPE::H264;
+}
+
+RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedAudioPayloadType(
+    const std::string &remote_sdp) {
+  if (!audio_pt_.empty()) {
+    return RtpPacket::PAYLOAD_TYPE::H264;
+  }
+  std::size_t start =
+      remote_sdp.find("m=audio ") + std::string("m=audio ").length();
+  if (start != std::string::npos) {
+    std::size_t end = remote_sdp.find("\n", start);
+    std::string::size_type pos1 = remote_sdp.find(' ', start);
+    std::string::size_type pos2 = remote_sdp.find(' ', pos1 + 1);
+    std::string::size_type pos3 = remote_sdp.find(' ', pos2 + 1);
+    if (end != std::string::npos && pos1 != std::string::npos &&
+        pos2 != std::string::npos && pos3 != std::string::npos) {
+      audio_pt_ = remote_sdp.substr(pos3 + 1, end - pos3 - 1);
+    }
+  }
+  LOG_INFO("audio pt [{}]", audio_pt_.c_str());
+  return RtpPacket::PAYLOAD_TYPE::OPUS;
 }
 
 int IceTransmission::SendData(DATA_TYPE type, const char *data, size_t size) {

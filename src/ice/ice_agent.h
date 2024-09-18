@@ -29,10 +29,10 @@ typedef void (*nice_cb_recv_t)(NiceAgent* agent, guint stream_id,
 
 class IceAgent {
  public:
-  IceAgent(bool enable_turn, bool trickle_ice, bool offer_peer,
-           std::string& stun_ip, uint16_t stun_port, std::string& turn_ip,
-           uint16_t turn_port, std::string& turn_username,
-           std::string& turn_password);
+  IceAgent(bool offer_peer, bool use_trickle_ice, bool use_reliable_ice,
+           bool enable_turn, bool force_turn, std::string& stun_ip,
+           uint16_t stun_port, std::string& turn_ip, uint16_t turn_port,
+           std::string& turn_username, std::string& turn_password);
   ~IceAgent();
 
   int CreateIceAgent(nice_cb_state_changed_t on_state_changed,
@@ -43,9 +43,9 @@ class IceAgent {
 
   int DestroyIceAgent();
 
-  char* GetLocalStreamSdp();
+  const char* GetLocalStreamSdp();
 
-  char* GenerateLocalSdp();
+  const char* GenerateLocalSdp();
 
   int SetRemoteSdp(const char* remote_sdp);
 
@@ -58,7 +58,11 @@ class IceAgent {
   int Send(const char* data, size_t size);
 
  public:
+  bool use_trickle_ice_ = true;
+  bool use_reliable_ice_ = false;
   bool enable_turn_ = false;
+  bool force_turn_ = false;
+
   std::string stun_ip_ = "";
   uint16_t stun_port_ = 0;
   std::string turn_ip_ = "";
@@ -72,14 +76,13 @@ class IceAgent {
   std::atomic<bool> nice_inited_{false};
 
   gboolean exit_nice_thread_ = false;
-  bool trickle_ice_ = true;
   bool controlling_ = false;
   gchar* ice_ufrag_ = nullptr;
   gchar* ice_password_ = nullptr;
-  gchar* stream_sdp_ = nullptr;
   uint32_t stream_id_ = 0;
   uint32_t n_components_ = 1;
-  char* local_sdp_ = nullptr;
+  // char* local_sdp_ = nullptr;
+  std::string local_sdp_ = "";
   NiceComponentState state_ = NiceComponentState::NICE_COMPONENT_STATE_LAST;
   bool destroyed_ = false;
   gboolean agent_closed_ = false;
