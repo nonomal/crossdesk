@@ -9,27 +9,41 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
-#include "aom/aom_codec.h"
-
-class Obu {
- public:
-  Obu();
-  Obu(const Obu &obu);
-  Obu(Obu &&obu);
-  Obu &operator=(const Obu &obu);
-  Obu &operator=(Obu &&obu);
-
-  ~Obu();
-
-  bool SetPayload(const uint8_t *payload, int size);
-
-  uint8_t header_ = 0;
-  uint8_t extension_header_ = 0;  // undefined if (header & kXbit) == 0
-  uint8_t *payload_ = nullptr;
-  int payload_size_ = 0;
-  uint8_t *data_ = nullptr;
-  int size_ = 0;  // size of the header and payload combined.
+namespace obu {
+struct PayloadSizeLimits {
+  int max_payload_len = 1200;
+  int first_packet_reduction_len = 0;
+  int last_packet_reduction_len = 0;
+  // Reduction len for packet that is first & last at the same time.
+  int single_packet_reduction_len = 0;
 };
+
+enum class VideoFrameType {
+  kEmptyFrame = 0,
+  kVideoFrameKey = 3,
+  kVideoFrameDelta = 4,
+};
+
+struct Obu {
+  uint8_t header;
+  uint8_t extension_header;  // undefined if (header & kXbit) == 0
+  std::vector<uint8_t> payload;
+  int size;  // size of the header and payload combined.
+};
+
+struct Packet {
+  explicit Packet(int first_obu_index) : first_obu(first_obu_index) {}
+  // Indexes into obus_ vector of the first and last obus that should put into
+  // the packet.
+  int first_obu;
+  int num_obu_elements = 0;
+  int first_obu_offset = 0;
+  int last_obu_size;
+  // Total size consumed by the packet.
+  int packet_size = 0;
+};
+}  // namespace obu
 
 #endif

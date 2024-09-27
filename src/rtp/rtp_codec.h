@@ -31,6 +31,8 @@ class RtpCodec {
  private:
   bool IsKeyFrame(const uint8_t* buffer, size_t size);
 
+  void EncodeAv1(uint8_t* buffer, size_t size, std::vector<RtpPacket>& packets);
+
  private:
   uint32_t version_ = 0;
   bool has_padding_ = false;
