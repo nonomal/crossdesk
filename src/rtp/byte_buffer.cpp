@@ -52,6 +52,32 @@ bool ByteBufferReader::ReadUVarint(uint64_t* val) {
   return false;
 }
 
+bool ByteBufferReader::ReadUVarint(uint64_t* val, size_t* len) {
+  if (!val) {
+    return false;
+  }
+  // Integers are deserialized 7 bits at a time, with each byte having a
+  // continuation byte (msb=1) if there are more bytes to be read.
+  uint64_t v = 0;
+  for (int i = 0; i < 64; i += 7) {
+    char byte;
+    if (!ReadBytes(&byte, 1)) {
+      return false;
+    }
+    // Read the first 7 bits of the byte, then offset by bits read so far.
+    v |= (static_cast<uint64_t>(byte) & 0x7F) << i;
+    // True if the msb is not a continuation byte.
+    if (static_cast<uint64_t>(byte) < 0x80) {
+      *val = v;
+      if (len) {
+        *len = i / 8 + (i % 8 ? 1 : 0) + 1;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 bool ByteBufferReader::Consume(size_t size) {
   if (size > Length()) return false;
   start_ += size;

@@ -1,8 +1,6 @@
 #include "rtp_video_receiver.h"
 
-#include "byte_buffer.h"
 #include "log.h"
-#include "obu_parser.h"
 
 #define NV12_BUFFER_SIZE (1280 * 720 * 3 / 2)
 #define RTCP_RR_INTERVAL 1000
@@ -16,8 +14,6 @@ RtpVideoReceiver::~RtpVideoReceiver() {
 }
 
 void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
-  LOG_ERROR("1 input [{:X} {:X}], size={}", rtp_packet.Payload()[0],
-            rtp_packet.Payload()[1], rtp_packet.PayloadSize());
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
@@ -239,9 +235,6 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(RtpPacket& rtp_packet) {
 }
 
 bool RtpVideoReceiver::CheckIsAv1FrameCompleted(RtpPacket& rtp_packet) {
-  LOG_ERROR("2 input [{:X} {:X}], size={}", rtp_packet.Payload()[0],
-            rtp_packet.Payload()[1], rtp_packet.PayloadSize());
-
   if (rtp_packet.Av1FrameEnd()) {
     uint16_t end_seq = rtp_packet.SequenceNumber();
     size_t start = end_seq;
@@ -279,14 +272,6 @@ bool RtpVideoReceiver::CheckIsAv1FrameCompleted(RtpPacket& rtp_packet) {
         incomplete_frame_list_.erase(start);
       }
 
-      obu::Obu obu;
-      ByteBufferReader payload_reader(reinterpret_cast<const char*>(nv12_data_),
-                                      complete_frame_size);
-      payload_reader.ReadUInt8(&obu.header);
-      int type = (nv12_data_[0] & 0b0'1111'000) >> 3;
-
-      LOG_ERROR("complete_frame_size = {}, type = {}", complete_frame_size,
-                type);
       compelete_video_frame_queue_.push(
           VideoFrame(nv12_data_, complete_frame_size));
 

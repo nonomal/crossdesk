@@ -98,7 +98,6 @@ int Dav1dAv1Decoder::Init() {
 int Dav1dAv1Decoder::Decode(
     const uint8_t *data, int size,
     std::function<void(VideoFrame)> on_receive_decoded_frame) {
-  LOG_ERROR("frame size = {}", size);
   if (SAVE_RECEIVED_AV1_STREAM) {
     fwrite((unsigned char *)data, 1, size, file_av1_);
   }

@@ -67,8 +67,6 @@ int AomAv1Decoder::Decode(
     fwrite((unsigned char *)data, 1, size, file_av1_);
   }
 
-  LOG_ERROR("Decode size {}", size);
-
   aom_codec_iter_t iter = nullptr;
   aom_codec_err_t ret =
       aom_codec_decode(&aom_av1_decoder_ctx_, data, size, nullptr);
