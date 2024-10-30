@@ -58,10 +58,11 @@ class Render {
 
   static void OnSignalStatusCb(SignalStatus status, void *user_data);
 
-  static void OnConnectionStatusCb(ConnectionStatus status, void *user_data);
+  static void OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
+                                   size_t user_id_size, void *user_data);
 
-  static void NetStatusReport(int client_id, TraversalMode mode,
-                              const unsigned short send,
+  static void NetStatusReport(const char *client_id, size_t client_id_size,
+                              TraversalMode mode, const unsigned short send,
                               const unsigned short receive, void *user_data);
 
   static SDL_HitTestResult HitTestCallback(SDL_Window *window,

@@ -240,7 +240,8 @@ void Render::OnSignalStatusCb(SignalStatus status, void *user_data) {
   }
 }
 
-void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
+void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
+                                  const size_t user_id_size, void *user_data) {
   Render *render = (Render *)user_data;
   if (!render) {
     return;
@@ -309,20 +310,18 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
   }
 }
 
-void Render::NetStatusReport(int client_id, TraversalMode mode,
-                             const unsigned short send,
+void Render::NetStatusReport(const char *client_id, size_t client_id_size,
+                             TraversalMode mode, const unsigned short send,
                              const unsigned short receive, void *user_data) {
   Render *render = (Render *)user_data;
   if (!render) {
     return;
   }
 
-  if (client_id != 0 && 0 == strcmp(render->client_id_, "")) {
-    std::string client_id_s = std::to_string(client_id);
+  if (0 == strcmp(render->client_id_, "")) {
     memset(&render->client_id_, 0, sizeof(render->client_id_));
-    strncpy(render->client_id_, client_id_s.c_str(),
-            sizeof(render->client_id_));
-    LOG_INFO("Use client id [{}] and save id into cache file", client_id_s);
+    strncpy(render->client_id_, client_id, client_id_size);
+    LOG_INFO("Use client id [{}] and save id into cache file", client_id);
     render->SaveSettingsIntoCacheFile();
   }
   if (mode != TraversalMode::UnknownMode) {
