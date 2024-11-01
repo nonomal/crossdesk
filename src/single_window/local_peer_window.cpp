@@ -302,7 +302,6 @@ int Render::LocalWindow() {
     }
 
     ImGui::EndChild();
-    ImGui::PopStyleVar();
   }
 
   ImGui::EndChild();

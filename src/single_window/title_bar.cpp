@@ -48,13 +48,14 @@ int Render::TitleBar() {
       draw_list->AddLine(ImVec2(bar_pos_x, bar_pos_y + 6),
                          ImVec2(bar_pos_x + menu_bar_line_size, bar_pos_y + 6),
                          IM_COL32(0, 0, 0, 255));
-      ImGui::PopStyleColor(2);
 
       {
         SettingWindow();
         AboutWindow();
       }
     }
+
+    ImGui::PopStyleColor(2);
 
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
     ImGui::SetCursorPosX(main_window_width_ - (streaming_
@@ -146,11 +147,13 @@ int Render::TitleBar() {
 
     ImGui::PopStyleColor(2);
 
-    ImGui::PopStyleColor(1);
+    ImGui::PopStyleColor();
   }
+
+  ImGui::EndMenuBar();
   ImGui::SetWindowFontScale(1.0f);
 
   ImGui::EndChild();
-  ImGui::PopStyleColor(2);
+  ImGui::PopStyleColor();
   return 0;
 }

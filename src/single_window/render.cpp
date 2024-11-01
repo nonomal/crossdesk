@@ -518,25 +518,37 @@ int Render::Run() {
       ImGui::PopStyleColor();
 
       TitleBar();
-    }
 
-    if (connection_established_ && streaming_ && is_client_mode_) {
-      if (!resizable_) {
-        resizable_ = !resizable_;
-        SDL_SetWindowResizable(main_window_, SDL_TRUE);
+      if (connection_established_ && streaming_ && is_client_mode_) {
+        if (!resizable_) {
+          resizable_ = !resizable_;
+          SDL_SetWindowResizable(main_window_, SDL_TRUE);
+        }
+        ControlWindow();
+      } else {
+        if (resizable_) {
+          resizable_ = !resizable_;
+          SDL_SetWindowResizable(main_window_, SDL_FALSE);
+        }
+        MainWindow();
       }
 
-      ControlWindow();
-    } else {
-      if (resizable_) {
-        resizable_ = !resizable_;
-        SDL_SetWindowResizable(main_window_, SDL_FALSE);
-      }
-      MainWindow();
-    }
-
-    if (!fullscreen_button_pressed_) {
       ImGui::End();
+    } else {
+      if (connection_established_ && streaming_ && is_client_mode_) {
+        if (!resizable_) {
+          resizable_ = !resizable_;
+          SDL_SetWindowResizable(main_window_, SDL_TRUE);
+        }
+
+        ControlWindow();
+      } else {
+        if (resizable_) {
+          resizable_ = !resizable_;
+          SDL_SetWindowResizable(main_window_, SDL_FALSE);
+        }
+        MainWindow();
+      }
     }
 
     // create connection
