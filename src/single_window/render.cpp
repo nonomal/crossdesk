@@ -498,11 +498,12 @@ int Render::SetupFontAndStyle() {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // Enable Docking
 
   // Load Fonts
+  ImFontConfig config;
+  config.FontDataOwnedByAtlas = false;
   io.Fonts->AddFontFromMemoryTTF(OPPOSans_Regular_ttf,
-                                 sizeof(OPPOSans_Regular_ttf), 32.0f, NULL,
+                                 sizeof(OPPOSans_Regular_ttf), 32.0f, &config,
                                  io.Fonts->GetGlyphRangesChineseFull());
 
-  ImFontConfig config;
   config.MergeMode = true;
   config.GlyphMinAdvanceX =
       13.0f;  // Use if you want to make the icon monospaced
@@ -529,6 +530,7 @@ int Render::SetupMainWindow() {
   }
 
   ImGui::SetCurrentContext(main_ctx_);
+
   SetupFontAndStyle();
 
   SDL_GL_GetDrawableSize(main_window_, &main_window_width_real_,
@@ -549,6 +551,7 @@ int Render::SetupMainWindow() {
 }
 
 int Render::DestroyMainWindowContext() {
+  ImGui::SetCurrentContext(main_ctx_);
   ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext(main_ctx_);
@@ -567,6 +570,7 @@ int Render::SetupStreamWindow() {
   }
 
   ImGui::SetCurrentContext(stream_ctx_);
+
   SetupFontAndStyle();
 
   SDL_GL_GetDrawableSize(stream_window_, &stream_window_width_real_,
@@ -591,6 +595,7 @@ int Render::SetupStreamWindow() {
 
 int Render::DestroyStreamWindowContext() {
   stream_window_inited_ = false;
+  ImGui::SetCurrentContext(stream_ctx_);
   ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext(stream_ctx_);

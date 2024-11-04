@@ -122,7 +122,6 @@ class Render {
   std::mutex cd_cache_mutex_;
 
   ConfigCenter config_center_;
-
   ConfigCenter::LANGUAGE localization_language_ =
       ConfigCenter::LANGUAGE::CHINESE;
 
