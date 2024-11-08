@@ -24,31 +24,31 @@ int Render::MainWindow() {
 
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
   draw_list->AddLine(
-      ImVec2(main_window_width_default_ / 2, title_bar_height_ + 25.0f),
-      ImVec2(main_window_width_default_ / 2, title_bar_height_ + 240.0f),
+      ImVec2(main_window_width_default_ / 2, title_bar_height_ + 15.0f),
+      ImVec2(main_window_width_default_ / 2, title_bar_height_ + 225.0f),
       IM_COL32(0, 0, 0, 122), 1.0f);
 
   RemoteWindow();
   ImGui::EndChild();
 
   ImGui::SetNextWindowPos(
-      ImVec2(0, title_bar_height_ + local_window_height_ - 1),
+      ImVec2(0, title_bar_height_ + local_window_height_ - 1.0f),
       ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
-  ImGui::BeginChild("RecentConnectionsWindow",
-                    ImVec2(main_window_width_default_,
-                           main_window_height_default_ - title_bar_height_ -
-                               local_window_height_ - status_bar_height_),
-                    ImGuiChildFlags_Border,
-                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                        ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+  ImGui::BeginChild(
+      "RecentConnectionsWindow",
+      ImVec2(main_window_width_default_,
+             main_window_height_default_ - title_bar_height_ -
+                 local_window_height_ - status_bar_height_ + 1.0f),
+      ImGuiChildFlags_Border,
+      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+          ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+          ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImGui::PopStyleVar();
   ImGui::PopStyleColor();
 
-  ImGui::SetCursorPosY(ImGui::GetCursorPosY() +
-                       main_window_text_y_padding_ / 2);
+  ImGui::SetCursorPosY(ImGui::GetCursorPosY() + main_window_text_y_padding_);
   ImGui::Indent(main_child_window_x_padding_);
   ImGui::SetWindowFontScale(0.8f);
 
@@ -57,14 +57,6 @@ int Render::MainWindow() {
       localization::recent_connections[localization_language_index_].c_str());
   ImGui::SetWindowFontScale(1.0f);
 
-  draw_list->AddLine(
-      ImVec2(25.0f, title_bar_height_ + local_window_height_ + 35.0f),
-      ImVec2(main_window_width_default_ - 25.0f,
-             title_bar_height_ + local_window_height_ + 35.0f),
-      IM_COL32(0, 0, 0, 122), 1.0f);
-
-  ImGui::SetCursorPosY(ImGui::GetCursorPosY() +
-                       main_window_text_y_padding_ / 2);
   ShowRecentConnections();
 
   ImGui::EndChild();
@@ -76,6 +68,17 @@ int Render::MainWindow() {
 }
 
 int Render::ShowRecentConnections() {
+  ImGui::SetCursorPosX(25.0f);
+  ImGui::BeginChild("RecentConnectionsContainer",
+                    ImVec2(main_window_width_default_ - 50.0f, 152.0f),
+                    ImGuiChildFlags_Border,
+                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                        ImGuiWindowFlags_NoBringToFrontOnFocus |
+                        ImGuiWindowFlags_AlwaysHorizontalScrollbar);
+
+  int recent_connections_count = recent_connection_textures_.size();
+  int count = 0;
   for (auto it = recent_connection_textures_.begin();
        it != recent_connection_textures_.end(); ++it) {
     std::string recent_connection_sub_window_name =
@@ -103,8 +106,10 @@ int Render::ShowRecentConnections() {
     ImGui::Text("%s", it->first.c_str());
     ImGui::SetWindowFontScale(1.0f);
     ImGui::EndChild();
-    ImGui::SameLine();
+    count++;
+    ImGui::SameLine(0, count != recent_connections_count ? 23.0f : 0.0f);
   }
+  ImGui::EndChild();
 
   return 0;
 }
