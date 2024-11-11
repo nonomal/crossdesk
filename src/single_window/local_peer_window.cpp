@@ -1,6 +1,5 @@
 #include <random>
 
-#include "IconsFontAwesome6.h"
 #include "layout_style.h"
 #include "localization.h"
 #include "rd_log.h"

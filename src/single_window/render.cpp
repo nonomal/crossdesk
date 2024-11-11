@@ -5,7 +5,6 @@
 #include <iostream>
 #include <string>
 
-#include "IconsFontAwesome6.h"
 #include "OPPOSans_Regular.h"
 #include "device_controller_factory.h"
 #include "fa_regular_400.h"

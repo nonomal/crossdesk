@@ -1,4 +1,3 @@
-#include "IconsFontAwesome6.h"
 #include "localization.h"
 #include "render.h"
 

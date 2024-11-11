@@ -14,6 +14,7 @@
 #include <string>
 
 #include "../../thirdparty/projectx/src/interface/x.h"
+#include "IconsFontAwesome6.h"
 #include "config_center.h"
 #include "device_controller_factory.h"
 #include "imgui.h"
