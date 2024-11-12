@@ -1,7 +1,6 @@
 #include "thumbnail.h"
 
-#include <openssl/aes.h>
-#include <openssl/rand.h>
+#include <openssl/evp.h>
 
 #include <chrono>
 #include <fstream>
@@ -71,6 +70,29 @@ Thumbnail::~Thumbnail() {
   }
 }
 
+void remove_colons(const char* input, char* output) {
+  int j = 0;
+  for (int i = 0; input[i] != '\0'; i++) {
+    if (input[i] != ':') {
+      output[j++] = input[i];
+    }
+  }
+  output[j] = '\0';  // 添加字符串结束符
+}
+
+void restore_colons(const char* input, char* output) {
+  int input_len = strlen(input);
+  int j = 0;
+
+  for (int i = 0; i < input_len; i++) {
+    if (i > 0 && i % 2 == 0) {
+      output[j++] = ':';
+    }
+    output[j++] = input[i];
+  }
+  output[j] = '\0';  // 添加字符串结束符
+}
+
 int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
                                const std::string& host_name,
                                const std::string& remote_id,
@@ -85,9 +107,33 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
 
     std::string image_name = password + "@" + host_name + "@" + remote_id;
     LOG_ERROR("1 Save thumbnail: {}", image_name);
-    std::string cipher_image_name = AES_encrypt(key_, image_name);
-    LOG_ERROR("2 Save thumbnail: {}", cipher_image_name);
-    std::string save_path = image_path_ + cipher_image_name;
+    int ciphertext_len = AES_encrypt((unsigned char*)image_name.c_str(),
+                                     image_name.size(), key_, iv_, ciphertext_);
+
+    int decryptedtext_len =
+        AES_decrypt(ciphertext_, ciphertext_len, key_, iv_, decryptedtext_);
+    decryptedtext_[decryptedtext_len] = '\0';
+
+    LOG_ERROR("ciphertext [{}]", (char*)ciphertext_);
+    LOG_ERROR("decryptedtext [{}]", (char*)decryptedtext_);
+    char* hex_str = OPENSSL_buf2hexstr(ciphertext_, ciphertext_len);
+    LOG_ERROR("hex [{}]", hex_str);
+
+    char* hex_str_rm = new char[256];
+    remove_colons(hex_str, hex_str_rm);
+    LOG_ERROR("hex_str_rm [{}]", hex_str_rm);
+
+    char* hex_str_re = new char[256];
+    restore_colons(hex_str_rm, hex_str_re);
+    LOG_ERROR("hex_str_re [{}]", hex_str_re);
+
+    long text_buf_len = 0;
+    unsigned char* text_buf = OPENSSL_hexstr2buf(hex_str, &text_buf_len);
+    text_buf[text_buf_len] = '\0';
+    LOG_ERROR("text_buf [{}]", (char*)text_buf);
+
+    std::string save_path = image_path_ + hex_str;
+    LOG_ERROR("Save thumbnail: {}", save_path);
     stbi_write_png(save_path.data(), thumbnail_width_, thumbnail_height_, 4,
                    rgba_buffer_, thumbnail_width_ * 4);
   }
@@ -189,34 +235,36 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
 int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
                              std::map<std::string, SDL_Texture*>& textures,
                              int* width, int* height) {
-  textures.clear();
-  std::vector<std::filesystem::path> image_paths =
-      FindThumbnailPath(image_path_);
+  // textures.clear();
+  // std::vector<std::filesystem::path> image_paths =
+  //     FindThumbnailPath(image_path_);
 
-  if (image_paths.size() == 0) {
-    return -1;
-  } else {
-    for (int i = 0; i < image_paths.size(); i++) {
-      size_t pos1 = image_paths[i].string().find('/') + 1;
-      std::string cipher_image_name = image_paths[i].string().substr(pos1);
-      LOG_ERROR("cipher_image_name: {}", cipher_image_name);
-      std::string original_image_name = AES_decrypt(key_, cipher_image_name);
-      std::string image_path = image_path_ + original_image_name;
-      LOG_ERROR("image_path: {}", image_path);
-      // size_t pos1 = original_image_name[i].string().find('@') + 1;
-      // size_t pos2 = original_image_name[i].string().rfind('@');
-      // std::string password = original_image_name[i].string().substr(0, pos1);
-      // std::string host_name =
-      //     original_image_name[i].string().substr(pos1, pos2 - pos1);
-      // std::string remote_id = original_image_name[i].string().substr(pos2 +
-      // 1);
+  // if (image_paths.size() == 0) {
+  //   return -1;
+  // } else {
+  //   for (int i = 0; i < image_paths.size(); i++) {
+  //     size_t pos1 = image_paths[i].string().find('/') + 1;
+  //     std::string cipher_image_name = image_paths[i].string().substr(pos1);
+  //     LOG_ERROR("cipher_image_name: {}", cipher_image_name);
+  //     std::string original_image_name = AES_decrypt(key_, cipher_image_name);
+  //     std::string image_path = image_path_ + original_image_name;
+  //     LOG_ERROR("image_path: {}", image_path);
+  //     // size_t pos1 = original_image_name[i].string().find('@') + 1;
+  //     // size_t pos2 = original_image_name[i].string().rfind('@');
+  //     // std::string password = original_image_name[i].string().substr(0,
+  //     pos1);
+  //     // std::string host_name =
+  //     //     original_image_name[i].string().substr(pos1, pos2 - pos1);
+  //     // std::string remote_id = original_image_name[i].string().substr(pos2
+  //     +
+  //     // 1);
 
-      textures[original_image_name] = nullptr;
-      LoadTextureFromFile(image_path.c_str(), renderer,
-                          &(textures[original_image_name]), width, height);
-    }
-    return 0;
-  }
+  //     textures[original_image_name] = nullptr;
+  //     LoadTextureFromFile(image_path.c_str(), renderer,
+  //                         &(textures[original_image_name]), width, height);
+  //   }
+  //   return 0;
+  // }
   return 0;
 }
 
@@ -231,94 +279,61 @@ int Thumbnail::DeleteThumbnail(const std::string& file_path) {
   }
 }
 
-// 将std::string转换为unsigned char向量
-std::vector<unsigned char> string_to_uchar_vector(const std::string& str) {
-  return std::vector<unsigned char>(str.begin(), str.end());
-}
-
-// 将unsigned char向量转换为std::string
-std::string uchar_vector_to_string(const std::vector<unsigned char>& vec) {
-  return std::string(vec.begin(), vec.end());
-}
-
-// PKCS#7 填充
-void pkcs7_pad(std::vector<unsigned char>& data) {
-  size_t pad_length = AES_BLOCK_SIZE - (data.size() % AES_BLOCK_SIZE);
-  data.insert(data.end(), pad_length, static_cast<unsigned char>(pad_length));
-}
-
-// PKCS#7 去除填充
-void pkcs7_unpad(std::vector<unsigned char>& data) {
-  if (!data.empty()) {
-    size_t pad_length = data.back();
-    data.resize(data.size() - pad_length);
+int Thumbnail::AES_encrypt(unsigned char* plaintext, int plaintext_len,
+                           unsigned char* key, unsigned char* iv,
+                           unsigned char* ciphertext_) {
+  EVP_CIPHER_CTX* ctx;
+  int len;
+  int ciphertext_len;
+  if (!(ctx = EVP_CIPHER_CTX_new())) {
+    return -1;
   }
-}
 
-std::string Thumbnail::AES_encrypt(const std::string& key,
-                                   const std::string& plaintext) {
-  std::vector<unsigned char> key_vec = string_to_uchar_vector(key);
-  std::vector<unsigned char> iv(AES_BLOCK_SIZE);
-  RAND_bytes(iv.data(), AES_BLOCK_SIZE);  // 随机生成IV
-
-  std::vector<unsigned char> plaintext_vec = string_to_uchar_vector(plaintext);
-  pkcs7_pad(plaintext_vec);  // 填充明文
-
-  std::vector<unsigned char> ciphertext(plaintext_vec.size());
-  AES_KEY encryptKey;
-  AES_set_encrypt_key(key_vec.data(), 128, &encryptKey);
-
-  AES_cbc_encrypt(plaintext_vec.data(), ciphertext.data(), plaintext_vec.size(),
-                  &encryptKey, iv.data(), AES_ENCRYPT);
-
-  // 将IV和密文拼接，方便解密时取出IV
-  ciphertext.insert(ciphertext.begin(), iv.begin(), iv.end());
-
-  // return uchar_vector_to_string(ciphertext);
-
-  std::string encrypted = uchar_vector_to_string(ciphertext);
-
-  std::string original_image_name =
-      AES_decrypt(key_, uchar_vector_to_string(ciphertext));
-  LOG_ERROR("!!!!!!!!!!!!!!! src = [{}]", original_image_name);
-
-  // 转换成十六进制字符串
-  std::ostringstream encrypted_oss;
-  for (unsigned char c : encrypted) {
-    encrypted_oss << std::hex << std::setw(2) << std::setfill('0') << (int)c;
+  if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)) {
+    return -1;
   }
-  return encrypted_oss.str();
+
+  if (1 !=
+      EVP_EncryptUpdate(ctx, ciphertext_, &len, plaintext, plaintext_len)) {
+    return -1;
+  }
+
+  ciphertext_len = len;
+  if (1 != EVP_EncryptFinal_ex(ctx, ciphertext_ + len, &len)) {
+    return -1;
+  }
+
+  ciphertext_len += len;
+  EVP_CIPHER_CTX_free(ctx);
+  return ciphertext_len;
 }
 
-std::string Thumbnail::AES_decrypt(const std::string& key,
-                                   const std::string& ciphertext) {
-  // // 将十六进制字符串转换回原始二进制密文
-  std::string original_ciphertext = ciphertext;
-  // for (size_t i = 0; i < ciphertext.size(); i += 2) {
-  //   std::string byte_str = ciphertext.substr(i, 2);
-  //   unsigned char byte =
-  //       static_cast<unsigned char>(std::stoi(byte_str, nullptr, 16));
-  //   original_ciphertext.push_back(byte);
-  // }
+int Thumbnail::AES_decrypt(unsigned char* ciphertext_, int ciphertext_len,
+                           unsigned char* key, unsigned char* iv,
+                           unsigned char* plaintext) {
+  EVP_CIPHER_CTX* ctx;
+  int len;
+  int plaintext_len;
+  if (!(ctx = EVP_CIPHER_CTX_new())) {
+    return -1;
+  }
 
-  std::vector<unsigned char> key_vec = string_to_uchar_vector(key);
-  std::vector<unsigned char> ciphertext_vec =
-      string_to_uchar_vector(ciphertext);
+  if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)) {
+    return -1;
+  }
 
-  // 提取IV
-  std::vector<unsigned char> iv(ciphertext_vec.begin(),
-                                ciphertext_vec.begin() + AES_BLOCK_SIZE);
-  ciphertext_vec.erase(ciphertext_vec.begin(),
-                       ciphertext_vec.begin() + AES_BLOCK_SIZE);
+  if (1 !=
+      EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext_, ciphertext_len)) {
+    return -1;
+  }
 
-  std::vector<unsigned char> plaintext(ciphertext_vec.size());
-  AES_KEY decryptKey;
-  AES_set_decrypt_key(key_vec.data(), 128, &decryptKey);
+  plaintext_len = len;
+  if (1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len)) {
+    return -1;
+  }
 
-  AES_cbc_encrypt(ciphertext_vec.data(), plaintext.data(),
-                  ciphertext_vec.size(), &decryptKey, iv.data(), AES_DECRYPT);
+  plaintext_len += len;
+  EVP_CIPHER_CTX_free(ctx);
 
-  pkcs7_unpad(plaintext);  // 去除填充
-
-  return uchar_vector_to_string(plaintext);
+  return plaintext_len;
 }
