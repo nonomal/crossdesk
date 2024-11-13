@@ -102,15 +102,25 @@ int Render::ShowRecentConnections() {
                           ImGuiWindowFlags_NoTitleBar |
                           ImGuiWindowFlags_NoBringToFrontOnFocus |
                           ImGuiWindowFlags_NoScrollbar);
-    // size_t pos1 = it->first.find('\\') + 1;
-    // size_t pos2 = it->first.rfind('@');
-    // std::string host_name = it->first.substr(pos1, pos2 - pos1);
+    std::string connection_info = it->first;
+    std::string remote_id;
+    std::string password;
+    std::string host_name;
 
-    size_t pos1 = it->first.find('@') + 1;
-    size_t pos2 = it->first.rfind('@');
-    std::string password = it->first.substr(0, pos1);
-    std::string host_name = it->first.substr(pos1, pos2 - pos1);
-    std::string remote_id = it->first.substr(pos2 + 1);
+    // remote id length is 9
+    // password length is 6
+    // connection_info -> remote_id + Y + password + host_name
+    //                 -> remote_id + N + host_name
+    if ('Y' == connection_info[9] && connection_info.size() >= 16) {
+      remote_id = connection_info.substr(0, 9);
+      password = connection_info.substr(10, 6);
+      host_name = connection_info.substr(16);
+    } else if ('N' == connection_info[9] && connection_info.size() >= 10) {
+      remote_id = connection_info.substr(0, 9);
+      host_name = connection_info.substr(10);
+    } else {
+      host_name = "unknown";
+    }
 
     ImGui::SetWindowFontScale(0.4f);
     ImVec2 window_size = ImGui::GetWindowSize();
@@ -159,8 +169,11 @@ int Render::ShowRecentConnections() {
         connect + "##ConnectionTo" + it->first;
     if (ImGui::Button(connect_to_this_connection_button_name.c_str(),
                       ImVec2(button_width, button_height))) {
-      LOG_ERROR("Connect to [{}]",
-                connect_to_this_connection_button_name.c_str());
+      LOG_ERROR("Connect to [{}], password [{}]", remote_id.c_str(),
+                password.c_str());
+      remote_id_ = remote_id;
+      strncpy(remote_password_, password.c_str(), 6);
+      ConnectTo();
     }
     ImGui::SetWindowFontScale(1.0f);
     ImGui::PopStyleColor(3);
@@ -170,55 +183,6 @@ int Render::ShowRecentConnections() {
     count++;
     ImGui::SameLine(0, count != recent_connections_count ? 23.0f : 0.0f);
   }
-
-  // ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-  // ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
-  // ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-  // for (const auto& pos : sub_containers_pos) {
-  //   ImVec2 delete_button_pos =
-  //       ImVec2(pos.second.x + recent_connection_sub_container_width - 11.0f,
-  //              pos.second.y - 7.0f);
-  //   ImGui::SetCursorPos(delete_button_pos);
-  //   ImGui::SetWindowFontScale(0.5f);
-  //   std::string xmake = ICON_FA_CIRCLE_XMARK;
-  //   std::string recent_connection_delete_button_name =
-  //       xmake + "##RecentConnectionDelete" +
-  //       std::to_string(delete_button_pos.x);
-  //   if (ImGui::SmallButton(recent_connection_delete_button_name.c_str())) {
-  //     show_confirm_delete_connection_ = true;
-  //   }
-
-  //   if (delete_connection_) {
-  //     if (!thumbnail_.DeleteThumbnail(pos.first)) {
-  //       reload_recent_connections_ = true;
-  //       delete_connection_ = false;
-  //     }
-  //   }
-  //   ImGui::SetWindowFontScale(1.0f);
-
-  //   {
-  //     int delete_button_width = 20;
-  //     int delete_button_height = 20;
-  //     int pos_x = pos.second.x;
-  //     int pos_y = pos.second.y + recent_connection_sub_container_height -
-  //                 delete_button_height;
-  //     ImVec2 connect_button_pos = ImVec2(pos_x, pos_y);
-  //     ImGui::SetCursorPos(connect_button_pos);
-  //     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 0, 0, 1));
-  //     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 1, 0, 1));
-  //     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 1, 1));
-  //     std::string connect_to_this_connection_button_name =
-  //         "##ConnectionTo" + pos.first;
-  //     if (ImGui::Button(connect_to_this_connection_button_name.c_str(),
-  //                       ImVec2(delete_button_width, delete_button_height))) {
-  //       LOG_ERROR("Connect to [{}]",
-  //                 connect_to_this_connection_button_name.c_str());
-  //     }
-
-  //     ImGui::PopStyleColor(3);
-  //   }
-  // }
-  // ImGui::PopStyleColor(3);
 
   ImGui::EndChild();
 

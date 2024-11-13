@@ -217,7 +217,7 @@ int Render::StartSpeakerCapture() {
     int speaker_capturer_init_ret = speaker_capturer_->Init(
         [this](unsigned char* data, size_t size) -> void {
           if (connection_established_) {
-            // SendData(peer_, DATA_TYPE::AUDIO, (const char*)data, size);
+            SendData(peer_, DATA_TYPE::AUDIO, (const char*)data, size);
           }
         });
 
@@ -803,8 +803,8 @@ int Render::Run() {
 
           if (dst_buffer_) {
             thumbnail_.SaveToThumbnail(
-                (char*)dst_buffer_, video_width_, video_height_, host_name_,
-                remote_id_, remember_password_ ? remote_password_ : "");
+                (char*)dst_buffer_, video_width_, video_height_, remote_id_,
+                host_name_, remember_password_ ? remote_password_ : "");
             recent_connection_image_save_time_ = SDL_GetTicks();
           }
 

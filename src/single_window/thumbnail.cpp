@@ -73,8 +73,8 @@ Thumbnail::~Thumbnail() {
 }
 
 int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
-                               const std::string& host_name,
                                const std::string& remote_id,
+                               const std::string& host_name,
                                const std::string& password) {
   if (!rgba_buffer_) {
     rgba_buffer_ = new char[thumbnail_width_ * thumbnail_height_ * 4];
@@ -84,10 +84,20 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
     ScaleYUV420pToABGR((char*)yuv420p, width, height, thumbnail_width_,
                        thumbnail_height_, rgba_buffer_);
 
-    std::string image_name = password + "@" + host_name + "@" + remote_id;
+    std::string image_name;
+    if (password.empty()) {
+      image_name = remote_id + "N" + host_name;
+    } else {
+      // delete the file which has no password in its name
+      std::string filename_without_password = remote_id + "N" + host_name;
+      DeleteThumbnail(filename_without_password);
+
+      image_name = remote_id + "Y" + password + host_name;
+    }
+
     std::string ciphertext = AES_encrypt(image_name, key_, iv_);
-    std::string save_path = image_path_ + ciphertext;
-    stbi_write_png(save_path.data(), thumbnail_width_, thumbnail_height_, 4,
+    std::string file_path = image_path_ + ciphertext;
+    stbi_write_png(file_path.data(), thumbnail_width_, thumbnail_height_, 4,
                    rgba_buffer_, thumbnail_width_ * 4);
   }
   return 0;
@@ -103,7 +113,7 @@ bool LoadTextureFromMemory(const void* data, size_t data_size,
       stbi_load_from_memory((const unsigned char*)data, (int)data_size,
                             &image_width, &image_height, NULL, 4);
   if (image_data == nullptr) {
-    fprintf(stderr, "Failed to load image: %s\n", stbi_failure_reason());
+    LOG_ERROR("Failed to load image: [{}]", stbi_failure_reason());
     return false;
   }
 
@@ -112,13 +122,14 @@ bool LoadTextureFromMemory(const void* data, size_t data_size,
       (void*)image_data, image_width, image_height, channels * 8,
       channels * image_width, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
   if (surface == nullptr) {
-    fprintf(stderr, "Failed to create SDL surface: %s\n", SDL_GetError());
+    LOG_ERROR("Failed to create SDL surface: [{}]", SDL_GetError());
     return false;
   }
 
   SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-  if (texture == nullptr)
-    fprintf(stderr, "Failed to create SDL texture: %s\n", SDL_GetError());
+  if (texture == nullptr) {
+    LOG_ERROR("Failed to create SDL texture: [{}]", SDL_GetError());
+  }
 
   *out_texture = texture;
   *out_width = image_width;
@@ -185,7 +196,14 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
 int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
                              std::map<std::string, SDL_Texture*>& textures,
                              int* width, int* height) {
+  for (auto& it : textures) {
+    if (it.second != nullptr) {
+      SDL_DestroyTexture(it.second);
+      it.second = nullptr;
+    }
+  }
   textures.clear();
+
   std::vector<std::filesystem::path> image_paths =
       FindThumbnailPath(image_path_);
 
@@ -207,13 +225,13 @@ int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
   return 0;
 }
 
-int Thumbnail::DeleteThumbnail(const std::string& file_path) {
+int Thumbnail::DeleteThumbnail(const std::string& file_name) {
+  std::string ciphertext = AES_encrypt(file_name, key_, iv_);
+  std::string file_path = image_path_ + ciphertext;
   if (std::filesystem::exists(file_path)) {
     std::filesystem::remove(file_path);
-    LOG_INFO("File [{}] removed successfully", file_path);
     return 0;
   } else {
-    LOG_ERROR("File [{}] does not exist", file_path);
     return -1;
   }
 }

@@ -19,15 +19,15 @@ class Thumbnail {
 
  public:
   int SaveToThumbnail(const char* yuv420p, int width, int height,
-                      const std::string& host_name,
                       const std::string& remote_id,
+                      const std::string& host_name,
                       const std::string& password);
 
   int LoadThumbnail(SDL_Renderer* renderer,
                     std::map<std::string, SDL_Texture*>& textures, int* width,
                     int* height);
 
-  int DeleteThumbnail(const std::string& file_path);
+  int DeleteThumbnail(const std::string& file_name);
 
  private:
   std::vector<std::filesystem::path> FindThumbnailPath(

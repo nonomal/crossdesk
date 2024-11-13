@@ -66,39 +66,17 @@ int Render::RemoteWindow() {
       ImGui::PopStyleVar();
       ImGui::SameLine();
       if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG, ImVec2(55, 38)) ||
-          enter_pressed || rejoin_) {
+          enter_pressed) {
         connect_button_pressed_ = true;
-        connection_status_ = ConnectionStatus::Connecting;
-        int ret = -1;
-        if (signal_connected_) {
-          if (!connection_established_) {
-            remote_id_ = remote_id_display_;
-            remote_id_.erase(remove_if(remote_id_.begin(), remote_id_.end(),
-                                       static_cast<int (*)(int)>(&isspace)),
-                             remote_id_.end());
-            if (0 == strcmp(remote_id_.c_str(), client_id_) &&
-                !peer_reserved_) {
-              peer_reserved_ = CreatePeer(&params_);
-              if (peer_reserved_) {
-                LOG_INFO("Create peer[reserved] instance successful");
-                std::string client_id = "C-";
-                client_id += client_id_;
-                Init(peer_reserved_, client_id.c_str());
-                LOG_INFO("Peer[reserved] init finish");
-              } else {
-                LOG_INFO("Create peer[reserved] instance failed");
-              }
-            }
-            ret = JoinConnection(peer_reserved_ ? peer_reserved_ : peer_,
-                                 remote_id_.c_str(), remote_password_);
-            if (0 == ret) {
-              is_client_mode_ = true;
-              rejoin_ = false;
-            } else {
-              rejoin_ = true;
-            }
-          }
-        }
+        remote_id_ = remote_id_display_;
+        remote_id_.erase(remove_if(remote_id_.begin(), remote_id_.end(),
+                                   static_cast<int (*)(int)>(&isspace)),
+                         remote_id_.end());
+        ConnectTo();
+      }
+
+      if (rejoin_) {
+        ConnectTo();
       }
     }
     ImGui::EndChild();
@@ -116,6 +94,38 @@ static int InputTextCallback(ImGuiInputTextCallbackData *data) {
 
   if (data->BufTextLen > 7 && data->Buf[7] != ' ') {
     data->InsertChars(7, " ");
+  }
+
+  return 0;
+}
+
+int Render::ConnectTo() {
+  connection_status_ = ConnectionStatus::Connecting;
+  int ret = -1;
+  if (signal_connected_) {
+    if (!connection_established_) {
+      if (0 == strcmp(remote_id_.c_str(), client_id_) && !peer_reserved_) {
+        peer_reserved_ = CreatePeer(&params_);
+        if (peer_reserved_) {
+          LOG_INFO("Create peer[reserved] instance successful");
+          std::string client_id = "C-";
+          client_id += client_id_;
+          Init(peer_reserved_, client_id.c_str());
+          LOG_INFO("Peer[reserved] init finish");
+        } else {
+          LOG_INFO("Create peer[reserved] instance failed");
+        }
+      }
+
+      ret = JoinConnection(peer_reserved_ ? peer_reserved_ : peer_,
+                           remote_id_.c_str(), remote_password_);
+      if (0 == ret) {
+        is_client_mode_ = true;
+        rejoin_ = false;
+      } else {
+        rejoin_ = true;
+      }
+    }
   }
 
   return 0;

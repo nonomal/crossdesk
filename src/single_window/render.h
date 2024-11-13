@@ -49,6 +49,7 @@ class Render {
 
  private:
   int CreateRtcConnection();
+  int ConnectTo();
   int CreateMainWindow();
   int DestroyMainWindow();
   int CreateStreamWindow();
@@ -279,7 +280,7 @@ class Render {
   bool hostname_sent_ = false;
   bool show_confirm_delete_connection_ = false;
   bool delete_connection_ = false;
-  bool remember_password_ = true;
+  bool remember_password_ = false;
 
   double copy_start_time_ = 0;
   double regenerate_password_start_time_ = 0;
