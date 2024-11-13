@@ -33,13 +33,11 @@ class Thumbnail {
   std::vector<std::filesystem::path> FindThumbnailPath(
       const std::filesystem::path& directory);
 
-  int AES_encrypt(unsigned char* plaintext, int plaintext_len,
-                  unsigned char* key, unsigned char* iv,
-                  unsigned char* ciphertext);
+  std::string AES_encrypt(const std::string& plaintext, unsigned char* key,
+                          unsigned char* iv);
 
-  int AES_decrypt(unsigned char* ciphertext, int ciphertext_len,
-                  unsigned char* key, unsigned char* iv,
-                  unsigned char* plaintext);
+  std::string AES_decrypt(const std::string& ciphertext, unsigned char* key,
+                          unsigned char* iv);
 
  private:
   int thumbnail_width_ = 160;

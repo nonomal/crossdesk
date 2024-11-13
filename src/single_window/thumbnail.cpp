@@ -1,5 +1,7 @@
 #include "thumbnail.h"
 
+#include <openssl/aes.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
 
 #include <chrono>
@@ -70,29 +72,6 @@ Thumbnail::~Thumbnail() {
   }
 }
 
-void remove_colons(const char* input, char* output) {
-  int j = 0;
-  for (int i = 0; input[i] != '\0'; i++) {
-    if (input[i] != ':') {
-      output[j++] = input[i];
-    }
-  }
-  output[j] = '\0';  // 添加字符串结束符
-}
-
-void restore_colons(const char* input, char* output) {
-  int input_len = strlen(input);
-  int j = 0;
-
-  for (int i = 0; i < input_len; i++) {
-    if (i > 0 && i % 2 == 0) {
-      output[j++] = ':';
-    }
-    output[j++] = input[i];
-  }
-  output[j] = '\0';  // 添加字符串结束符
-}
-
 int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
                                const std::string& host_name,
                                const std::string& remote_id,
@@ -106,34 +85,8 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
                        thumbnail_height_, rgba_buffer_);
 
     std::string image_name = password + "@" + host_name + "@" + remote_id;
-    LOG_ERROR("1 Save thumbnail: {}", image_name);
-    int ciphertext_len = AES_encrypt((unsigned char*)image_name.c_str(),
-                                     image_name.size(), key_, iv_, ciphertext_);
-
-    int decryptedtext_len =
-        AES_decrypt(ciphertext_, ciphertext_len, key_, iv_, decryptedtext_);
-    decryptedtext_[decryptedtext_len] = '\0';
-
-    LOG_ERROR("ciphertext [{}]", (char*)ciphertext_);
-    LOG_ERROR("decryptedtext [{}]", (char*)decryptedtext_);
-    char* hex_str = OPENSSL_buf2hexstr(ciphertext_, ciphertext_len);
-    LOG_ERROR("hex [{}]", hex_str);
-
-    char* hex_str_rm = new char[256];
-    remove_colons(hex_str, hex_str_rm);
-    LOG_ERROR("hex_str_rm [{}]", hex_str_rm);
-
-    char* hex_str_re = new char[256];
-    restore_colons(hex_str_rm, hex_str_re);
-    LOG_ERROR("hex_str_re [{}]", hex_str_re);
-
-    long text_buf_len = 0;
-    unsigned char* text_buf = OPENSSL_hexstr2buf(hex_str, &text_buf_len);
-    text_buf[text_buf_len] = '\0';
-    LOG_ERROR("text_buf [{}]", (char*)text_buf);
-
-    std::string save_path = image_path_ + hex_str;
-    LOG_ERROR("Save thumbnail: {}", save_path);
+    std::string ciphertext = AES_encrypt(image_name, key_, iv_);
+    std::string save_path = image_path_ + ciphertext;
     stbi_write_png(save_path.data(), thumbnail_width_, thumbnail_height_, 4,
                    rgba_buffer_, thumbnail_width_ * 4);
   }
@@ -201,7 +154,6 @@ bool LoadTextureFromFile(const char* file_name, SDL_Renderer* renderer,
 std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
     const std::filesystem::path& directory) {
   std::vector<std::filesystem::path> thumbnails_path;
-  // std::string image_extensions = ".png";
 
   if (!std::filesystem::is_directory(directory)) {
     LOG_ERROR("No such directory [{}]", directory.string());
@@ -218,9 +170,7 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
               std::filesystem::file_time_type::clock::now() +
               std::chrono::system_clock::now()));
 
-      // if (entry.path().extension() == image_extensions) {
       thumbnails_sorted_by_write_time_[last_write_time] = entry.path();
-      // }
     }
   }
 
@@ -235,36 +185,25 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
 int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
                              std::map<std::string, SDL_Texture*>& textures,
                              int* width, int* height) {
-  // textures.clear();
-  // std::vector<std::filesystem::path> image_paths =
-  //     FindThumbnailPath(image_path_);
+  textures.clear();
+  std::vector<std::filesystem::path> image_paths =
+      FindThumbnailPath(image_path_);
 
-  // if (image_paths.size() == 0) {
-  //   return -1;
-  // } else {
-  //   for (int i = 0; i < image_paths.size(); i++) {
-  //     size_t pos1 = image_paths[i].string().find('/') + 1;
-  //     std::string cipher_image_name = image_paths[i].string().substr(pos1);
-  //     LOG_ERROR("cipher_image_name: {}", cipher_image_name);
-  //     std::string original_image_name = AES_decrypt(key_, cipher_image_name);
-  //     std::string image_path = image_path_ + original_image_name;
-  //     LOG_ERROR("image_path: {}", image_path);
-  //     // size_t pos1 = original_image_name[i].string().find('@') + 1;
-  //     // size_t pos2 = original_image_name[i].string().rfind('@');
-  //     // std::string password = original_image_name[i].string().substr(0,
-  //     pos1);
-  //     // std::string host_name =
-  //     //     original_image_name[i].string().substr(pos1, pos2 - pos1);
-  //     // std::string remote_id = original_image_name[i].string().substr(pos2
-  //     +
-  //     // 1);
-
-  //     textures[original_image_name] = nullptr;
-  //     LoadTextureFromFile(image_path.c_str(), renderer,
-  //                         &(textures[original_image_name]), width, height);
-  //   }
-  //   return 0;
-  // }
+  if (image_paths.size() == 0) {
+    return -1;
+  } else {
+    for (int i = 0; i < image_paths.size(); i++) {
+      size_t pos1 = image_paths[i].string().find('/') + 1;
+      std::string cipher_image_name = image_paths[i].string().substr(pos1);
+      std::string original_image_name =
+          AES_decrypt(cipher_image_name, key_, iv_);
+      std::string image_path = image_path_ + cipher_image_name;
+      textures[original_image_name] = nullptr;
+      LoadTextureFromFile(image_path.c_str(), renderer,
+                          &(textures[original_image_name]), width, height);
+    }
+    return 0;
+  }
   return 0;
 }
 
@@ -279,61 +218,114 @@ int Thumbnail::DeleteThumbnail(const std::string& file_path) {
   }
 }
 
-int Thumbnail::AES_encrypt(unsigned char* plaintext, int plaintext_len,
-                           unsigned char* key, unsigned char* iv,
-                           unsigned char* ciphertext_) {
+std::string Thumbnail::AES_encrypt(const std::string& plaintext,
+                                   unsigned char* key, unsigned char* iv) {
   EVP_CIPHER_CTX* ctx;
   int len;
   int ciphertext_len;
-  if (!(ctx = EVP_CIPHER_CTX_new())) {
-    return -1;
+  int ret = 0;
+  std::vector<unsigned char> ciphertext(plaintext.size() + AES_BLOCK_SIZE);
+
+  ctx = EVP_CIPHER_CTX_new();
+  if (!ctx) {
+    LOG_ERROR("Error in EVP_CIPHER_CTX_new");
+    return plaintext;
   }
 
-  if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)) {
-    return -1;
+  ret = EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
+  if (1 != ret) {
+    LOG_ERROR("Error in EVP_EncryptInit_ex");
+    EVP_CIPHER_CTX_free(ctx);
+    return plaintext;
   }
 
-  if (1 !=
-      EVP_EncryptUpdate(ctx, ciphertext_, &len, plaintext, plaintext_len)) {
-    return -1;
+  ret = EVP_EncryptUpdate(
+      ctx, ciphertext.data(), &len,
+      reinterpret_cast<const unsigned char*>(plaintext.data()),
+      plaintext.size());
+  if (1 != ret) {
+    LOG_ERROR("Error in EVP_EncryptUpdate");
+    EVP_CIPHER_CTX_free(ctx);
+    return plaintext;
   }
 
   ciphertext_len = len;
-  if (1 != EVP_EncryptFinal_ex(ctx, ciphertext_ + len, &len)) {
-    return -1;
+  ret = EVP_EncryptFinal_ex(ctx, ciphertext.data() + len, &len);
+  if (1 != ret) {
+    LOG_ERROR("Error in EVP_EncryptFinal_ex");
+    EVP_CIPHER_CTX_free(ctx);
+    return plaintext;
   }
 
   ciphertext_len += len;
+
+  unsigned char hex_str[256];
+  size_t hex_str_len = 0;
+  ret = OPENSSL_buf2hexstr_ex((char*)hex_str, sizeof(hex_str), &hex_str_len,
+                              ciphertext.data(), ciphertext_len, '\0');
+  if (1 != ret) {
+    LOG_ERROR("Error in OPENSSL_buf2hexstr_ex");
+    EVP_CIPHER_CTX_free(ctx);
+    return plaintext;
+  }
+
   EVP_CIPHER_CTX_free(ctx);
-  return ciphertext_len;
+
+  std::string str(reinterpret_cast<char*>(hex_str), hex_str_len);
+  return str;
 }
 
-int Thumbnail::AES_decrypt(unsigned char* ciphertext_, int ciphertext_len,
-                           unsigned char* key, unsigned char* iv,
-                           unsigned char* plaintext) {
+std::string Thumbnail::AES_decrypt(const std::string& ciphertext,
+                                   unsigned char* key, unsigned char* iv) {
+  unsigned char ciphertext_buf[256];
+  size_t ciphertext_buf_len = 0;
+  unsigned char plaintext[256];
+  int plaintext_len = 0;
+  int plaintext_final_len = 0;
   EVP_CIPHER_CTX* ctx;
-  int len;
-  int plaintext_len;
-  if (!(ctx = EVP_CIPHER_CTX_new())) {
-    return -1;
+  int ret = 0;
+
+  ret = OPENSSL_hexstr2buf_ex(ciphertext_buf, sizeof(ciphertext_buf),
+                              &ciphertext_buf_len, ciphertext.c_str(), '\0');
+  if (1 != ret) {
+    LOG_ERROR("Error in OPENSSL_hexstr2buf_ex");
+    return ciphertext;
   }
 
-  if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)) {
-    return -1;
+  ctx = EVP_CIPHER_CTX_new();
+  if (!ctx) {
+    LOG_ERROR("Error in EVP_CIPHER_CTX_new");
+    return ciphertext;
   }
 
-  if (1 !=
-      EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext_, ciphertext_len)) {
-    return -1;
+  ret = EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
+  if (1 != ret) {
+    LOG_ERROR("Error in EVP_DecryptInit_ex");
+
+    EVP_CIPHER_CTX_free(ctx);
+    return ciphertext;
   }
 
-  plaintext_len = len;
-  if (1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len)) {
-    return -1;
+  ret = EVP_DecryptUpdate(ctx, plaintext, &plaintext_len, ciphertext_buf,
+                          ciphertext_buf_len);
+  if (1 != ret) {
+    LOG_ERROR("Error in EVP_DecryptUpdate");
+
+    EVP_CIPHER_CTX_free(ctx);
+    return ciphertext;
   }
 
-  plaintext_len += len;
+  ret =
+      EVP_DecryptFinal_ex(ctx, plaintext + plaintext_len, &plaintext_final_len);
+  if (1 != ret) {
+    LOG_ERROR("Error in EVP_DecryptFinal_ex, ret [{}]", ret);
+
+    EVP_CIPHER_CTX_free(ctx);
+    return ciphertext;
+  }
+  plaintext_len += plaintext_final_len;
+
   EVP_CIPHER_CTX_free(ctx);
 
-  return plaintext_len;
+  return std::string(reinterpret_cast<char*>(plaintext), plaintext_len);
 }

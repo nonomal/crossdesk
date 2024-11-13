@@ -19,7 +19,7 @@ end
 add_requires("spdlog 1.14.1", {system = false})
 add_requires("imgui v1.91.4-docking", {configs = {sdl2 = true, sdl2_renderer = true}})
 add_requires("miniaudio 0.11.21")
-add_requires("openssl 1.1.1-w", {system = false})
+add_requires("openssl3 3.3.2", {system = false})
 
 if is_os("windows") then
     add_requires("libyuv")
@@ -125,7 +125,7 @@ target("localization")
 
 target("single_window")
     set_kind("object")
-    add_packages("libyuv", "openssl")
+    add_packages("libyuv", "openssl3")
     add_deps("rd_log", "common", "localization", "config_center", "projectx", "screen_capturer", "speaker_capturer", "device_controller")
     if is_os("macosx") then
         add_packages("ffmpeg")
