@@ -210,6 +210,9 @@ int Render::ShowRecentConnections() {
         LOG_ERROR("Connect to [{}], password [{}]", remote_id.c_str(),
                   password.c_str());
         remote_id_ = remote_id;
+        if (!password.empty() && password.size() == 6) {
+          remember_password_ = true;
+        }
         strncpy(remote_password_, password.c_str(), 6);
         ConnectTo();
       }
@@ -220,11 +223,10 @@ int Render::ShowRecentConnections() {
 
     ImGui::EndChild();
 
-    // 绘制纵向分割线
     if (count != recent_connections_count - 1) {
       ImVec2 line_start =
           ImVec2(image_screen_pos.x + recent_connection_image_width_ + 20.0f,
-                 image_screen_pos.y);  // 起点
+                 image_screen_pos.y);
       ImVec2 line_end = ImVec2(
           image_screen_pos.x + recent_connection_image_width_ + 20.0f,
           image_screen_pos.y + recent_connection_image_height_ + button_height);
