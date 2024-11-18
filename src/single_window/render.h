@@ -39,6 +39,7 @@ class Render {
   int MainWindow();
   int LocalWindow();
   int RemoteWindow();
+  int RecentConnectionsWindow();
   int SettingWindow();
   int ControlWindow();
   int ControlBar();

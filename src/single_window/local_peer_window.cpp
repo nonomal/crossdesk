@@ -20,7 +20,6 @@ int Render::LocalWindow() {
 
   ImGui::SetCursorPosY(ImGui::GetCursorPosY() + main_window_text_y_padding_);
   ImGui::Indent(main_child_window_x_padding_);
-  ImGui::SetWindowFontScale(1.0f);
 
   ImGui::TextColored(
       ImVec4(0.0f, 0.0f, 0.0f, 0.5f), "%s",
@@ -45,7 +44,7 @@ int Render::LocalWindow() {
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
     {
-      ImGui::SetWindowFontScale(0.5f);
+      ImGui::SetWindowFontScale(0.8f);
       ImGui::Text("%s",
                   localization::local_id[localization_language_index_].c_str());
 
@@ -70,17 +69,17 @@ int Render::LocalWindow() {
       ImGui::PopStyleVar();
 
       ImGui::SameLine();
+
       ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
       ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
       ImGui::SetWindowFontScale(0.5f);
-
       if (ImGui::Button(ICON_FA_COPY, ImVec2(35, 38))) {
         local_id_copied_ = true;
         ImGui::SetClipboardText(client_id_);
         copy_start_time_ = ImGui::GetTime();
       }
-
+      ImGui::SetWindowFontScale(1.0f);
       ImGui::PopStyleColor(3);
 
       auto time_duration = ImGui::GetTime() - copy_start_time_;
@@ -123,16 +122,14 @@ int Render::LocalWindow() {
         ImGui::End();
       }
 
-      ImGui::SetWindowFontScale(1.0f);
-
       ImGui::Spacing();
       ImGui::Separator();
       ImGui::Spacing();
 
-      ImGui::SetWindowFontScale(0.5f);
-
+      ImGui::SetWindowFontScale(0.8f);
       ImGui::Text("%s",
                   localization::password[localization_language_index_].c_str());
+      ImGui::SetWindowFontScale(1.0f);
 
       ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
       ImGui::Spacing();
@@ -157,7 +154,6 @@ int Render::LocalWindow() {
         }
       }
 
-      ImGui::SetWindowFontScale(1.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
       ImGui::InputTextWithHint(
           "##server_pwd",
@@ -174,7 +170,6 @@ int Render::LocalWindow() {
       ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
       ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-
       ImGui::SetWindowFontScale(0.5f);
       auto l_x = ImGui::GetCursorScreenPos().x;
       auto l_y = ImGui::GetCursorScreenPos().y;
@@ -246,9 +241,9 @@ int Render::LocalWindow() {
         auto window_height = ImGui::GetWindowSize().y;
         std::string text =
             localization::new_password[localization_language_index_];
-        auto text_width = ImGui::CalcTextSize(text.c_str()).x;
         ImGui::SetWindowFontScale(0.5f);
-        ImGui::SetCursorPosX((window_width - text_width / 2) * 0.5f);
+        auto text_width = ImGui::CalcTextSize(text.c_str()).x;
+        ImGui::SetCursorPosX((window_width - text_width) * 0.5f);
         ImGui::SetCursorPosY(window_height * 0.2f);
         ImGui::Text("%s", text.c_str());
 

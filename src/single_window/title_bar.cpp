@@ -14,8 +14,9 @@ int Render::TitleBar(bool main_window) {
       ImGuiChildFlags_Border,
       ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDecoration |
           ImGuiWindowFlags_NoBringToFrontOnFocus);
-  ImDrawList* draw_list = ImGui::GetWindowDrawList();
+  ImGui::SetWindowFontScale(1.0f);
 
+  ImDrawList* draw_list = ImGui::GetWindowDrawList();
   if (ImGui::BeginMenuBar()) {
     ImGui::SetCursorPosX(
         (main_window ? main_window_width_ : stream_window_width_) -
@@ -157,8 +158,6 @@ int Render::TitleBar(bool main_window) {
   }
 
   ImGui::EndMenuBar();
-  ImGui::SetWindowFontScale(1.0f);
-
   ImGui::EndChild();
   ImGui::PopStyleColor();
   return 0;

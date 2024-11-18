@@ -13,17 +13,16 @@ int Render::StatusBar() {
       ImGuiChildFlags_Border,
       ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
+  ImVec2 dot_pos =
+      ImVec2(13, main_window_height_default_ - status_bar_height_ + 11.0f);
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
-  draw_list->AddCircleFilled(
-      ImVec2(15, main_window_height_default_ - status_bar_height_ + 9.0f), 5,
-      ImColor(signal_connected_ ? 0.0f : 1.0f, signal_connected_ ? 1.0f : 0.0f,
-              0.0f),
-      100);
-  draw_list->AddCircle(
-      ImVec2(15, main_window_height_default_ - status_bar_height_ + 10.0f), 6,
-      ImColor(1.0f, 1.0f, 1.0f), 100);
+  draw_list->AddCircleFilled(dot_pos, 5.0f,
+                             ImColor(signal_connected_ ? 0.0f : 1.0f,
+                                     signal_connected_ ? 1.0f : 0.0f, 0.0f),
+                             100);
+  draw_list->AddCircle(dot_pos, 6.0f, ImColor(1.0f, 1.0f, 1.0f), 100);
 
-  ImGui::SetWindowFontScale(0.5f);
+  ImGui::SetWindowFontScale(0.6f);
   draw_list->AddText(
       ImVec2(25, main_window_height_default_ - status_bar_height_ + 3.0f),
       ImColor(0.0f, 0.0f, 0.0f),

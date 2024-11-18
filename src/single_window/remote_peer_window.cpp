@@ -21,7 +21,6 @@ int Render::RemoteWindow() {
 
   ImGui::SetCursorPosY(ImGui::GetCursorPosY() + main_window_text_y_padding_);
   ImGui::Indent(main_child_window_x_padding_ - 1.0f);
-  ImGui::SetWindowFontScale(1.0f);
 
   ImGui::TextColored(
       ImVec4(0.0f, 0.0f, 0.0f, 0.5f), "%s",
@@ -47,7 +46,7 @@ int Render::RemoteWindow() {
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
     {
-      ImGui::SetWindowFontScale(0.5f);
+      ImGui::SetWindowFontScale(0.8f);
       ImGui::Text(
           "%s", localization::remote_id[localization_language_index_].c_str());
 
