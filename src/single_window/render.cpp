@@ -408,7 +408,8 @@ int Render::CreateMainWindow() {
   ImGui::SetCurrentContext(main_ctx_);
 
   SDL_WindowFlags window_flags =
-      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
+      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS |
+                        SDL_WINDOW_HIDDEN);
   main_window_ = SDL_CreateWindow(
       "Remote Desk", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
       main_window_width_default_, main_window_height_default_, window_flags);
@@ -516,28 +517,13 @@ int Render::SetupFontAndStyle(bool is_main_window) {
   // Load Fonts
   ImFontConfig config;
   config.FontDataOwnedByAtlas = false;
-  (is_main_window ? font_size_32_main_ : font_size_32_sub_) =
-      io.Fonts->AddFontFromMemoryTTF(
-          OPPOSans_Regular_ttf, sizeof(OPPOSans_Regular_ttf), 32.0f, &config,
-          io.Fonts->GetGlyphRangesChineseFull());
+  io.Fonts->AddFontFromMemoryTTF(OPPOSans_Regular_ttf, OPPOSans_Regular_ttf_len,
+                                 32.0f, &config,
+                                 io.Fonts->GetGlyphRangesChineseFull());
   config.MergeMode = true;
-  (is_main_window ? font_size_25_main_ : font_size_25_sub_) =
-      io.Fonts->AddFontFromMemoryTTF(
-          OPPOSans_Regular_ttf, sizeof(OPPOSans_Regular_ttf), 25.0f, &config,
-          io.Fonts->GetGlyphRangesChineseFull());
-  (is_main_window ? font_size_16_main_ : font_size_16_sub_) =
-      io.Fonts->AddFontFromMemoryTTF(
-          OPPOSans_Regular_ttf, sizeof(OPPOSans_Regular_ttf), 16.0f, &config,
-          io.Fonts->GetGlyphRangesChineseFull());
-
   static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-  (is_main_window ? icon_size_30_main_ : icon_size_30_sub_) =
-      io.Fonts->AddFontFromMemoryTTF(fa_solid_900_ttf, fa_solid_900_ttf_len,
-                                     30.0f, &config, icon_ranges);
-  (is_main_window ? icon_size_15_main_ : icon_size_15_sub_) =
-      io.Fonts->AddFontFromMemoryTTF(fa_solid_900_ttf, fa_solid_900_ttf_len,
-                                     15.0f, &config, icon_ranges);
-
+  io.Fonts->AddFontFromMemoryTTF(fa_solid_900_ttf, fa_solid_900_ttf_len, 30.0f,
+                                 &config, icon_ranges);
   io.Fonts->Build();
   ImGui::StyleColorsLight();
 
@@ -930,9 +916,9 @@ int Render::Run() {
     }
 
     if (reload_recent_connections_ && main_renderer_) {
-      // loal recent connection thumbnails after saving for 1 second
+      // loal recent connection thumbnails after saving for 0.5 second
       uint32_t now_time = SDL_GetTicks();
-      if (now_time - recent_connection_image_save_time_ >= 1000) {
+      if (now_time - recent_connection_image_save_time_ >= 500) {
         int ret = thumbnail_->LoadThumbnail(
             main_renderer_, recent_connection_textures_,
             &recent_connection_image_width_, &recent_connection_image_height_);
@@ -958,6 +944,10 @@ int Render::Run() {
     }
 
     DrawMainWindow();
+
+    if (SDL_WINDOW_HIDDEN & SDL_GetWindowFlags(main_window_)) {
+      SDL_ShowWindow(main_window_);
+    }
 
     if (stream_window_inited_) {
       DrawStreamWindow();

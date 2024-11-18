@@ -193,7 +193,7 @@ class Render {
   int main_window_text_y_padding_ = 10;
   int main_child_window_x_padding_ = 27;
   int main_child_window_y_padding_ = 45;
-  int status_bar_height_ = 20;
+  int status_bar_height_ = 22;
   int connection_status_window_width_ = 200;
   int connection_status_window_height_ = 150;
   int notification_window_width_ = 200;
@@ -353,19 +353,6 @@ class Render {
 
  private:
   bool settings_window_pos_reset_ = true;
-
- private:
-  ImFont *font_size_32_main_ = nullptr;
-  ImFont *font_size_25_main_ = nullptr;
-  ImFont *font_size_16_main_ = nullptr;
-  ImFont *font_size_32_sub_ = nullptr;
-  ImFont *font_size_25_sub_ = nullptr;
-  ImFont *font_size_16_sub_ = nullptr;
-
-  ImFont *icon_size_30_main_ = nullptr;
-  ImFont *icon_size_15_main_ = nullptr;
-  ImFont *icon_size_30_sub_ = nullptr;
-  ImFont *icon_size_15_sub_ = nullptr;
 };
 
 #endif
