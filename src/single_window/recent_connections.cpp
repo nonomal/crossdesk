@@ -176,8 +176,6 @@ int Render::ShowRecentConnections() {
           connect + "##ConnectionTo" + it->first;
       if (ImGui::Button(connect_to_this_connection_button_name.c_str(),
                         ImVec2(button_width, button_height))) {
-        LOG_ERROR("Connect to [{}], password [{}]", remote_id.c_str(),
-                  password.c_str());
         remote_id_ = remote_id;
         if (!password.empty() && password.size() == 6) {
           remember_password_ = true;
