@@ -20,11 +20,11 @@ int Render::TitleBar(bool main_window) {
   if (ImGui::BeginMenuBar()) {
     ImGui::SetCursorPosX(
         (main_window ? main_window_width_ : stream_window_width_) -
-        (streaming_ ? BUTTON_PADDING * 4 - 3 : BUTTON_PADDING * 3 - 3));
+        (BUTTON_PADDING * 3 - 3));
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0.1f));
     ImGui::PushStyleColor(ImGuiCol_HeaderActive,
                           ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-    if (!streaming_) {
+    if (main_window) {
       float bar_pos_x = ImGui::GetCursorPosX() + 6;
       float bar_pos_y = ImGui::GetCursorPosY() + 15;
       std::string menu_button = "    ";  // ICON_FA_BARS;
@@ -61,9 +61,9 @@ int Render::TitleBar(bool main_window) {
     ImGui::PopStyleColor(2);
 
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-    ImGui::SetCursorPosX(
-        (main_window ? main_window_width_ : stream_window_width_) -
-        (streaming_ ? BUTTON_PADDING * 3 : BUTTON_PADDING * 2));
+    ImGui::SetCursorPosX(main_window
+                             ? (main_window_width_ - BUTTON_PADDING * 2)
+                             : (stream_window_width_ - BUTTON_PADDING * 3));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0.1f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive,
                           ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -80,10 +80,8 @@ int Render::TitleBar(bool main_window) {
                        IM_COL32(0, 0, 0, 255));
     ImGui::PopStyleColor(2);
 
-    if (streaming_) {
-      ImGui::SetCursorPosX(
-          (main_window ? main_window_width_ : stream_window_width_) -
-          BUTTON_PADDING * 2);
+    if (!main_window) {
+      ImGui::SetCursorPosX(stream_window_width_ - BUTTON_PADDING * 2);
       ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0.1f));
       ImGui::PushStyleColor(ImGuiCol_ButtonActive,
                             ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -97,7 +95,7 @@ int Render::TitleBar(bool main_window) {
             "##restore";  // ICON_FA_WINDOW_RESTORE;
         if (ImGui::Button(window_restore_button.c_str(),
                           ImVec2(BUTTON_PADDING, 30))) {
-          SDL_RestoreWindow(main_window ? main_window_ : stream_window_);
+          SDL_RestoreWindow(stream_window_);
           window_maximized_ = false;
         }
         draw_list->AddRect(ImVec2(pos_x_top, pos_y_top),
@@ -116,7 +114,7 @@ int Render::TitleBar(bool main_window) {
             "##maximize";  // ICON_FA_SQUARE_FULL;
         if (ImGui::Button(window_maximize_button.c_str(),
                           ImVec2(BUTTON_PADDING, 30))) {
-          SDL_MaximizeWindow(main_window ? main_window_ : stream_window_);
+          SDL_MaximizeWindow(stream_window_);
           window_maximized_ = !window_maximized_;
         }
         draw_list->AddRect(ImVec2(maximize_pos_x, maximize_pos_y),

@@ -70,6 +70,10 @@ int Render::SettingWindow() {
 
       ImGui::Separator();
 
+      if (streaming_) {
+        ImGui::BeginDisabled();
+      }
+
       {
         const char *video_quality_items[] = {
             localization::video_quality_high[localization_language_index_]
@@ -157,6 +161,10 @@ int Render::SettingWindow() {
         ImGui::Checkbox("##enable_turn", &enable_turn_);
       }
 
+      if (streaming_) {
+        ImGui::EndDisabled();
+      }
+
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
         ImGui::SetCursorPosX(SETTINGS_OK_BUTTON_PADDING_CN);
       } else {
@@ -226,7 +234,7 @@ int Render::SettingWindow() {
         LoadSettingsFromCacheFile();
 
         // Recreate peer instance
-        {
+        if (!streaming_) {
           LOG_INFO("Recreate peer instance");
           DestroyPeer(&peer_);
           is_create_connection_ = false;
