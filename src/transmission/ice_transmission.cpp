@@ -49,7 +49,7 @@ int IceTransmission::InitIceTransmission(
              uint32_t total_inbound_bitrate, uint32_t total_outbound_bitrate) {
         if (on_receive_net_status_report_) {
           on_receive_net_status_report_(
-              transmission_id_, traversal_type_, video_inbound_bitrate,
+              user_id_, traversal_type_, video_inbound_bitrate,
               video_outbound_bitrate, audio_inbound_bitrate,
               audio_outbound_bitrate, data_inbound_bitrate,
               data_outbound_bitrate, total_inbound_bitrate,
@@ -300,7 +300,7 @@ int IceTransmission::InitIceTransmission(
             ice_transmission_obj->traversal_type_ = TraversalType::TP2P;
           }
           ice_transmission_obj->on_receive_net_status_report_(
-              ice_transmission_obj->transmission_id_,
+              ice_transmission_obj->user_id_,
               ice_transmission_obj->traversal_type_, 0, 0, 0, 0, 0, 0, 0, 0,
               nullptr);
         }
