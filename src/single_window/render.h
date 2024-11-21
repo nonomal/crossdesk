@@ -305,6 +305,7 @@ class Render {
   bool show_confirm_delete_connection_ = false;
   bool delete_connection_ = false;
   bool remember_password_ = false;
+  bool re_enter_remote_id_ = false;
 
   double copy_start_time_ = 0;
   double regenerate_password_start_time_ = 0;

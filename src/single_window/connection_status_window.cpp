@@ -154,6 +154,7 @@ int Render::ConnectionStatusWindow() {
               localization::ok[localization_language_index_].c_str()) ||
           ImGui::IsKeyPressed(ImGuiKey_Enter)) {
         show_connection_status_window_ = false;
+        re_enter_remote_id_ = true;
       }
     }
 

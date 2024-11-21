@@ -54,6 +54,11 @@ int Render::RemoteWindow() {
       ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+      if (re_enter_remote_id_) {
+        ImGui::SetKeyboardFocusHere();
+        re_enter_remote_id_ = false;
+        memset(remote_id_display_, 0, sizeof(remote_id_display_));
+      }
       bool enter_pressed = ImGui::InputText(
           "##remote_id_", remote_id_display_, IM_ARRAYSIZE(remote_id_display_),
           ImGuiInputTextFlags_CharsUppercase |
