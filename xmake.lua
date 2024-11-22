@@ -109,7 +109,7 @@ target("device_controller")
         "src/device_controller/keyboard/windows", {public = true})
     elseif is_os("macosx") then
         add_files("src/device_controller/mouse/mac/*.cpp",
-        "src/device_controller/mouse/keyboard/*.cpp")
+        "src/device_controller/keyboard/mac/*.cpp")
         add_includedirs("src/device_controller/mouse/mac",
         "src/device_controller/keyboard/mac", {public = true})
     elseif is_os("linux") then

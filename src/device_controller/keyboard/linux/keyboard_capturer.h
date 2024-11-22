@@ -15,7 +15,7 @@ class KeyboardCapturer : public DeviceController {
   virtual ~KeyboardCapturer();
 
  public:
-  virtual int Hook();
+  virtual int Hook(OnKeyAction on_key_action, void *user_ptr);
   virtual int Unhook();
 
  private:

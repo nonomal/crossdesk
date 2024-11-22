@@ -123,14 +123,14 @@ int Render::ShowRecentConnections() {
       ImGui::SetCursorPos(
           ImVec2(dummy_button_pos.x + 2.0f, dummy_button_pos.y + 1.0f));
       ImGui::SetWindowFontScale(0.65f);
-      ImGui::Text(remote_id.c_str());
+      ImGui::Text("%s", remote_id.c_str());
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PopStyleColor(3);
 
       if (ImGui::IsItemHovered()) {
         ImGui::BeginTooltip();
         ImGui::SetWindowFontScale(0.5f);
-        ImGui::Text(host_name.c_str());
+        ImGui::Text("%s", host_name.c_str());
         ImGui::SetWindowFontScale(1.0f);
         ImGui::EndTooltip();
       }
@@ -264,7 +264,7 @@ int Render::ConfirmDeleteConnection() {
   auto text_width = ImGui::CalcTextSize(text.c_str()).x;
   ImGui::SetCursorPosX((window_width - text_width) * 0.5f);
   ImGui::SetCursorPosY(window_height * 0.2f);
-  ImGui::Text(text.c_str());
+  ImGui::Text("%s", text.c_str());
   ImGui::SetWindowFontScale(1.0f);
 
   ImGui::End();
