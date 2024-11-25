@@ -27,6 +27,11 @@ typedef void (*nice_cb_recv_t)(NiceAgent* agent, guint stream_id,
                                guint component_id, guint size, gchar* buffer,
                                gpointer data);
 
+typedef struct {
+  void* user_ptr_1_;
+  void* user_ptr_2_;
+} UserPtrSt;
+
 class IceAgent {
  public:
   IceAgent(bool offer_peer, bool use_trickle_ice, bool use_reliable_ice,
@@ -104,6 +109,11 @@ class IceAgent {
   nice_cb_gathering_done_t on_gathering_done_;
   nice_cb_recv_t on_recv_;
   void* user_ptr_;
+
+  UserPtrSt user_prt_st_;
+
+  FILE* file_in_ = nullptr;
+  FILE* file_out_ = nullptr;
 };
 
 #endif

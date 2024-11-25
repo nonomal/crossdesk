@@ -7,6 +7,8 @@
 
 #include "log.h"
 
+#define SAVE_IO_STREAM
+
 IceAgent::IceAgent(bool offer_peer, bool use_trickle_ice, bool use_reliable_ice,
                    bool enable_turn, bool force_turn, std::string &stun_ip,
                    uint16_t stun_port, std::string &turn_ip, uint16_t turn_port,
@@ -30,6 +32,20 @@ IceAgent::~IceAgent() {
   g_object_unref(agent_);
   g_free(ice_ufrag_);
   g_free(ice_password_);
+
+#ifdef SAVE_IO_STREAM
+  if (file_in_) {
+    fflush(file_in_);
+    fclose(file_in_);
+    file_in_ = nullptr;
+  }
+
+  if (file_out_) {
+    fflush(file_out_);
+    fclose(file_out_);
+    file_out_ = nullptr;
+  }
+#endif
 }
 
 int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
@@ -44,7 +60,13 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
 
   on_gathering_done_ = on_gathering_done;
   on_recv_ = on_recv;
+
+#ifdef SAVE_IO_STREAM
+  user_prt_st_.user_ptr_1_ = this;
+  user_prt_st_.user_ptr_2_ = user_ptr;
+#else
   user_ptr_ = user_ptr;
+#endif
 
   g_networking_init();
 
@@ -75,6 +97,17 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
     g_object_set(agent_, "stun-server-port", stun_port_, nullptr);
     g_object_set(agent_, "controlling-mode", controlling_, nullptr);
 
+#ifdef SAVE_IO_STREAM
+    g_signal_connect(agent_, "candidate-gathering-done",
+                     G_CALLBACK(on_gathering_done_), user_prt_st_.user_ptr_2_);
+    g_signal_connect(agent_, "new-selected-pair",
+                     G_CALLBACK(on_new_selected_pair_),
+                     user_prt_st_.user_ptr_2_);
+    g_signal_connect(agent_, "new-candidate", G_CALLBACK(on_new_candidate_),
+                     user_prt_st_.user_ptr_2_);
+    g_signal_connect(agent_, "component-state-changed",
+                     G_CALLBACK(on_state_changed_), user_prt_st_.user_ptr_2_);
+#else
     g_signal_connect(agent_, "candidate-gathering-done",
                      G_CALLBACK(on_gathering_done_), user_ptr_);
     g_signal_connect(agent_, "new-selected-pair",
@@ -83,6 +116,7 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
                      user_ptr_);
     g_signal_connect(agent_, "component-state-changed",
                      G_CALLBACK(on_state_changed_), user_ptr_);
+#endif
 
     stream_id_ = nice_agent_add_stream(agent_, n_components_);
     if (stream_id_ == 0) {
@@ -104,9 +138,26 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
       g_object_set(agent_, "force-relay", true, NULL);
     }
 
+#ifdef SAVE_IO_STREAM
+    nice_agent_attach_recv(
+        agent_, stream_id_, NICE_COMPONENT_TYPE_RTP,
+        g_main_loop_get_context(gloop_),
+        [](NiceAgent *agent, guint stream_id, guint component_id, guint size,
+           gchar *buffer, gpointer data) -> void {
+          if (data) {
+            UserPtrSt *user_prt_st = (UserPtrSt *)data;
+            IceAgent *ice_agent = (IceAgent *)(user_prt_st->user_ptr_1_);
+            ice_agent->on_recv_(agent, stream_id, component_id, size, buffer,
+                                user_prt_st->user_ptr_2_);
+            fwrite(buffer, 1, size, ice_agent->file_in_);
+          }
+        },
+        (void *)&user_prt_st_);
+#else
     nice_agent_attach_recv(agent_, stream_id_, NICE_COMPONENT_TYPE_RTP,
                            g_main_loop_get_context(gloop_), on_recv_,
                            user_ptr_);
+#endif
 
     nice_inited_ = true;
     g_main_loop_run(gloop_);
@@ -116,6 +167,23 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
   do {
     g_usleep(1000);
   } while (!nice_inited_);
+
+#ifdef SAVE_IO_STREAM
+  std::string in_file_name =
+      "ice_in_" + std::to_string(reinterpret_cast<std::uintptr_t>(this)) +
+      ".rtp";
+  std::string out_file_name =
+      "ice_out_" + std::to_string(reinterpret_cast<std::uintptr_t>(this)) +
+      ".rtp";
+  file_in_ = fopen(in_file_name.c_str(), "w+b");
+  if (!file_in_) {
+    LOG_WARN("Fail to open ice_in.rtp");
+  }
+  file_out_ = fopen(out_file_name.c_str(), "w+b");
+  if (!file_in_) {
+    LOG_WARN("Fail to open ice_out.rtp");
+  }
+#endif
 
   LOG_INFO("Nice agent init finish");
 
@@ -317,5 +385,10 @@ int IceAgent::Send(const char *data, size_t size) {
   // }
 
   int ret = nice_agent_send(agent_, stream_id_, 1, size, data);
+
+#ifdef SAVE_IO_STREAM
+  fwrite(data, 1, size, file_out_);
+#endif
+
   return 0;
 }
