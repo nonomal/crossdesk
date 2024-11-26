@@ -88,7 +88,8 @@ int Render::ControlBar() {
         RemoteAction remote_action;
         remote_action.type = ControlType::audio_capture;
         remote_action.a = audio_capture_button_pressed_;
-        SendData(peer_, (const char*)&remote_action, sizeof(remote_action));
+        SendDataFrame(peer_, (const char*)&remote_action,
+                      sizeof(remote_action));
       }
     }
     if (!audio_capture_button_pressed_) {

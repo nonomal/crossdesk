@@ -26,6 +26,8 @@ if is_os("windows") then
     add_links("Shell32", "windowsapp", "dwmapi", "User32", "kernel32",
         "SDL2-static", "SDL2main", "gdi32", "winmm", "setupapi", "version",
         "Imm32", "iphlpapi")
+    -- add_cxflags("/W4", "/WX")
+     add_cxflags("/W4")
 elseif is_os("linux") then
     add_requires("ffmpeg 5.1.2", {system = false})
     add_syslinks("pthread", "dl")
@@ -36,12 +38,14 @@ elseif is_os("linux") then
         "-lasound", "-lxcb-shape", "-lxcb-xfixes", "-lsndio", "-lxcb", 
         "-lxcb-shm", "-lXext", "-lX11", "-lXv", "-ldl", "-lpthread",
         {force = true})
+    add_cxflags("-Wno-unused-variable")   
 elseif is_os("macosx") then
     add_requires("ffmpeg 5.1.2", {system = false})
     add_requires("libxcb", {system = false})
     add_packages("libxcb")
     add_links("SDL2", "SDL2main")
     add_ldflags("-Wl,-ld_classic")
+    add_cxflags("-Wno-unused-variable")
     add_frameworks("OpenGL", "IOSurface", "ScreenCaptureKit")
 end
 
