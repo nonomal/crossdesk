@@ -2,23 +2,27 @@
 
 #include "log.h"
 
-#define SAVE_RECEIVED_AV1_STREAM 0
-#define SAVE_DECODED_NV12_STREAM 0
+// #define SAVE_DECODED_NV12_STREAM
+// #define SAVE_RECEIVED_AV1_STREAM
 
 AomAv1Decoder::AomAv1Decoder() {}
 
 AomAv1Decoder::~AomAv1Decoder() {
-  if (SAVE_RECEIVED_AV1_STREAM && file_av1_) {
-    fflush(file_av1_);
-    fclose(file_av1_);
-    file_av1_ = nullptr;
-  }
-
-  if (SAVE_DECODED_NV12_STREAM && file_nv12_) {
+#ifdef SAVE_DECODED_NV12_STREAM
+  if (file_nv12_) {
     fflush(file_nv12_);
     fclose(file_nv12_);
     file_nv12_ = nullptr;
   }
+#endif
+
+#ifdef SAVE_RECEIVED_AV1_STREAM
+  if (file_av1_) {
+    fflush(file_av1_);
+    fclose(file_av1_);
+    file_av1_ = nullptr;
+  }
+#endif
 
   if (nv12_frame_) {
     delete nv12_frame_;
@@ -43,29 +47,29 @@ int AomAv1Decoder::Init() {
   aom_codec_control(&aom_av1_decoder_ctx_, AV1D_GET_IMG_FORMAT,
                     AOM_IMG_FMT_NV12);
 
-  if (SAVE_RECEIVED_AV1_STREAM) {
-    file_av1_ = fopen("received_av1_stream.ivf", "w+b");
-    if (!file_av1_) {
-      LOG_WARN("Fail to open received_av1_stream.ivf");
-    }
+#ifdef SAVE_DECODED_NV12_STREAM
+  file_nv12_ = fopen("decoded_nv12_stream.yuv", "w+b");
+  if (!file_nv12_) {
+    LOG_WARN("Fail to open decoded_nv12_stream.yuv");
   }
+#endif
 
-  if (SAVE_DECODED_NV12_STREAM) {
-    file_nv12_ = fopen("decoded_nv12_stream.yuv", "w+b");
-    if (!file_nv12_) {
-      LOG_WARN("Fail to open decoded_nv12_stream.yuv");
-    }
+#ifdef SAVE_RECEIVED_AV1_STREAM
+  file_av1_ = fopen("received_av1_stream.ivf", "w+b");
+  if (!file_av1_) {
+    LOG_WARN("Fail to open received_av1_stream.ivf");
   }
+#endif
 
   return 0;
 }
 
 int AomAv1Decoder::Decode(
-    const uint8_t *data, int size,
+    const uint8_t *data, size_t size,
     std::function<void(VideoFrame)> on_receive_decoded_frame) {
-  if (SAVE_RECEIVED_AV1_STREAM) {
-    fwrite((unsigned char *)data, 1, size, file_av1_);
-  }
+#ifdef SAVE_RECEIVED_AV1_STREAM
+  fwrite((unsigned char *)data, 1, size, file_av1_);
+#endif
 
   aom_codec_iter_t iter = nullptr;
   aom_codec_err_t ret =
@@ -105,8 +109,8 @@ int AomAv1Decoder::Decode(
       }
     }
     int corrupted = 0;
-    int ret = aom_codec_control(&aom_av1_decoder_ctx_, AOMD_GET_FRAME_CORRUPTED,
-                                &corrupted);
+    ret = aom_codec_control(&aom_av1_decoder_ctx_, AOMD_GET_FRAME_CORRUPTED,
+                            &corrupted);
     if (ret != AOM_CODEC_OK) {
       LOG_ERROR("Failed to get frame corrupted");
       return -1;
@@ -140,10 +144,10 @@ int AomAv1Decoder::Decode(
 
     on_receive_decoded_frame(*nv12_frame_);
 
-    if (SAVE_DECODED_NV12_STREAM) {
-      fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
-             file_nv12_);
-    }
+#ifdef SAVE_DECODED_NV12_STREAM
+    fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
+           file_nv12_);
+#endif
 
     return 0;
   }

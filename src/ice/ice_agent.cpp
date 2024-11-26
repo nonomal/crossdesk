@@ -190,11 +190,10 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
   return 0;
 }
 
-void cb_closed(GObject *src, GAsyncResult *res, gpointer data) {
-  NiceAgent *agent = NICE_AGENT(src);
-  g_debug("test-turn:%s: %p", G_STRFUNC, agent);
-
-  *((gboolean *)data) = TRUE;
+void cb_closed(GObject *src, [[maybe_unused]] GAsyncResult *res,
+               [[maybe_unused]] gpointer data) {
+  [[maybe_unused]] NiceAgent *agent = NICE_AGENT(src);
+  LOG_INFO("Nice agent closed");
 }
 
 int IceAgent::DestroyIceAgent() {
@@ -384,11 +383,11 @@ int IceAgent::Send(const char *data, size_t size) {
   //   return -1;
   // }
 
-  int ret = nice_agent_send(agent_, stream_id_, 1, size, data);
+  bool ret = nice_agent_send(agent_, stream_id_, 1, (guint)size, data);
 
 #ifdef SAVE_IO_STREAM
   fwrite(data, 1, size, file_out_);
 #endif
 
-  return 0;
+  return ret ? 0 : -1;
 }

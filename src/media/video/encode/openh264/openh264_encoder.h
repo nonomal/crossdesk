@@ -23,19 +23,11 @@ class OpenH264Encoder : public VideoEncoder {
   virtual ~OpenH264Encoder();
 
   int Init();
-  int Encode(const uint8_t* pData, int nSize,
-             std::function<int(char* encoded_packets, size_t size,
-                               VideoFrameType frame_type)>
-                 on_encoded_image) {
-    return 0;
-  }
 
   int Encode(const XVideoFrame* video_frame,
              std::function<int(char* encoded_packets, size_t size,
                                VideoFrameType frame_type)>
                  on_encoded_image);
-
-  int OnEncodedImage(char* encoded_packets, size_t size);
 
   int ForceIdr();
 
@@ -48,8 +40,8 @@ class OpenH264Encoder : public VideoEncoder {
   int Release();
 
  private:
-  int frame_width_ = 1280;
-  int frame_height_ = 720;
+  uint32_t frame_width_ = 1280;
+  uint32_t frame_height_ = 720;
   int key_frame_interval_ = 300;
   int target_bitrate_ = 10000000;
   int max_bitrate_ = 10000000;
@@ -68,10 +60,10 @@ class OpenH264Encoder : public VideoEncoder {
   int video_format_;
   SSourcePicture raw_frame_;
   unsigned char* yuv420p_frame_ = nullptr;
-  int yuv420p_frame_capacity_ = 0;
+  size_t yuv420p_frame_capacity_ = 0;
   uint8_t* encoded_frame_ = nullptr;
-  int encoded_frame_capacity_ = 0;
-  int encoded_frame_size_ = 0;
+  size_t encoded_frame_capacity_ = 0;
+  size_t encoded_frame_size_ = 0;
   bool got_output = false;
   bool is_keyframe = false;
   int temporal_ = 1;

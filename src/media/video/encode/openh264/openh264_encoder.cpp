@@ -5,17 +5,15 @@
 #include "libyuv.h"
 #include "log.h"
 
-#define SAVE_RECEIVED_NV12_STREAM 0
-#define SAVE_ENCODED_H264_STREAM 0
+// #define SAVE_RECEIVED_NV12_STREAM
+// #define SAVE_ENCODED_H264_STREAM
 
 void Nv12ToI420(unsigned char *Src_data, int src_width, int src_height,
                 unsigned char *Dst_data) {
-  // NV12 video size
-  int NV12_Size = src_width * src_height * 3 / 2;
+  // NV12
   int NV12_Y_Size = src_width * src_height;
 
-  // YUV420 video size
-  int I420_Size = src_width * src_height * 3 / 2;
+  // YUV420
   int I420_Y_Size = src_width * src_height;
   int I420_U_Size = (src_width >> 1) * (src_height >> 1);
   int I420_V_Size = I420_U_Size;
@@ -29,7 +27,7 @@ void Nv12ToI420(unsigned char *Src_data, int src_width, int src_height,
   // dst: buffer address of Y channel、U channel and V channel
   unsigned char *Y_data_Dst = Dst_data;
   unsigned char *U_data_Dst = Dst_data + I420_Y_Size;
-  unsigned char *V_data_Dst = Dst_data + I420_Y_Size + I420_U_Size;
+  unsigned char *V_data_Dst = Dst_data + I420_Y_Size + I420_V_Size;
   int Dst_Stride_Y = src_width;
   int Dst_Stride_U = src_width >> 1;
   int Dst_Stride_V = Dst_Stride_U;
@@ -43,17 +41,21 @@ void Nv12ToI420(unsigned char *Src_data, int src_width, int src_height,
 OpenH264Encoder::OpenH264Encoder() {}
 
 OpenH264Encoder::~OpenH264Encoder() {
-  if (SAVE_RECEIVED_NV12_STREAM && file_nv12_) {
+#ifdef SAVE_RECEIVED_NV12_STREAM
+  if (file_nv12_) {
     fflush(file_nv12_);
     fclose(file_nv12_);
     file_nv12_ = nullptr;
   }
+#endif
 
-  if (SAVE_ENCODED_H264_STREAM && file_h264_) {
+#ifdef SAVE_ENCODED_H264_STREAM
+  if (file_h264_) {
     fflush(file_h264_);
     fclose(file_h264_);
     file_h264_ = nullptr;
   }
+#endif
 
   if (yuv420p_frame_) {
     delete[] yuv420p_frame_;
@@ -160,19 +162,19 @@ int OpenH264Encoder::Init() {
   video_format_ = EVideoFormatType::videoFormatI420;
   openh264_encoder_->SetOption(ENCODER_OPTION_DATAFORMAT, &video_format_);
 
-  if (SAVE_RECEIVED_NV12_STREAM) {
-    file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
-    if (!file_nv12_) {
-      LOG_WARN("Fail to open received_nv12_stream.yuv");
-    }
+#ifdef SAVE_RECEIVED_NV12_STREAM
+  file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
+  if (!file_nv12_) {
+    LOG_WARN("Fail to open received_nv12_stream.yuv");
   }
+#endif
 
-  if (SAVE_ENCODED_H264_STREAM) {
-    file_h264_ = fopen("encoded_h264_stream.h264", "w+b");
-    if (!file_h264_) {
-      LOG_WARN("Fail to open encoded_h264_stream.h264");
-    }
+#ifdef SAVE_ENCODED_H264_STREAM
+  file_h264_ = fopen("encoded_h264_stream.h264", "w+b");
+  if (!file_h264_) {
+    LOG_WARN("Fail to open encoded_h264_stream.h264");
   }
+#endif
 
   return 0;
 }
@@ -187,9 +189,9 @@ int OpenH264Encoder::Encode(
     return -1;
   }
 
-  if (SAVE_RECEIVED_NV12_STREAM) {
-    fwrite(video_frame->data, 1, video_frame->size, file_nv12_);
-  }
+#ifdef SAVE_RECEIVED_NV12_STREAM
+  fwrite(video_frame->data, 1, video_frame->size, file_nv12_);
+#endif
 
   if (!yuv420p_frame_) {
     yuv420p_frame_capacity_ = video_frame->size;
@@ -267,7 +269,7 @@ int OpenH264Encoder::Encode(
   }
 
   size_t frag = 0;
-  int encoded_frame_size = 0;
+  size_t encoded_frame_size = 0;
   for (int layer = 0; layer < info.iLayerNum; ++layer) {
     const SLayerBSInfo &layerInfo = info.sLayerInfo[layer];
     size_t layer_len = 0;
@@ -281,11 +283,9 @@ int OpenH264Encoder::Encode(
 
   if (on_encoded_image) {
     on_encoded_image((char *)encoded_frame_, encoded_frame_size_, frame_type);
-    if (SAVE_ENCODED_H264_STREAM) {
-      fwrite(encoded_frame_, 1, encoded_frame_size_, file_h264_);
-    }
-  } else {
-    OnEncodedImage((char *)encoded_frame_, encoded_frame_size_);
+#ifdef SAVE_ENCODED_H264_STREAM
+    fwrite(encoded_frame_, 1, encoded_frame_size_, file_h264_);
+#endif
   }
 #else
   if (info.eFrameType == videoFrameTypeInvalid) {
@@ -327,11 +327,9 @@ int OpenH264Encoder::Encode(
 
     if (on_encoded_image) {
       on_encoded_image((char *)encoded_frame_, frame_type);
-      if (SAVE_ENCODED_H264_STREAM) {
-        fwrite(encoded_frame_, 1, encoded_frame_size_, file_h264_);
-      }
-    } else {
-      OnEncodedImage((char *)encoded_frame_, encoded_frame_size_);
+#ifdef SAVE_ENCODED_H264_STREAM
+      fwrite(encoded_frame_, 1, encoded_frame_size_, file_h264_);
+#endif
     }
 
     EVideoFrameType ft_temp = info.eFrameType;
@@ -350,11 +348,6 @@ int OpenH264Encoder::Encode(
   }
 #endif
 
-  return 0;
-}
-
-int OpenH264Encoder::OnEncodedImage(char *encoded_packets, size_t size) {
-  LOG_INFO("OnEncodedImage not implemented");
   return 0;
 }
 

@@ -20,18 +20,18 @@ class Dav1dAv1Decoder : public VideoDecoder {
  public:
   int Init();
 
-  int Decode(const uint8_t *data, int size,
+  int Decode(const uint8_t *data, size_t size,
              std::function<void(VideoFrame)> on_receive_decoded_frame);
 
   std::string GetDecoderName() { return "Dav1dAv1"; }
 
  private:
   VideoFrame *nv12_frame_ = 0;
-  int nv12_frame_capacity_ = 0;
-  int nv12_frame_size_ = 0;
+  size_t nv12_frame_capacity_ = 0;
+  size_t nv12_frame_size_ = 0;
 
-  int frame_width_ = 0;
-  int frame_height_ = 0;
+  uint32_t frame_width_ = 0;
+  uint32_t frame_height_ = 0;
 
   FILE *file_av1_ = nullptr;
   FILE *file_nv12_ = nullptr;

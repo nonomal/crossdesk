@@ -769,12 +769,11 @@ uint32_t NvEncoder::GetWidthInBytes(const NV_ENC_BUFFER_FORMAT bufferFormat,
       return width * 4;
     default:
       NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-      return 0;
+      // return 0;
   }
 }
 
-uint32_t NvEncoder::GetNumChromaPlanes(
-    const NV_ENC_BUFFER_FORMAT bufferFormat) {
+int32_t NvEncoder::GetNumChromaPlanes(const NV_ENC_BUFFER_FORMAT bufferFormat) {
   switch (bufferFormat) {
     case NV_ENC_BUFFER_FORMAT_NV12:
     case NV_ENC_BUFFER_FORMAT_YUV420_10BIT:
@@ -792,12 +791,12 @@ uint32_t NvEncoder::GetNumChromaPlanes(
       return 0;
     default:
       NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-      return -1;
+      // return -1;
   }
 }
 
-uint32_t NvEncoder::GetChromaPitch(const NV_ENC_BUFFER_FORMAT bufferFormat,
-                                   const uint32_t lumaPitch) {
+int32_t NvEncoder::GetChromaPitch(const NV_ENC_BUFFER_FORMAT bufferFormat,
+                                  const uint32_t lumaPitch) {
   switch (bufferFormat) {
     case NV_ENC_BUFFER_FORMAT_NV12:
     case NV_ENC_BUFFER_FORMAT_YUV420_10BIT:
@@ -815,7 +814,7 @@ uint32_t NvEncoder::GetChromaPitch(const NV_ENC_BUFFER_FORMAT bufferFormat,
       return 0;
     default:
       NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-      return -1;
+      // return -1;
   }
 }
 
@@ -871,7 +870,7 @@ uint32_t NvEncoder::GetChromaHeight(const NV_ENC_BUFFER_FORMAT bufferFormat,
       return 0;
     default:
       NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-      return 0;
+      // return 0;
   }
 }
 
@@ -897,7 +896,7 @@ uint32_t NvEncoder::GetChromaWidthInBytes(
       return 0;
     default:
       NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-      return 0;
+      // return 0;
   }
 }
 
@@ -934,7 +933,7 @@ int NvEncoder::GetFrameSize() const {
       return 4 * GetEncodeWidth() * GetEncodeHeight();
     default:
       NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-      return 0;
+      // return 0;
   }
 }
 

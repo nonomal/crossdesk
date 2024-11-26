@@ -2,8 +2,8 @@
 
 #include "log.h"
 
-#define SAVE_RECEIVED_AV1_STREAM 0
-#define SAVE_DECODED_NV12_STREAM 0
+// #define SAVE_DECODED_NV12_STREAM
+// #define SAVE_RECEIVED_AV1_STREAM
 
 #include "libyuv.h"
 
@@ -28,7 +28,8 @@ class ScopedDav1dData {
 };
 
 // Calling `dav1d_data_wrap` requires a `free_callback` to be registered.
-void NullFreeCallback(const uint8_t *buffer, void *opaque) {}
+void NullFreeCallback([[maybe_unused]] const uint8_t *buffer,
+                      [[maybe_unused]] void *opaque) {}
 
 void Yuv420pToNv12(unsigned char *SrcY, unsigned char *SrcU,
                    unsigned char *SrcV, int y_stride, int uv_stride,
@@ -49,17 +50,21 @@ void Yuv420pToNv12(unsigned char *SrcY, unsigned char *SrcU,
 Dav1dAv1Decoder::Dav1dAv1Decoder() {}
 
 Dav1dAv1Decoder::~Dav1dAv1Decoder() {
-  if (SAVE_RECEIVED_AV1_STREAM && file_av1_) {
-    fflush(file_av1_);
-    fclose(file_av1_);
-    file_av1_ = nullptr;
-  }
-
-  if (SAVE_DECODED_NV12_STREAM && file_nv12_) {
+#ifdef SAVE_DECODED_NV12_STREAM
+  if (file_nv12_) {
     fflush(file_nv12_);
     fclose(file_nv12_);
     file_nv12_ = nullptr;
   }
+#endif
+
+#ifdef SAVE_RECEIVED_AV1_STREAM
+  if (file_av1_) {
+    fflush(file_av1_);
+    fclose(file_av1_);
+    file_av1_ = nullptr;
+  }
+#endif
 
   if (nv12_frame_) {
     delete nv12_frame_;
@@ -83,29 +88,29 @@ int Dav1dAv1Decoder::Init() {
     LOG_ERROR("Dav1d AV1 decoder open failed");
   }
 
-  if (SAVE_RECEIVED_AV1_STREAM) {
-    file_av1_ = fopen("received_av1_stream.ivf", "w+b");
-    if (!file_av1_) {
-      LOG_WARN("Fail to open received_av1_stream.ivf");
-    }
+#ifdef SAVE_DECODED_NV12_STREAM
+  file_nv12_ = fopen("decoded_nv12_stream.yuv", "w+b");
+  if (!file_nv12_) {
+    LOG_WARN("Fail to open decoded_nv12_stream.yuv");
   }
+#endif
 
-  if (SAVE_DECODED_NV12_STREAM) {
-    file_nv12_ = fopen("decoded_nv12_stream.yuv", "w+b");
-    if (!file_nv12_) {
-      LOG_WARN("Fail to open decoded_nv12_stream.yuv");
-    }
+#ifdef SAVE_RECEIVED_AV1_STREAM
+  file_av1_ = fopen("received_av1_stream.ivf", "w+b");
+  if (!file_av1_) {
+    LOG_WARN("Fail to open received_av1_stream.ivf");
   }
+#endif
 
   return 0;
 }
 
 int Dav1dAv1Decoder::Decode(
-    const uint8_t *data, int size,
+    const uint8_t *data, size_t size,
     std::function<void(VideoFrame)> on_receive_decoded_frame) {
-  if (SAVE_RECEIVED_AV1_STREAM) {
-    fwrite((unsigned char *)data, 1, size, file_av1_);
-  }
+#ifdef SAVE_RECEIVED_AV1_STREAM
+  fwrite((unsigned char *)data, 1, size, file_av1_);
+#endif
 
   ScopedDav1dData scoped_dav1d_data;
   Dav1dData &dav1d_data = scoped_dav1d_data.Data();
@@ -176,14 +181,14 @@ int Dav1dAv1Decoder::Decode(
     Yuv420pToNv12((unsigned char *)dav1d_picture.data[0],
                   (unsigned char *)dav1d_picture.data[1],
                   (unsigned char *)dav1d_picture.data[2],
-                  dav1d_picture.stride[0], dav1d_picture.stride[1],
+                  (int)dav1d_picture.stride[0], (int)dav1d_picture.stride[1],
                   (unsigned char *)nv12_frame_->Buffer(), frame_width_,
                   frame_height_);
   } else {
     libyuv::I420ToNV12(
-        (const uint8_t *)dav1d_picture.data[0], dav1d_picture.stride[0],
-        (const uint8_t *)dav1d_picture.data[1], dav1d_picture.stride[1],
-        (const uint8_t *)dav1d_picture.data[2], dav1d_picture.stride[1],
+        (const uint8_t *)dav1d_picture.data[0], (int)dav1d_picture.stride[0],
+        (const uint8_t *)dav1d_picture.data[1], (int)dav1d_picture.stride[1],
+        (const uint8_t *)dav1d_picture.data[2], (int)dav1d_picture.stride[1],
         (uint8_t *)nv12_frame_->Buffer(), frame_width_,
         (uint8_t *)nv12_frame_->Buffer() + frame_width_ * frame_height_,
         frame_width_, frame_width_, frame_height_);
@@ -191,10 +196,10 @@ int Dav1dAv1Decoder::Decode(
 
   on_receive_decoded_frame(*nv12_frame_);
 
-  if (SAVE_DECODED_NV12_STREAM) {
-    fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
-           file_nv12_);
-  }
+#ifdef SAVE_DECODED_NV12_STREAM
+  fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
+         file_nv12_);
+#endif
 
   return 0;
 }

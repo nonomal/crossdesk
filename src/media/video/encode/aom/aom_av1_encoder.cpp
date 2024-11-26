@@ -5,8 +5,8 @@
 
 #include "log.h"
 
-#define SAVE_RECEIVED_NV12_STREAM 0
-#define SAVE_ENCODED_AV1_STREAM 0
+// #define SAVE_RECEIVED_NV12_STREAM
+// #define SAVE_ENCODED_AV1_STREAM
 
 #define SET_ENCODER_PARAM_OR_RETURN_ERROR(param_id, param_value) \
   do {                                                           \
@@ -104,17 +104,21 @@ int AomAv1Encoder::ResetEncodeResolution(unsigned int width,
 AomAv1Encoder::AomAv1Encoder() {}
 
 AomAv1Encoder::~AomAv1Encoder() {
-  if (SAVE_RECEIVED_NV12_STREAM && file_nv12_) {
+#ifdef SAVE_RECEIVED_NV12_STREAM
+  if (file_nv12_) {
     fflush(file_nv12_);
     fclose(file_nv12_);
     file_nv12_ = nullptr;
   }
+#endif
 
-  if (SAVE_ENCODED_AV1_STREAM && file_av1_) {
+#ifdef SAVE_ENCODED_AV1_STREAM
+  if (file_av1_) {
     fflush(file_av1_);
     fclose(file_av1_);
     file_av1_ = nullptr;
   }
+#endif
 
   delete[] encoded_frame_;
   encoded_frame_ = nullptr;
@@ -245,19 +249,19 @@ int AomAv1Encoder::Init() {
   frame_for_encode_ = aom_img_wrap(nullptr, AOM_IMG_FMT_NV12, frame_width_,
                                    frame_height_, 1, nullptr);
 
-  if (SAVE_RECEIVED_NV12_STREAM) {
-    file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
-    if (!file_nv12_) {
-      LOG_ERROR("Fail to open received_nv12_stream.yuv");
-    }
+#ifdef SAVE_RECEIVED_NV12_STREAM
+  file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
+  if (!file_nv12_) {
+    LOG_ERROR("Fail to open received_nv12_stream.yuv");
   }
+#endif
 
-  if (SAVE_ENCODED_AV1_STREAM) {
-    file_av1_ = fopen("encoded_av1_stream.ivf", "w+b");
-    if (!file_av1_) {
-      LOG_ERROR("Fail to open encoded_av1_stream.ivf");
-    }
+#ifdef SAVE_ENCODED_AV1_STREAM
+  file_av1_ = fopen("encoded_av1_stream.ivf", "w+b");
+  if (!file_av1_) {
+    LOG_ERROR("Fail to open encoded_av1_stream.ivf");
   }
+#endif
 
   return 0;
 }
@@ -266,9 +270,9 @@ int AomAv1Encoder::Encode(const XVideoFrame *video_frame,
                           std::function<int(char *encoded_packets, size_t size,
                                             VideoFrameType frame_type)>
                               on_encoded_image) {
-  if (SAVE_RECEIVED_NV12_STREAM) {
-    fwrite(video_frame->data, 1, video_frame->size, file_nv12_);
-  }
+#ifdef SAVE_RECEIVED_NV12_STREAM
+  fwrite(video_frame->data, 1, video_frame->size, file_nv12_);
+#endif
 
   aom_codec_err_t ret = AOM_CODEC_OK;
 
@@ -293,7 +297,7 @@ int AomAv1Encoder::Encode(const XVideoFrame *video_frame,
   }
 
   const uint32_t duration =
-      kRtpTicksPerSecond / static_cast<float>(max_frame_rate_);
+      (uint32_t)(kRtpTicksPerSecond / static_cast<float>(max_frame_rate_));
   timestamp_ += duration;
 
   frame_for_encode_->planes[AOM_PLANE_Y] = (unsigned char *)(video_frame->data);
@@ -327,7 +331,6 @@ int AomAv1Encoder::Encode(const XVideoFrame *video_frame,
   }
 
   aom_codec_iter_t iter = nullptr;
-  int data_pkt_count = 0;
   while (const aom_codec_cx_pkt_t *pkt =
              aom_codec_get_cx_data(&aom_av1_encoder_ctx_, &iter)) {
     if (pkt->kind == AOM_CODEC_CX_FRAME_PKT && pkt->data.frame.sz > 0) {
@@ -341,20 +344,13 @@ int AomAv1Encoder::Encode(const XVideoFrame *video_frame,
       if (on_encoded_image) {
         on_encoded_image((char *)encoded_frame_, encoded_frame_size_,
                          frame_type);
-        if (SAVE_ENCODED_AV1_STREAM) {
-          fwrite(encoded_frame_, 1, encoded_frame_size_, file_av1_);
-        }
-      } else {
-        OnEncodedImage((char *)encoded_frame_, encoded_frame_size_);
+#ifdef SAVE_ENCODED_AV1_STREAM
+        fwrite(encoded_frame_, 1, encoded_frame_size_, file_av1_);
+#endif
       }
     }
   }
 
-  return 0;
-}
-
-int AomAv1Encoder::OnEncodedImage(char *encoded_packets, size_t size) {
-  LOG_INFO("OnEncodedImage not implemented");
   return 0;
 }
 

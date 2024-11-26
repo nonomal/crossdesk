@@ -36,11 +36,11 @@ int AudioDecoder::Init() {
 }
 
 int AudioDecoder::Decode(
-    const uint8_t* data, int size,
+    const uint8_t* data, size_t size,
     std::function<void(uint8_t*, int)> on_receive_decoded_frame) {
   // LOG_ERROR("input opus size = {}", size);
-  auto frame_size =
-      opus_decode(opus_decoder_, data, size, out_data, MAX_FRAME_SIZE, 0);
+  auto frame_size = opus_decode(opus_decoder_, data, (opus_int32)size, out_data,
+                                MAX_FRAME_SIZE, 0);
 
   if (frame_size < 0) {
     LOG_ERROR("Decode opus frame failed");

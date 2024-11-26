@@ -14,7 +14,7 @@ class NvidiaVideoDecoder : public VideoDecoder {
  public:
   int Init();
 
-  int Decode(const uint8_t* data, int size,
+  int Decode(const uint8_t* data, size_t size,
              std::function<void(VideoFrame)> on_receive_decoded_frame);
 
   std::string GetDecoderName() { return "NvidiaH264"; }

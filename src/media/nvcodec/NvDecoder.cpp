@@ -24,6 +24,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+#pragma warning(push)
+#pragma warning(disable : 4244)
 
 #include "NvDecoder.h"
 
@@ -222,7 +224,7 @@ int NvDecoder::HandleVideoSequence(CUVIDEOFORMAT *pVideoFormat) {
   if (!decodecaps.bIsSupported) {
     NVDEC_THROW_ERROR("Codec not supported on this GPU",
                       CUDA_ERROR_NOT_SUPPORTED);
-    return nDecodeSurface;
+    // return nDecodeSurface;
   }
 
   if ((pVideoFormat->coded_width > decodecaps.nMaxWidth) ||
@@ -237,7 +239,7 @@ int NvDecoder::HandleVideoSequence(CUVIDEOFORMAT *pVideoFormat) {
 
     const std::string cErr = errorString.str();
     NVDEC_THROW_ERROR(cErr, CUDA_ERROR_NOT_SUPPORTED);
-    return nDecodeSurface;
+    // return nDecodeSurface;
   }
 
   if ((pVideoFormat->coded_width >> 4) * (pVideoFormat->coded_height >> 4) >
@@ -254,7 +256,7 @@ int NvDecoder::HandleVideoSequence(CUVIDEOFORMAT *pVideoFormat) {
 
     const std::string cErr = errorString.str();
     NVDEC_THROW_ERROR(cErr, CUDA_ERROR_NOT_SUPPORTED);
-    return nDecodeSurface;
+    // return nDecodeSurface;
   }
 
   if (m_nWidth && m_nLumaHeight && m_nChromaHeight) {
@@ -571,7 +573,7 @@ int NvDecoder::setReconfigParams(const Rect *pCropRect, const Dim *pResizeDim) {
 int NvDecoder::HandlePictureDecode(CUVIDPICPARAMS *pPicParams) {
   if (!m_hDecoder) {
     NVDEC_THROW_ERROR("Decoder not initialized.", CUDA_ERROR_NOT_INITIALIZED);
-    return false;
+    // return false;
   }
   m_nPicNumInDecodeOrder[pPicParams->CurrPicIdx] = m_nDecodePicCnt++;
   CUDA_DRVAPI_CALL(cuCtxPushCurrent(m_cuContext));
@@ -921,3 +923,4 @@ void NvDecoder::UnlockFrame(uint8_t **pFrame) {
   uint64_t timestamp[2] = {0};
   m_vTimestamp.insert(m_vTimestamp.end(), &timestamp[0], &timestamp[1]);
 }
+#pragma warning(pop)

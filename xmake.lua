@@ -22,8 +22,7 @@ includes("thirdparty")
 
 if is_os("windows") then
     add_defines("_WEBSOCKETPP_CPP11_INTERNAL_")
-    -- add_cxflags("/W4", "/WX")
-    add_cxflags("/W4")
+    add_cxflags("/W4", "/WX")
 elseif is_os("linux") then
     add_requires("glib", {system = true})
     add_packages("glib")
@@ -176,8 +175,8 @@ target("media")
 target("qos")
     set_kind("object")
     add_deps("log")
-    add_files("src/qos/kcp/*.c")
-    add_includedirs("src/qos/kcp", {public = true})
+    add_files("src/qos/*.cpp")
+    add_includedirs("src/qos", {public = true})
 
 target("statistics")
     set_kind("object")

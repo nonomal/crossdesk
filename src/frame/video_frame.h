@@ -14,9 +14,10 @@ class VideoFrame {
  public:
   VideoFrame();
   VideoFrame(size_t size);
-  VideoFrame(size_t size, size_t width, size_t height);
+  VideoFrame(size_t size, uint32_t width, uint32_t height);
   VideoFrame(const uint8_t *buffer, size_t size);
-  VideoFrame(const uint8_t *buffer, size_t size, size_t width, size_t height);
+  VideoFrame(const uint8_t *buffer, size_t size, uint32_t width,
+             uint32_t height);
   VideoFrame(const VideoFrame &video_frame);
   VideoFrame(VideoFrame &&video_frame);
   VideoFrame &operator=(const VideoFrame &video_frame);
@@ -27,18 +28,18 @@ class VideoFrame {
  public:
   const uint8_t *Buffer() { return buffer_; }
   size_t Size() { return size_; }
-  size_t Width() { return width_; }
-  size_t Height() { return height_; }
+  uint32_t Width() { return width_; }
+  uint32_t Height() { return height_; }
 
   void SetSize(size_t size) { size_ = size; }
-  void SetWidth(size_t width) { width_ = width; }
-  void SetHeight(size_t height) { height_ = height; }
+  void SetWidth(uint32_t width) { width_ = width; }
+  void SetHeight(uint32_t height) { height_ = height; }
 
  private:
   uint8_t *buffer_ = nullptr;
   size_t size_ = 0;
-  size_t width_ = 0;
-  size_t height_ = 0;
+  uint32_t width_ = 0;
+  uint32_t height_ = 0;
 };
 
 #endif

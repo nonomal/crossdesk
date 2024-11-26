@@ -5,8 +5,8 @@
 #include "libyuv.h"
 #include "log.h"
 
-#define SAVE_NV12_STREAM 0
-#define SAVE_H264_STREAM 0
+// #define SAVE_DECODED_NV12_STREAM
+// #define SAVE_RECEIVED_H264_STREAM
 
 void CopyYuvWithStride(uint8_t *src_y, uint8_t *src_u, uint8_t *src_v,
                        int width, int height, int stride_y, int stride_u,
@@ -65,31 +65,35 @@ OpenH264Decoder::~OpenH264Decoder() {
     delete[] yuv420p_frame_;
   }
 
-  if (SAVE_H264_STREAM && h264_stream_) {
-    fflush(h264_stream_);
-    h264_stream_ = nullptr;
-  }
-
-  if (SAVE_NV12_STREAM && nv12_stream_) {
+#ifdef SAVE_DECODED_NV12_STREAM
+  if (nv12_stream_) {
     fflush(nv12_stream_);
     nv12_stream_ = nullptr;
   }
+#endif
+
+#ifdef SAVE_RECEIVED_H264_STREAM
+  if (h264_stream_) {
+    fflush(h264_stream_);
+    h264_stream_ = nullptr;
+  }
+#endif
 }
 
 int OpenH264Decoder::Init() {
-  if (SAVE_NV12_STREAM) {
-    nv12_stream_ = fopen("nv12_receive_.yuv", "w+b");
-    if (!nv12_stream_) {
-      LOG_WARN("Fail to open nv12_receive_.yuv");
-    }
+#ifdef SAVE_DECODED_NV12_STREAM
+  nv12_stream_ = fopen("nv12_receive_.yuv", "w+b");
+  if (!nv12_stream_) {
+    LOG_WARN("Fail to open nv12_receive_.yuv");
   }
+#endif
 
-  if (SAVE_NV12_STREAM) {
-    h264_stream_ = fopen("h264_receive.h264", "w+b");
-    if (!h264_stream_) {
-      LOG_WARN("Fail to open h264_receive.h264");
-    }
+#ifdef SAVE_RECEIVED_H264_STREAM
+  h264_stream_ = fopen("h264_receive.h264", "w+b");
+  if (!h264_stream_) {
+    LOG_WARN("Fail to open h264_receive.h264");
   }
+#endif
 
   frame_width_ = 1280;
   frame_height_ = 720;
@@ -115,15 +119,15 @@ int OpenH264Decoder::Init() {
 }
 
 int OpenH264Decoder::Decode(
-    const uint8_t *data, int size,
+    const uint8_t *data, size_t size,
     std::function<void(VideoFrame)> on_receive_decoded_frame) {
   if (!openh264_decoder_) {
     return -1;
   }
 
-  if (SAVE_H264_STREAM) {
-    fwrite((unsigned char *)data, 1, size, h264_stream_);
-  }
+#ifdef SAVE_RECEIVED_H264_STREAM
+  fwrite((unsigned char *)data, 1, size, h264_stream_);
+#endif
 
   if ((*(data + 4) & 0x1f) == 0x07) {
     // LOG_WARN("Receive key frame");
@@ -132,7 +136,7 @@ int OpenH264Decoder::Decode(
   SBufferInfo sDstBufInfo;
   memset(&sDstBufInfo, 0, sizeof(SBufferInfo));
 
-  openh264_decoder_->DecodeFrameNoDelay(data, size, yuv420p_planes_,
+  openh264_decoder_->DecodeFrameNoDelay(data, (int)size, yuv420p_planes_,
                                         &sDstBufInfo);
 
   frame_width_ = sDstBufInfo.UsrData.sSystemBuffer.iWidth;
@@ -200,10 +204,10 @@ int OpenH264Decoder::Decode(
 
       on_receive_decoded_frame(*nv12_frame_);
 
-      if (SAVE_NV12_STREAM) {
-        fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
-               nv12_stream_);
-      }
+#ifdef SAVE_DECODED_NV12_STREAM
+      fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
+             nv12_stream_);
+#endif
     }
   }
 

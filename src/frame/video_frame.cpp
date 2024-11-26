@@ -12,7 +12,7 @@ VideoFrame::VideoFrame(size_t size) {
   height_ = 0;
 }
 
-VideoFrame::VideoFrame(size_t size, size_t width, size_t height) {
+VideoFrame::VideoFrame(size_t size, uint32_t width, uint32_t height) {
   buffer_ = new uint8_t[size];
   size_ = size;
   width_ = width;
@@ -27,8 +27,8 @@ VideoFrame::VideoFrame(const uint8_t *buffer, size_t size) {
   height_ = 0;
 }
 
-VideoFrame::VideoFrame(const uint8_t *buffer, size_t size, size_t width,
-                       size_t height) {
+VideoFrame::VideoFrame(const uint8_t *buffer, size_t size, uint32_t width,
+                       uint32_t height) {
   buffer_ = new uint8_t[size];
   memcpy(buffer_, buffer, size);
   size_ = size;

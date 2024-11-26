@@ -136,7 +136,8 @@ void WsClient::Ping(websocketpp::connection_hdl hdl) {
 
 WsStatus WsClient::GetStatus() { return ws_status_; }
 
-void WsClient::OnOpen(client *c, websocketpp::connection_hdl hdl) {
+void WsClient::OnOpen([[maybe_unused]] client *c,
+                      websocketpp::connection_hdl hdl) {
   ws_status_ = WsStatus::WsOpened;
   on_ws_status_(WsStatus::WsOpened);
 
@@ -155,13 +156,15 @@ void WsClient::OnOpen(client *c, websocketpp::connection_hdl hdl) {
   }
 }
 
-void WsClient::OnFail(client *c, websocketpp::connection_hdl hdl) {
+void WsClient::OnFail([[maybe_unused]] client *c,
+                      websocketpp::connection_hdl hdl) {
   ws_status_ = WsStatus::WsFailed;
   on_ws_status_(WsStatus::WsFailed);
   Connect(uri_);
 }
 
-void WsClient::OnClose(client *c, websocketpp::connection_hdl hdl) {
+void WsClient::OnClose([[maybe_unused]] client *c,
+                       websocketpp::connection_hdl hdl) {
   ws_status_ = WsStatus::WsServerClosed;
   on_ws_status_(WsStatus::WsServerClosed);
 

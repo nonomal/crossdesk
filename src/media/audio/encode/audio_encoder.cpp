@@ -52,7 +52,7 @@ int AudioEncoder::Init() {
 }
 
 int AudioEncoder::Encode(
-    const uint8_t *data, int size,
+    const uint8_t *data, size_t size,
     std::function<int(char *encoded_audio_buffer, size_t size)>
         on_encoded_audio_buffer) {
   if (!on_encoded_audio_buffer_) {
@@ -67,7 +67,7 @@ int AudioEncoder::Encode(
   // printf("1 Time cost: %d size: %d\n", now_ts - last_ts, size);
   // last_ts = now_ts;
 
-  auto ret = opus_encode(opus_encoder_, (opus_int16 *)data, size, out_data,
+  auto ret = opus_encode(opus_encoder_, (opus_int16 *)data, (int)size, out_data,
                          MAX_PACKET_SIZE);
   if (ret < 0) {
     printf("opus decode failed, %d\n", ret);
@@ -76,15 +76,7 @@ int AudioEncoder::Encode(
 
   if (on_encoded_audio_buffer_) {
     on_encoded_audio_buffer_((char *)out_data, ret);
-  } else {
-    OnEncodedAudioBuffer((char *)out_data, ret);
   }
 
-  return 0;
-}
-
-int AudioEncoder::OnEncodedAudioBuffer(char *encoded_audio_buffer,
-                                       size_t size) {
-  LOG_INFO("OnEncodedAudioBuffer not implemented");
   return 0;
 }

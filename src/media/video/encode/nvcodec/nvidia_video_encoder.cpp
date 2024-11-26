@@ -6,22 +6,26 @@
 #include "nvcodec_api.h"
 #include "nvcodec_common.h"
 
-#define SAVE_RECEIVED_NV12_STREAM 0
-#define SAVE_ENCODED_H264_STREAM 0
+// #define SAVE_RECEIVED_NV12_STREAM
+// #define SAVE_ENCODED_H264_STREAM
 
 NvidiaVideoEncoder::NvidiaVideoEncoder() {}
 NvidiaVideoEncoder::~NvidiaVideoEncoder() {
-  if (SAVE_RECEIVED_NV12_STREAM && file_nv12_) {
+#ifdef SAVE_RECEIVED_NV12_STREAM
+  if (file_nv12_) {
     fflush(file_nv12_);
     fclose(file_nv12_);
     file_nv12_ = nullptr;
   }
+#endif
 
-  if (SAVE_ENCODED_H264_STREAM && file_h264_) {
+#ifdef SAVE_ENCODED_H264_STREAM
+  if (file_h264_) {
     fflush(file_h264_);
     fclose(file_h264_);
     file_h264_ = nullptr;
   }
+#endif
 
   if (nv12_data_) {
     free(nv12_data_);
@@ -106,19 +110,20 @@ int NvidiaVideoEncoder::Init() {
 
   encoder_->CreateEncoder(&init_params);
 
-  if (SAVE_RECEIVED_NV12_STREAM) {
-    file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
-    if (!file_nv12_) {
-      LOG_WARN("Fail to open received_nv12_stream.yuv");
-    }
+#ifdef SAVE_RECEIVED_NV12_STREAM
+  file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
+  if (!file_nv12_) {
+    LOG_WARN("Fail to open received_nv12_stream.yuv");
   }
 
-  if (SAVE_ENCODED_H264_STREAM) {
-    file_h264_ = fopen("encoded_h264_stream.h264", "w+b");
-    if (!file_h264_) {
-      LOG_WARN("Fail to open encoded_h264_stream.h264");
-    }
+#endif
+
+#ifdef SAVE_ENCODED_H264_STREAM
+  file_h264_ = fopen("encoded_h264_stream.h264", "w+b");
+  if (!file_h264_) {
+    LOG_WARN("Fail to open encoded_h264_stream.h264");
   }
+#endif
 
   return 0;
 }
@@ -133,9 +138,9 @@ int NvidiaVideoEncoder::Encode(
     return -1;
   }
 
-  if (SAVE_RECEIVED_NV12_STREAM) {
-    fwrite(video_frame->data, 1, video_frame->size, file_nv12_);
-  }
+#ifdef SAVE_RECEIVED_NV12_STREAM
+  fwrite(video_frame->data, 1, video_frame->size, file_nv12_);
+#endif
 
   if (video_frame->width != frame_width_ ||
       video_frame->height != frame_height_) {
@@ -178,11 +183,9 @@ int NvidiaVideoEncoder::Encode(
   for (const auto &packet : encoded_packets_) {
     if (on_encoded_image) {
       on_encoded_image((char *)packet.data(), packet.size(), frame_type);
-      if (SAVE_ENCODED_H264_STREAM) {
-        fwrite((unsigned char *)packet.data(), 1, packet.size(), file_h264_);
-      }
-    } else {
-      OnEncodedImage((char *)packet.data(), packet.size());
+#ifdef SAVE_ENCODED_H264_STREAM
+      fwrite((unsigned char *)packet.data(), 1, packet.size(), file_h264_);
+#endif
     }
   }
 
@@ -193,11 +196,6 @@ int NvidiaVideoEncoder::Encode(
   LOG_INFO("Encode time cost {}ms", encode_time_cost);
 #endif
 
-  return 0;
-}
-
-int NvidiaVideoEncoder::OnEncodedImage(char *encoded_packets, size_t size) {
-  LOG_INFO("OnEncodedImage not implemented");
   return 0;
 }
 

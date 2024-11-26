@@ -6,7 +6,6 @@
 #include <thread>
 
 #include "common.h"
-#include "ikcp.h"
 #include "log.h"
 #if __APPLE__
 #else
@@ -49,7 +48,7 @@ int IceTransmission::SetLocalCapabilities(
   hardware_acceleration_ = hardware_acceleration;
   use_trickle_ice_ = use_trickle_ice;
   use_reliable_ice_ = use_reliable_ice;
-  enable_turn_ = force_turn;
+  enable_turn_ = enable_turn;
   force_turn_ = force_turn;
   support_video_payload_types_ = video_payload_types;
   support_audio_payload_types_ = audio_payload_types;
@@ -105,10 +104,9 @@ int IceTransmission::InitIceTransmission(
       });
   rtp_video_receiver_->SetOnReceiveCompleteFrame(
       [this](VideoFrame &video_frame) -> void {
-        // LOG_ERROR("OnReceiveCompleteFrame {}", video_frame.Size());
-        ice_io_statistics_->UpdateVideoInboundBytes(video_frame.Size());
-
-        int num_frame_returned = video_decoder_->Decode(
+        ice_io_statistics_->UpdateVideoInboundBytes(
+            (uint32_t)video_frame.Size());
+        [[maybe_unused]] int num_frame_returned = video_decoder_->Decode(
             (uint8_t *)video_frame.Buffer(), video_frame.Size(),
             [this](VideoFrame video_frame) {
               if (on_receive_video_) {
@@ -140,7 +138,7 @@ int IceTransmission::InitIceTransmission(
           return -2;
         }
 
-        ice_io_statistics_->UpdateVideoOutboundBytes(size);
+        ice_io_statistics_->UpdateVideoOutboundBytes((uint32_t)size);
         return ice_agent_->Send(data, size);
       });
 
@@ -166,9 +164,9 @@ int IceTransmission::InitIceTransmission(
       });
   rtp_audio_receiver_->SetOnReceiveData([this](const char *data,
                                                size_t size) -> void {
-    ice_io_statistics_->UpdateAudioInboundBytes(size);
+    ice_io_statistics_->UpdateAudioInboundBytes((uint32_t)size);
 
-    int num_frame_returned = audio_decoder_->Decode(
+    [[maybe_unused]] int num_frame_returned = audio_decoder_->Decode(
         (uint8_t *)data, size, [this](uint8_t *data, int size) {
           if (on_receive_audio_) {
             on_receive_audio_((const char *)data, size, remote_user_id_.data(),
@@ -192,7 +190,7 @@ int IceTransmission::InitIceTransmission(
           return -2;
         }
 
-        ice_io_statistics_->UpdateAudioOutboundBytes(size);
+        ice_io_statistics_->UpdateAudioOutboundBytes((uint32_t)size);
         return ice_agent_->Send(data, size);
       });
 
@@ -218,7 +216,7 @@ int IceTransmission::InitIceTransmission(
       });
   rtp_data_receiver_->SetOnReceiveData(
       [this](const char *data, size_t size) -> void {
-        ice_io_statistics_->UpdateDataInboundBytes(size);
+        ice_io_statistics_->UpdateDataInboundBytes((uint32_t)size);
 
         if (on_receive_data_) {
           on_receive_data_(data, size, remote_user_id_.data(),
@@ -241,7 +239,7 @@ int IceTransmission::InitIceTransmission(
           return -2;
         }
 
-        ice_io_statistics_->UpdateDataOutboundBytes(size);
+        ice_io_statistics_->UpdateDataOutboundBytes((uint32_t)size);
         return ice_agent_->Send(data, size);
       });
 
@@ -253,8 +251,9 @@ int IceTransmission::InitIceTransmission(
       turn_password);
 
   ice_agent_->CreateIceAgent(
-      [](NiceAgent *agent, guint stream_id, guint component_id,
-         NiceComponentState state, gpointer user_ptr) {
+      []([[maybe_unused]] NiceAgent *agent, [[maybe_unused]] guint stream_id,
+         [[maybe_unused]] guint component_id, NiceComponentState state,
+         gpointer user_ptr) {
         if (user_ptr) {
           IceTransmission *ice_transmission_obj =
               static_cast<IceTransmission *>(user_ptr);
@@ -313,7 +312,8 @@ int IceTransmission::InitIceTransmission(
           }
         }
       },
-      [](NiceAgent *agent, guint stream_id, gpointer user_ptr) {
+      []([[maybe_unused]] NiceAgent *agent, [[maybe_unused]] guint stream_id,
+         gpointer user_ptr) {
         // non-trickle
         if (user_ptr) {
           IceTransmission *ice_transmission_obj =
@@ -365,8 +365,9 @@ int IceTransmission::InitIceTransmission(
               &net_traffic_stats, ice_transmission_obj->user_data_);
         }
       },
-      [](NiceAgent *agent, guint stream_id, guint component_id, guint size,
-         gchar *buffer, gpointer user_ptr) {
+      []([[maybe_unused]] NiceAgent *agent, [[maybe_unused]] guint stream_id,
+         [[maybe_unused]] guint component_id, guint size, gchar *buffer,
+         gpointer user_ptr) {
         if (user_ptr) {
           IceTransmission *ice_transmission_obj =
               static_cast<IceTransmission *>(user_ptr);
@@ -977,7 +978,7 @@ int IceTransmission::SendVideoFrame(const XVideoFrame *video_frame) {
           if (video_rtp_codec_) {
             video_rtp_codec_->Encode(
                 static_cast<RtpCodec::VideoFrameType>(frame_type),
-                (uint8_t *)encoded_frame, size, packets);
+                (uint8_t *)encoded_frame, (uint32_t)size, packets);
           }
           rtp_video_sender_->Enqueue(packets);
         }
@@ -1007,15 +1008,15 @@ int IceTransmission::SendAudioFrame(const char *data, size_t size) {
         if (rtp_audio_sender_) {
           if (audio_rtp_codec_) {
             std::vector<RtpPacket> packets;
-            audio_rtp_codec_->Encode((uint8_t *)encoded_audio_buffer, size,
-                                     packets);
+            audio_rtp_codec_->Encode((uint8_t *)encoded_audio_buffer,
+                                     (uint32_t)size, packets);
             rtp_audio_sender_->Enqueue(packets);
           }
         }
         return 0;
       });
 
-  return 0;
+  return ret;
 }
 
 int IceTransmission::SendDataFrame(const char *data, size_t size) {
@@ -1030,7 +1031,7 @@ int IceTransmission::SendDataFrame(const char *data, size_t size) {
 
   if (rtp_data_sender_) {
     if (data_rtp_codec_) {
-      data_rtp_codec_->Encode((uint8_t *)data, size, packets);
+      data_rtp_codec_->Encode((uint8_t *)data, (uint32_t)size, packets);
       rtp_data_sender_->Enqueue(packets);
     }
   }

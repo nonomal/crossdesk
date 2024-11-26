@@ -317,14 +317,14 @@ class NvEncoder {
    *  @brief This a static function to get the chroma plane pitch for YUV planar
    * formats.
    */
-  static uint32_t GetChromaPitch(const NV_ENC_BUFFER_FORMAT bufferFormat,
-                                 const uint32_t lumaPitch);
+  static int32_t GetChromaPitch(const NV_ENC_BUFFER_FORMAT bufferFormat,
+                                const uint32_t lumaPitch);
 
   /**
    *  @brief This a static function to get the number of chroma planes for YUV
    * planar formats.
    */
-  static uint32_t GetNumChromaPlanes(const NV_ENC_BUFFER_FORMAT bufferFormat);
+  static int32_t GetNumChromaPlanes(const NV_ENC_BUFFER_FORMAT bufferFormat);
 
   /**
    *  @brief This a static function to get the chroma plane width in bytes for

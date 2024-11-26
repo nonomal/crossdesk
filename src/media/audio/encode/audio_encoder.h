@@ -23,11 +23,9 @@ class AudioEncoder {
  public:
   int Init();
 
-  int Encode(const uint8_t* data, int size,
+  int Encode(const uint8_t* data, size_t size,
              std::function<int(char* encoded_audio_buffer, size_t size)>
                  on_encoded_audio_buffer);
-
-  int OnEncodedAudioBuffer(char* encoded_audio_buffer, size_t size);
 
   std::string GetEncoderName() { return "Opus"; }
 
