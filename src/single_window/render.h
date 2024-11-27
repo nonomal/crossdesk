@@ -180,8 +180,8 @@ class Render {
   float main_window_height_ = 480;
   float main_window_width_last_ = 640;
   float main_window_height_last_ = 480;
-  float stream_window_width_default_ = 1280;
-  float stream_window_height_default_ = 720;
+  int stream_window_width_default_ = 1280;
+  int stream_window_height_default_ = 720;
   float stream_window_width_ = 1280;
   float stream_window_height_ = 720;
   int stream_window_width_last_ = 1280;
@@ -279,7 +279,6 @@ class Render {
   bool mouse_control_button_pressed_ = false;
   bool audio_capture_button_pressed_ = false;
   bool show_settings_window_ = false;
-  bool received_frame_ = false;
   bool is_create_connection_ = false;
   bool audio_buffer_fresh_ = false;
   bool rejoin_ = false;

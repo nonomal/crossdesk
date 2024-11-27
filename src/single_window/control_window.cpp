@@ -84,18 +84,23 @@ int Render::ControlWindow() {
           stream_render_rect_.y;
     }
 
-    // set cursor pos
-    new_cursor_pos_x = new_control_window_pos_x + mouse_diff_control_bar_pos_x_;
-    new_cursor_pos_y = new_control_window_pos_y + mouse_diff_control_bar_pos_y_;
-
     ImGui::SetNextWindowPos(
         ImVec2(new_control_window_pos_x, new_control_window_pos_y),
         ImGuiCond_Always);
 
     if (0 != mouse_diff_control_bar_pos_x_ &&
         0 != mouse_diff_control_bar_pos_y_) {
-      SDL_WarpMouseInWindow(stream_window_, (int)new_cursor_pos_x,
-                            (int)new_cursor_pos_y);
+      // set cursor pos
+      new_cursor_pos_x =
+          new_control_window_pos_x + mouse_diff_control_bar_pos_x_;
+      new_cursor_pos_y =
+          new_control_window_pos_y + mouse_diff_control_bar_pos_y_;
+
+      if (new_cursor_pos_x < stream_window_width_ &&
+          new_cursor_pos_y < stream_window_height_) {
+        SDL_WarpMouseInWindow(stream_window_, (int)new_cursor_pos_x,
+                              (int)new_cursor_pos_y);
+      }
     }
     reset_control_bar_pos_ = false;
   } else if (!reset_control_bar_pos_ &&

@@ -507,10 +507,10 @@ int Render::CreateStreamWindow() {
 
   SDL_WindowFlags window_flags =
       (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
-  stream_window_ = SDL_CreateWindow(
-      "Stream window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-      (int)stream_window_width_default_, (int)stream_window_height_default_,
-      window_flags);
+  stream_window_ =
+      SDL_CreateWindow("Stream window", SDL_WINDOWPOS_UNDEFINED,
+                       SDL_WINDOWPOS_UNDEFINED, stream_window_width_default_,
+                       stream_window_height_default_, window_flags);
 
   stream_renderer_ = SDL_CreateRenderer(
       stream_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
@@ -529,12 +529,22 @@ int Render::CreateStreamWindow() {
   // for window region action
   SDL_SetWindowHitTest(stream_window_, HitTestCallback, this);
 
+  // change stream_render_rect_
+  SDL_Event event;
+  event.type = SDL_WINDOWEVENT;
+  event.window.windowID = SDL_GetWindowID(stream_window_);
+  event.window.event = SDL_WINDOWEVENT_SIZE_CHANGED;
+  SDL_PushEvent(&event);
+
   stream_window_created_ = true;
 
   return 0;
 }
 
 int Render::DestroyStreamWindow() {
+  stream_window_width_ = (float)stream_window_width_default_;
+  stream_window_height_ = (float)stream_window_height_default_;
+
   if (stream_ctx_) {
     ImGui::SetCurrentContext(stream_ctx_);
   }
@@ -626,10 +636,12 @@ int Render::SetupStreamWindow() {
 
   SDL_GL_GetDrawableSize(stream_window_, &main_window_width_real_,
                          &main_window_height_real_);
+
   stream_window_dpi_scaling_w_ =
       stream_window_width_real_ / stream_window_width_;
   stream_window_dpi_scaling_h_ =
       stream_window_width_real_ / stream_window_width_;
+
   SDL_RenderSetScale(stream_renderer_, stream_window_dpi_scaling_w_,
                      stream_window_dpi_scaling_h_);
   LOG_INFO("Use dpi scaling [{}x{}] for stream window",
@@ -874,7 +886,6 @@ int Render::Run() {
           streaming_ = false;
           rejoin_ = false;
           connection_established_ = false;
-          received_frame_ = false;
           is_client_mode_ = false;
           audio_capture_button_pressed_ = false;
           fullscreen_button_pressed_ = false;
@@ -884,14 +895,6 @@ int Render::Run() {
           memset(&net_traffic_stats_, 0, sizeof(net_traffic_stats_));
           SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
           memset(audio_buffer_, 0, 720);
-          SDL_SetWindowSize(main_window_, (int)main_window_width_default_,
-                            (int)main_window_height_default_);
-
-          // SDL_Rect display_bounds;
-          // SDL_GetDisplayBounds(0, &display_bounds);
-          // int center_x = (display_bounds.w - main_window_width_default_) / 2;
-          // int center_y = (display_bounds.h - main_window_height_default_) /
-          // 2; SDL_SetWindowPosition(main_window_, center_x, center_y);
 
           continue;
         } else {
@@ -902,10 +905,15 @@ int Render::Run() {
       } else if (event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
       } else if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
         window_maximized_ = false;
-      } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+      } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED &&
+                 stream_window_created_ &&
+                 event.window.windowID == SDL_GetWindowID(stream_window_)) {
         reset_control_bar_pos_ = true;
-        SDL_GetWindowSize(stream_window_, (int*)&stream_window_width_,
-                          (int*)&stream_window_height_);
+        int stream_window_width, stream_window_height;
+        SDL_GetWindowSize(stream_window_, &stream_window_width,
+                          &stream_window_height);
+        stream_window_width_ = (float)stream_window_width;
+        stream_window_height_ = (float)stream_window_height;
 
         float video_ratio = (float)video_width_ / (float)video_height_;
         float video_ratio_reverse = (float)video_height_ / (float)video_width_;
