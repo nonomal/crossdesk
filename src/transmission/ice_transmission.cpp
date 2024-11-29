@@ -61,30 +61,21 @@ int IceTransmission::InitIceTransmission(
     std::string &turn_username, std::string &turn_password,
     RtpPacket::PAYLOAD_TYPE video_codec_payload_type) {
   ice_io_statistics_ = std::make_unique<IOStatistics>(
-      [this](uint32_t video_inbound_bitrate, uint32_t video_outbound_bitrate,
-             uint32_t audio_inbound_bitrate, uint32_t audio_outbound_bitrate,
-             uint32_t data_inbound_bitrate, uint32_t data_outbound_bitrate,
-             uint32_t total_inbound_bitrate, uint32_t total_outbound_bitrate) {
+      [this](const IOStatistics::NetTrafficStats &net_traffic_stats) {
         if (on_receive_net_status_report_) {
-          XNetTrafficStats net_traffic_stats;
-          net_traffic_stats.video_in = video_inbound_bitrate;
-          net_traffic_stats.video_out = video_outbound_bitrate;
-          net_traffic_stats.audio_in = audio_inbound_bitrate;
-          net_traffic_stats.audio_out = audio_outbound_bitrate;
-          net_traffic_stats.data_in = data_inbound_bitrate;
-          net_traffic_stats.data_out = data_outbound_bitrate;
-          net_traffic_stats.total_in = total_inbound_bitrate;
-          net_traffic_stats.total_out = total_outbound_bitrate;
+          XNetTrafficStats xnet_traffic_stats;
 
+          memcpy(&xnet_traffic_stats, &net_traffic_stats,
+                 sizeof(XNetTrafficStats));
           on_receive_net_status_report_(user_id_.data(), user_id_.size(),
                                         TraversalMode(traversal_type_),
-                                        &net_traffic_stats, user_data_);
+                                        &xnet_traffic_stats, user_data_);
         }
       });
 
   video_codec_payload_type_ = video_codec_payload_type;
 
-  rtp_video_receiver_ = std::make_unique<RtpVideoReceiver>();
+  rtp_video_receiver_ = std::make_unique<RtpVideoReceiver>(ice_io_statistics_);
   // rr sender
   rtp_video_receiver_->SetSendDataFunc(
       [this](const char *data, size_t size) -> int {
@@ -123,7 +114,7 @@ int IceTransmission::InitIceTransmission(
 
   rtp_video_receiver_->Start();
 
-  rtp_video_sender_ = std::make_unique<RtpVideoSender>();
+  rtp_video_sender_ = std::make_unique<RtpVideoSender>(ice_io_statistics_);
   rtp_video_sender_->SetSendDataFunc(
       [this](const char *data, size_t size) -> int {
         if (!ice_agent_) {
@@ -144,7 +135,7 @@ int IceTransmission::InitIceTransmission(
 
   rtp_video_sender_->Start();
 
-  rtp_audio_receiver_ = std::make_unique<RtpAudioReceiver>();
+  rtp_audio_receiver_ = std::make_unique<RtpAudioReceiver>(ice_io_statistics_);
   // rr sender
   rtp_audio_receiver_->SetSendDataFunc(
       [this](const char *data, size_t size) -> int {
@@ -175,7 +166,7 @@ int IceTransmission::InitIceTransmission(
         });
   });
 
-  rtp_audio_sender_ = std::make_unique<RtpAudioSender>();
+  rtp_audio_sender_ = std::make_unique<RtpAudioSender>(ice_io_statistics_);
   rtp_audio_sender_->SetSendDataFunc(
       [this](const char *data, size_t size) -> int {
         if (!ice_agent_) {
@@ -196,7 +187,7 @@ int IceTransmission::InitIceTransmission(
 
   rtp_audio_sender_->Start();
 
-  rtp_data_receiver_ = std::make_unique<RtpDataReceiver>();
+  rtp_data_receiver_ = std::make_unique<RtpDataReceiver>(ice_io_statistics_);
   // rr sender
   rtp_data_receiver_->SetSendDataFunc(
       [this](const char *data, size_t size) -> int {
@@ -224,7 +215,7 @@ int IceTransmission::InitIceTransmission(
         }
       });
 
-  rtp_data_sender_ = std::make_unique<RtpDataSender>();
+  rtp_data_sender_ = std::make_unique<RtpDataSender>(ice_io_statistics_);
   rtp_data_sender_->SetSendDataFunc(
       [this](const char *data, size_t size) -> int {
         if (!ice_agent_) {
@@ -349,14 +340,7 @@ int IceTransmission::InitIceTransmission(
             ice_transmission_obj->traversal_type_ = TraversalType::TP2P;
           }
           XNetTrafficStats net_traffic_stats;
-          net_traffic_stats.video_in = 0;
-          net_traffic_stats.video_out = 0;
-          net_traffic_stats.audio_in = 0;
-          net_traffic_stats.audio_out = 0;
-          net_traffic_stats.data_in = 0;
-          net_traffic_stats.data_out = 0;
-          net_traffic_stats.total_in = 0;
-          net_traffic_stats.total_out = 0;
+          memset(&net_traffic_stats, 0, sizeof(net_traffic_stats));
 
           ice_transmission_obj->on_receive_net_status_report_(
               ice_transmission_obj->user_id_.data(),

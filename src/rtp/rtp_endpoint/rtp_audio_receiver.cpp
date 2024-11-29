@@ -4,6 +4,9 @@
 
 RtpAudioReceiver::RtpAudioReceiver() {}
 
+RtpAudioReceiver::RtpAudioReceiver(std::shared_ptr<IOStatistics> io_statistics)
+    : io_statistics_(io_statistics) {}
+
 RtpAudioReceiver::~RtpAudioReceiver() {
   if (rtp_statistics_) {
     rtp_statistics_->Stop();
@@ -16,8 +19,17 @@ void RtpAudioReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     rtp_statistics_->Start();
   }
 
+  last_recv_bytes_ = (uint32_t)rtp_packet.Size();
+  total_rtp_payload_recv_ += (uint32_t)rtp_packet.PayloadSize();
+  total_rtp_packets_recv_++;
+
   if (rtp_statistics_) {
-    rtp_statistics_->UpdateReceiveBytes((uint32_t)rtp_packet.Size());
+    rtp_statistics_->UpdateReceiveBytes(last_recv_bytes_);
+  }
+
+  if (io_statistics_) {
+    io_statistics_->UpdateAudioInboundBytes(last_recv_bytes_);
+    io_statistics_->IncrementAudioInboundRtpPacketCount();
   }
 
   if (CheckIsTimeSendRR()) {

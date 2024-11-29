@@ -9,6 +9,7 @@
 
 #include <functional>
 
+#include "io_statistics.h"
 #include "ringbuffer.h"
 #include "rtcp_sender_report.h"
 #include "rtp_packet.h"
@@ -18,6 +19,7 @@
 class RtpAudioSender : public ThreadBase {
  public:
   RtpAudioSender();
+  RtpAudioSender(std::shared_ptr<IOStatistics> io_statistics);
   virtual ~RtpAudioSender();
 
  public:
@@ -38,10 +40,11 @@ class RtpAudioSender : public ThreadBase {
   std::function<int(const char *, size_t)> data_send_func_ = nullptr;
   RingBuffer<RtpPacket> rtp_packe_queue_;
   std::unique_ptr<RtpStatistics> rtp_statistics_ = nullptr;
+  std::shared_ptr<IOStatistics> io_statistics_ = nullptr;
   uint32_t last_send_bytes_ = 0;
-  uint32_t last_send_rtcp_sr_packet_ts_ = 0;
-  uint32_t total_rtp_packets_sent_ = 0;
   uint32_t total_rtp_payload_sent_ = 0;
+  uint32_t total_rtp_packets_sent_ = 0;
+  uint32_t last_send_rtcp_sr_packet_ts_ = 0;
 };
 
 #endif

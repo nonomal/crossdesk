@@ -182,6 +182,7 @@ class IceTransmission {
   std::unique_ptr<RtpCodec> video_rtp_codec_ = nullptr;
   std::unique_ptr<RtpCodec> audio_rtp_codec_ = nullptr;
   std::unique_ptr<RtpCodec> data_rtp_codec_ = nullptr;
+
   std::unique_ptr<RtpVideoReceiver> rtp_video_receiver_ = nullptr;
   std::unique_ptr<RtpVideoSender> rtp_video_sender_ = nullptr;
   std::unique_ptr<RtpAudioReceiver> rtp_audio_receiver_ = nullptr;
@@ -194,7 +195,7 @@ class IceTransmission {
   uint32_t last_complete_frame_ts_ = 0;
 
  private:
-  std::unique_ptr<IOStatistics> ice_io_statistics_ = nullptr;
+  std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
 
  private:
   RtpPacket::PAYLOAD_TYPE video_codec_payload_type_;

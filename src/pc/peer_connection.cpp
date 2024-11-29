@@ -399,14 +399,7 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
         user_id_ = j["user_id"].get<std::string>();
 
         XNetTrafficStats net_traffic_stats;
-        net_traffic_stats.video_in = 0;
-        net_traffic_stats.video_out = 0;
-        net_traffic_stats.audio_in = 0;
-        net_traffic_stats.audio_out = 0;
-        net_traffic_stats.data_in = 0;
-        net_traffic_stats.data_out = 0;
-        net_traffic_stats.total_in = 0;
-        net_traffic_stats.total_out = 0;
+        memset(&net_traffic_stats, 0, sizeof(net_traffic_stats));
 
         net_status_report_(user_id_.data(), user_id_.size(),
                            TraversalMode::UnknownMode, &net_traffic_stats,

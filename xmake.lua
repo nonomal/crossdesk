@@ -22,7 +22,7 @@ includes("thirdparty")
 
 if is_os("windows") then
     add_defines("_WEBSOCKETPP_CPP11_INTERNAL_")
-    add_cxflags("/W4", "/WX")
+    add_cxflags("/WX")
 elseif is_os("linux") then
     add_requires("glib", {system = true})
     add_packages("glib")
@@ -70,6 +70,12 @@ target("fec")
     add_files("src/fec/*.cpp")
     add_includedirs("src/fec", {public = true})
 
+target("statistics")
+    set_kind("object")
+    add_deps("log")
+    add_files("src/statistics/*.cpp")
+    add_includedirs("src/statistics", {public = true})
+
 target("rtcp")
     set_kind("object")
     add_deps("log")
@@ -78,9 +84,13 @@ target("rtcp")
 
 target("rtp")
     set_kind("object")
-    add_deps("log", "frame", "ringbuffer", "thread", "rtcp", "fec")
-    add_files("src/rtp/*.cpp")
-    add_includedirs("src/rtp", {public = true})
+    add_deps("log", "frame", "ringbuffer", "thread", "rtcp", "fec", "statistics")
+    add_files("src/rtp/*.cpp", 
+    "src/rtp/rtp_endpoint/*.cpp", 
+    "src/rtp/rtp_packet/*.cpp")
+    add_includedirs("src/rtp", 
+    "src/rtp/rtp_endpoint", 
+    "src/rtp/rtp_packet", {public = true})
 
 target("ice")
     set_kind("object")
@@ -178,11 +188,6 @@ target("qos")
     add_files("src/qos/*.cpp")
     add_includedirs("src/qos", {public = true})
 
-target("statistics")
-    set_kind("object")
-    add_deps("log")
-    add_files("src/statistics/*.cpp")
-    add_includedirs("src/statistics", {public = true})
 
 target("transmission")
     set_kind("object")

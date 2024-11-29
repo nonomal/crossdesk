@@ -47,14 +47,25 @@ typedef struct {
 } XVideoFrame;
 
 typedef struct {
-  uint64_t video_in;
-  uint64_t video_out;
-  uint64_t audio_in;
-  uint64_t audio_out;
-  uint64_t data_in;
-  uint64_t data_out;
-  uint64_t total_in;
-  uint64_t total_out;
+  uint32_t bitrate;
+  uint32_t rtp_packet_count;
+  float loss_rate;
+} XInboundStats;
+
+typedef struct {
+  uint32_t bitrate;
+  uint32_t rtp_packet_count;
+} XOutboundStats;
+
+typedef struct {
+  XInboundStats video_inbound_stats;
+  XOutboundStats video_outbound_stats;
+  XInboundStats audio_inbound_stats;
+  XOutboundStats audio_outbound_stats;
+  XInboundStats data_inbound_stats;
+  XOutboundStats data_outbound_stats;
+  XInboundStats total_inbound_stats;
+  XOutboundStats total_outbound_stats;
 } XNetTrafficStats;
 
 typedef struct Peer PeerPtr;

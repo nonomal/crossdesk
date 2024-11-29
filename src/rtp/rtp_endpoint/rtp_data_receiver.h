@@ -3,6 +3,7 @@
 
 #include <functional>
 
+#include "io_statistics.h"
 #include "rtcp_receiver_report.h"
 #include "rtp_codec.h"
 #include "rtp_statistics.h"
@@ -10,6 +11,7 @@
 class RtpDataReceiver {
  public:
   RtpDataReceiver();
+  RtpDataReceiver(std::shared_ptr<IOStatistics> io_statistics);
   ~RtpDataReceiver();
 
  public:
@@ -32,6 +34,11 @@ class RtpDataReceiver {
 
  private:
   std::unique_ptr<RtpStatistics> rtp_statistics_ = nullptr;
+  std::shared_ptr<IOStatistics> io_statistics_ = nullptr;
+  uint32_t last_recv_bytes_ = 0;
+  uint32_t total_rtp_payload_recv_ = 0;
+  uint32_t total_rtp_packets_recv_ = 0;
+
   uint32_t last_send_rtcp_rr_packet_ts_ = 0;
   std::function<int(const char*, size_t)> data_send_func_ = nullptr;
 };

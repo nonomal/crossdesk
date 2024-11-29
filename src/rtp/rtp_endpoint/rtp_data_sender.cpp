@@ -8,6 +8,9 @@
 
 RtpDataSender::RtpDataSender() {}
 
+RtpDataSender::RtpDataSender(std::shared_ptr<IOStatistics> io_statistics)
+    : io_statistics_(io_statistics) {}
+
 RtpDataSender::~RtpDataSender() {
   if (rtp_statistics_) {
     rtp_statistics_->Stop();
@@ -43,8 +46,13 @@ int RtpDataSender::SendRtpPacket(RtpPacket& rtp_packet) {
   }
 
   last_send_bytes_ += (uint32_t)rtp_packet.Size();
-  total_rtp_packets_sent_++;
   total_rtp_payload_sent_ += (uint32_t)rtp_packet.PayloadSize();
+  total_rtp_packets_sent_++;
+
+  if (io_statistics_) {
+    io_statistics_->UpdateDataOutboundBytes(last_send_bytes_);
+    io_statistics_->IncrementDataOutboundRtpPacketCount();
+  }
 
   if (CheckIsTimeSendSR()) {
     RtcpSenderReport rtcp_sr;
