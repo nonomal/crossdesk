@@ -155,11 +155,11 @@ void IOStatistics::Stop() {
 }
 
 void IOStatistics::UpdateVideoInboundBytes(uint32_t bytes) {
-  video_inbound_bytes_.fetch_add(bytes, std::memory_order_relaxed);
+  video_inbound_bytes_ += bytes;
 }
 
 void IOStatistics::UpdateVideoOutboundBytes(uint32_t bytes) {
-  video_outbound_bytes_.fetch_add(bytes, std::memory_order_relaxed);
+  video_outbound_bytes_ += bytes;
 }
 
 void IOStatistics::UpdateVideoPacketLossCount(uint16_t seq_num) {
@@ -167,13 +167,11 @@ void IOStatistics::UpdateVideoPacketLossCount(uint16_t seq_num) {
   if (last_v_seq != 0) {
     if (seq_num > last_v_seq) {
       if (seq_num - last_v_seq != 1) {
-        video_rtp_pkt_loss_cnt_.fetch_add(seq_num - last_v_seq - 1,
-                                          std::memory_order_relaxed);
+        video_rtp_pkt_loss_cnt_ += seq_num - last_v_seq - 1;
       }
     } else {
-      video_rtp_pkt_loss_cnt_.fetch_add(
-          seq_num + (std::numeric_limits<uint16_t>::max() - last_v_seq) - 1,
-          std::memory_order_relaxed);
+      video_rtp_pkt_loss_cnt_ +=
+          seq_num + (std::numeric_limits<uint16_t>::max() - last_v_seq) - 1;
     }
   }
 
@@ -181,11 +179,11 @@ void IOStatistics::UpdateVideoPacketLossCount(uint16_t seq_num) {
 }
 
 void IOStatistics::UpdateAudioInboundBytes(uint32_t bytes) {
-  audio_inbound_bytes_.fetch_add(bytes, std::memory_order_relaxed);
+  audio_inbound_bytes_ += bytes;
 }
 
 void IOStatistics::UpdateAudioOutboundBytes(uint32_t bytes) {
-  audio_outbound_bytes_.fetch_add(bytes, std::memory_order_relaxed);
+  audio_outbound_bytes_ += bytes;
 }
 
 void IOStatistics::UpdateAudioPacketLossCount(uint16_t seq_num) {
@@ -193,13 +191,11 @@ void IOStatistics::UpdateAudioPacketLossCount(uint16_t seq_num) {
   if (last_a_seq != 0) {
     if (seq_num > last_a_seq) {
       if (seq_num - last_a_seq != 1) {
-        audio_rtp_pkt_loss_cnt_.fetch_add(seq_num - last_a_seq - 1,
-                                          std::memory_order_relaxed);
+        audio_rtp_pkt_loss_cnt_ += seq_num - last_a_seq - 1;
       }
     } else {
-      audio_rtp_pkt_loss_cnt_.fetch_add(
-          seq_num + (std::numeric_limits<uint16_t>::max() - last_a_seq) - 1,
-          std::memory_order_relaxed);
+      audio_rtp_pkt_loss_cnt_ +=
+          seq_num + (std::numeric_limits<uint16_t>::max() - last_a_seq) - 1;
     }
   }
 
@@ -207,11 +203,11 @@ void IOStatistics::UpdateAudioPacketLossCount(uint16_t seq_num) {
 }
 
 void IOStatistics::UpdateDataInboundBytes(uint32_t bytes) {
-  data_inbound_bytes_.fetch_add(bytes, std::memory_order_relaxed);
+  data_inbound_bytes_ += bytes;
 }
 
 void IOStatistics::UpdateDataOutboundBytes(uint32_t bytes) {
-  data_outbound_bytes_.fetch_add(bytes, std::memory_order_relaxed);
+  data_outbound_bytes_ += bytes;
 }
 
 void IOStatistics::UpdateDataPacketLossCount(uint16_t seq_num) {

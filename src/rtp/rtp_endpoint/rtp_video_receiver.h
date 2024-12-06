@@ -45,6 +45,7 @@ class RtpVideoReceiver : public ThreadBase {
 
  private:
   bool Process() override;
+  void RtcpThread();
 
  private:
   std::map<uint16_t, RtpPacket> incomplete_frame_list_;
@@ -72,6 +73,16 @@ class RtpVideoReceiver : public ThreadBase {
   // std::map<uint32_t, std::map<uint16_t, RtpPacket>> fec_repair_symbol_list_;
   std::set<uint64_t> incomplete_fec_frame_list_;
   std::map<uint64_t, std::map<uint16_t, RtpPacket>> incomplete_fec_packet_list_;
+
+ private:
+  std::thread rtcp_thread_;
+  std::mutex rtcp_mtx_;
+  std::condition_variable rtcp_cv_;
+  std::chrono::steady_clock::time_point last_send_rtcp_rr_ts_;
+  std::atomic<bool> send_rtcp_rr_triggered_ = false;
+  std::atomic<bool> rtcp_stop_ = false;
+  int rtcp_rr_interval_ms_ = 5000;
+  int rtcp_tcc_interval_ms_ = 200;
 };
 
 #endif

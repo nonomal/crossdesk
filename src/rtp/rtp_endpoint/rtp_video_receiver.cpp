@@ -8,11 +8,20 @@
 RtpVideoReceiver::RtpVideoReceiver() {}
 
 RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics)
-    : io_statistics_(io_statistics) {}
+    : io_statistics_(io_statistics) {
+  rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
+}
 
 RtpVideoReceiver::~RtpVideoReceiver() {
   if (rtp_statistics_) {
     rtp_statistics_->Stop();
+  }
+
+  rtcp_stop_.store(true);
+  rtcp_cv_.notify_one();
+
+  if (rtcp_thread_.joinable()) {
+    rtcp_thread_.join();
   }
 }
 
@@ -299,27 +308,6 @@ bool RtpVideoReceiver::CheckIsAv1FrameCompleted(RtpPacket& rtp_packet) {
   return false;
 }
 
-bool RtpVideoReceiver::Process() {
-  if (!compelete_video_frame_queue_.isEmpty()) {
-    VideoFrame video_frame;
-    compelete_video_frame_queue_.pop(video_frame);
-    if (on_receive_complete_frame_) {
-      // auto now_complete_frame_ts =
-      //     std::chrono::duration_cast<std::chrono::milliseconds>(
-      //         std::chrono::system_clock::now().time_since_epoch())
-      //         .count();
-      // uint32_t duration = now_complete_frame_ts - last_complete_frame_ts_;
-      // LOG_ERROR("Duration {}", duration);
-      // last_complete_frame_ts_ = now_complete_frame_ts;
-
-      on_receive_complete_frame_(video_frame);
-    }
-  }
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(5));
-  return true;
-}
-
 void RtpVideoReceiver::SetSendDataFunc(
     std::function<int(const char*, size_t)> data_send_func) {
   data_send_func_ = data_send_func;
@@ -350,5 +338,48 @@ bool RtpVideoReceiver::CheckIsTimeSendRR() {
     return true;
   } else {
     return false;
+  }
+}
+
+bool RtpVideoReceiver::Process() {
+  if (!compelete_video_frame_queue_.isEmpty()) {
+    VideoFrame video_frame;
+    compelete_video_frame_queue_.pop(video_frame);
+    if (on_receive_complete_frame_) {
+      // auto now_complete_frame_ts =
+      //     std::chrono::duration_cast<std::chrono::milliseconds>(
+      //         std::chrono::system_clock::now().time_since_epoch())
+      //         .count();
+      // uint32_t duration = now_complete_frame_ts - last_complete_frame_ts_;
+      // LOG_ERROR("Duration {}", duration);
+      // last_complete_frame_ts_ = now_complete_frame_ts;
+
+      on_receive_complete_frame_(video_frame);
+    }
+  }
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  return true;
+}
+
+void RtpVideoReceiver::RtcpThread() {
+  while (!rtcp_stop_) {
+    std::unique_lock<std::mutex> lock(rtcp_mtx_);
+    if (rtcp_cv_.wait_for(
+            lock, std::chrono::milliseconds(rtcp_tcc_interval_ms_),
+            [&]() { return send_rtcp_rr_triggered_ || rtcp_stop_; })) {
+      if (rtcp_stop_) break;
+      send_rtcp_rr_triggered_ = false;
+    } else {
+      LOG_ERROR("Send video tcc");
+      auto now = std::chrono::steady_clock::now();
+      auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         now - last_send_rtcp_rr_ts_)
+                         .count();
+      if (elapsed >= rtcp_rr_interval_ms_) {
+        LOG_ERROR("Send video rr [{}]", (void*)this);
+        last_send_rtcp_rr_ts_ = now;
+      }
+    }
   }
 }
