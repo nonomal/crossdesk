@@ -132,15 +132,25 @@ class TransportFeedback : public RtcpPacket {
   ~TransportFeedback();
 
  public:
+  static constexpr uint8_t kPacketType = 205;
+
+ public:
   bool AddReceivedPacket(uint16_t sequence_number, int64_t timestamp);
   bool AddMissingPackets(size_t num_missing_packets);
   bool AddDeltaSize(DeltaSize delta_size);
   void Clear();
 
-  bool Create(std::vector<uint8_t>& packet, size_t max_length,
+  bool Create(uint8_t* packet, size_t* position, size_t max_length,
               PacketReadyCallback callback) const override;
 
  public:
+  void SetMediaSsrc(uint32_t ssrc) { media_ssrc_ = ssrc; }
+  uint32_t media_ssrc() const { return media_ssrc_; }
+  void ParseCommonFeedback(const uint8_t* payload);
+  void CreateCommonFeedback(uint8_t* payload) const;
+
+ public:
+  static constexpr size_t kCommonFeedbackLength = 8;
   void SetBaseSequenceNumber(uint16_t base_sequence_number);
   void SetPacketStatusCount(uint16_t packet_status_count);
   void SetReferenceTime(uint32_t reference_time);
@@ -148,6 +158,11 @@ class TransportFeedback : public RtcpPacket {
 
   int64_t BaseTime() const;
   int64_t GetBaseDelta(int64_t prev_timestamp) const;
+  size_t BlockLength() const override;
+  size_t PaddingLength() const;
+
+ private:
+  uint32_t media_ssrc_ = 0;
 
  private:
   uint16_t base_seq_no_;

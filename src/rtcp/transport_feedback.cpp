@@ -1,5 +1,6 @@
 #include "transport_feedback.h"
 
+#include "byte_io.h"
 #include "log.h"
 #include "sequence_number_compare.h"
 
@@ -135,62 +136,63 @@ void TransportFeedback::Clear() {
 }
 
 // Serialize packet.
-bool TransportFeedback::Create(std::vector<uint8_t>& packet, size_t max_length,
+bool TransportFeedback::Create(uint8_t* packet, size_t* position,
+                               size_t max_length,
                                PacketReadyCallback callback) const {
   if (pkt_stat_cnt_ == 0) return false;
 
-  size_t position = packet.size();
-  while (position + BlockLength() > max_length) {
-    if (!OnBufferFull(packet, callback)) return false;
+  while (*position + BlockLength() > max_length) {
+    if (!OnBufferFull(packet, position, callback)) return false;
   }
-  const size_t position_end = position + BlockLength();
+  const size_t position_end = *position + BlockLength();
   const size_t padding_length = PaddingLength();
   bool has_padding = padding_length > 0;
   CreateHeader(kFeedbackMessageType, kPacketType, HeaderLength(), has_padding,
-               packet);
-  CreateCommonFeedback(packet + position);
-  position += kCommonFeedbackLength;
+               packet, position);
+  CreateCommonFeedback(packet + *position);
+  *position += kCommonFeedbackLength;
 
-  ByteWriter<uint16_t>::WriteBigEndian(&packet[position], base_seq_no_);
-  position += 2;
+  ByteWriter<uint16_t>::WriteBigEndian(&packet[*position], base_seq_no_);
+  *position += 2;
 
-  ByteWriter<uint16_t>::WriteBigEndian(&packet[position], pkt_stat_cnt_);
-  position += 2;
+  ByteWriter<uint16_t>::WriteBigEndian(&packet[*position], pkt_stat_cnt_);
+  *position += 2;
 
-  ByteWriter<uint32_t, 3>::WriteBigEndian(&packet[position], base_time_ticks_);
-  position += 3;
+  ByteWriter<uint32_t, 3>::WriteBigEndian(&packet[*position], ref_time_);
+  *position += 3;
 
-  packet[(position)++] = feedback_seq_;
+  packet[(*position)++] = feedback_pkt_cnt_;
 
   for (uint16_t chunk : encoded_chunks_) {
-    ByteWriter<uint16_t>::WriteBigEndian(&packet[position], chunk);
-    position += 2;
+    ByteWriter<uint16_t>::WriteBigEndian(&packet[*position], chunk);
+    *position += 2;
   }
   if (!last_chunk_.Empty()) {
     uint16_t chunk = last_chunk_.EncodeLast();
-    ByteWriter<uint16_t>::WriteBigEndian(&packet[position], chunk);
-    position += 2;
+    ByteWriter<uint16_t>::WriteBigEndian(&packet[*position], chunk);
+    *position += 2;
   }
 
-  if (include_timestamps_) {
-    for (const auto& received_packet : received_packets_) {
-      int16_t delta = received_packet.delta_ticks();
-      if (delta >= 0 && delta <= 0xFF) {
-        packet[(position)++] = delta;
-      } else {
-        ByteWriter<int16_t>::WriteBigEndian(&packet[position], delta);
-        position += 2;
-      }
+  for (const auto& received_packet : received_packets_) {
+    int16_t delta = received_packet.delta_ticks();
+    if (delta >= 0 && delta <= 0xFF) {
+      packet[(*position)++] = delta;
+    } else {
+      ByteWriter<int16_t>::WriteBigEndian(&packet[*position], delta);
+      *position += 2;
     }
   }
 
   if (padding_length > 0) {
     for (size_t i = 0; i < padding_length - 1; ++i) {
-      packet[(position)++] = 0;
+      packet[(*position)++] = 0;
     }
-    packet[(position)++] = padding_length;
+    packet[(*position)++] = padding_length;
   }
-  RTC_DCHECK_EQ(position, position_end);
+
+  if (*position != position_end) {
+    LOG_FATAL("padding_length is too small");
+  }
   return true;
 }
 
@@ -213,17 +215,36 @@ void TransportFeedback::SetFeedbackPacketCount(uint8_t feedback_packet_count) {
 int64_t TransportFeedback::BaseTime() const {
   // Add an extra kTimeWrapPeriod to allow add received packets arrived earlier
   // than the first added packet (and thus allow to record negative deltas)
-  // even when base_time_ticks_ == 0.
-  return 0 + kTimeWrapPeriod + int64_t{base_time_ticks_} * kBaseTimeTick;
+  // even when ref_time_ == 0.
+  return 0 + kTimeWrapPeriod + int64_t{ref_time_} * kBaseTimeTick;
 }
 
 int64_t TransportFeedback::GetBaseDelta(int64_t prev_timestamp) const {
   int64_t delta = BaseTime() - prev_timestamp;
   // Compensate for wrap around.
-  if (std::abs(delta - kTimeWrapPeriod) < std::abs(delta) {
+  if (std::abs(delta - kTimeWrapPeriod) < std::abs(delta)) {
     delta -= kTimeWrapPeriod;  // Wrap backwards.
   } else if (std::abs(delta + kTimeWrapPeriod) < std::abs(delta)) {
     delta += kTimeWrapPeriod;  // Wrap forwards.
   }
   return delta;
+}
+
+size_t TransportFeedback::BlockLength() const {
+  // Round size_bytes_ up to multiple of 32bits.
+  return (size_bytes_ + 3) & (~static_cast<size_t>(3));
+}
+
+size_t TransportFeedback::PaddingLength() const {
+  return BlockLength() - size_bytes_;
+}
+
+void TransportFeedback::ParseCommonFeedback(const uint8_t* payload) {
+  SetSenderSsrc(ByteReader<uint32_t>::ReadBigEndian(&payload[0]));
+  SetMediaSsrc(ByteReader<uint32_t>::ReadBigEndian(&payload[4]));
+}
+
+void TransportFeedback::CreateCommonFeedback(uint8_t* payload) const {
+  ByteWriter<uint32_t>::WriteBigEndian(&payload[0], sender_ssrc());
+  ByteWriter<uint32_t>::WriteBigEndian(&payload[4], media_ssrc());
 }

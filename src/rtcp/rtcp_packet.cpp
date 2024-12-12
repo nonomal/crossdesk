@@ -4,12 +4,12 @@
 
 #define IP_PACKET_SIZE 1500  // we assume ethernet
 
-bool RtcpPacket::OnBufferFull(std::vector<uint8_t>& packet,
+bool RtcpPacket::OnBufferFull(uint8_t* packet, size_t* index,
                               PacketReadyCallback callback) const {
-  if (packet.empty()) {
+  if (*index == 0) {
     return false;
   }
-  callback(packet);
+  callback(packet, *index);
   return true;
 }
 

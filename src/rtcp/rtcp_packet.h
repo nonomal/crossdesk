@@ -19,7 +19,8 @@ class RtcpPacket {
   // not contain all data in this RtcpPacket; if a packet cannot fit in
   // max_length bytes, it will be fragmented and multiple calls to this
   // callback will be made.
-  using PacketReadyCallback = std::function<void(std::vector<uint8_t> packet)>;
+  using PacketReadyCallback =
+      std::function<void(const uint8_t* packet, size_t size)>;
 
   virtual ~RtcpPacket() = default;
 
@@ -32,7 +33,7 @@ class RtcpPacket {
   // Creates packet in the given buffer at the given position.
   // Calls PacketReadyCallback::OnPacketReady if remaining buffer is too small
   // and assume buffer can be reused after OnPacketReady returns.
-  virtual bool Create(std::vector<uint8_t>& packet, size_t max_length,
+  virtual bool Create(uint8_t* packet, size_t* position, size_t max_length,
                       PacketReadyCallback callback) const = 0;
 
  protected:
@@ -42,14 +43,14 @@ class RtcpPacket {
 
   static void CreateHeader(size_t count_or_format, uint8_t packet_type,
                            size_t block_length,  // Payload size in 32bit words.
-                           std::vector<uint8_t>& buffer);
+                           uint8_t* buffer, size_t* pos);
 
   static void CreateHeader(size_t count_or_format, uint8_t packet_type,
                            size_t block_length,  // Payload size in 32bit words.
                            bool padding,  // True if there are padding bytes.
-                           std::vector<uint8_t>& buffer);
+                           uint8_t* buffer, size_t* pos);
 
-  bool OnBufferFull(std::vector<uint8_t>& packet,
+  bool OnBufferFull(uint8_t* packet, size_t* index,
                     PacketReadyCallback callback) const;
   // Size of the rtcp packet as written in header.
   size_t HeaderLength() const;
