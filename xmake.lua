@@ -79,8 +79,12 @@ target("statistics")
 target("rtcp")
     set_kind("object")
     add_deps("log", "common")
-    add_files("src/rtcp/*.cpp")
-    add_includedirs("src/rtcp", {public = true})
+    add_files("src/rtcp/*.cpp",
+    "src/rtcp/rtcp_packet/*.cpp",
+    "src/rtcp/rtp_feedback/*.cpp")
+    add_includedirs("src/rtcp",
+    "src/rtcp/rtcp_packet",
+    "src/rtcp/rtp_feedback", {public = true})
 
 target("rtp")
     set_kind("object")
