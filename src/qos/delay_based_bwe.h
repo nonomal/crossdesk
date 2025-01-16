@@ -1,11 +1,15 @@
 /*
- * @Author: DI JUNKUN
- * @Date: 2025-01-14
- * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef _DELAY_BASED_BWE_H_
-#define _DELAY_BASED_BWE_H_
+#ifndef MODULES_CONGESTION_CONTROLLER_GOOG_CC_DELAY_BASED_BWE_H_
+#define MODULES_CONGESTION_CONTROLLER_GOOG_CC_DELAY_BASED_BWE_H_
 
 #include <stdint.h>
 
@@ -13,27 +17,29 @@
 #include <optional>
 #include <vector>
 
+#include "aimd_rate_control.h"
+#include "api/units/data_rate.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
+#include "bandwidth_usage.h"
+#include "delay_increase_detector_interface.h"
+#include "inter_arrival.h"
+#include "inter_arrival_delta.h"
+#include "link_capacity_estimator.h"
 #include "network_types.h"
+#include "probe_bitrate_estimator.h"
 
-enum class BandwidthUsage {
-  kBwNormal = 0,
-  kBwUnderusing = 1,
-  kBwOverusing = 2,
-  kLast
-};
+namespace webrtc {
+class RtcEventLog;
 
 struct BweSeparateAudioPacketsSettings {
   static constexpr char kKey[] = "WebRTC-Bwe-SeparateAudioPackets";
 
   BweSeparateAudioPacketsSettings() = default;
-  explicit BweSeparateAudioPacketsSettings(
-      const FieldTrialsView* key_value_config);
 
   bool enabled = false;
   int packet_threshold = 10;
-  int64_t time_threshold = int64_t::Seconds(1);
-
-  std::unique_ptr<StructParametersParser> Parser();
+  TimeDelta time_threshold = TimeDelta::Seconds(1);
 };
 
 class DelayBasedBwe {
@@ -43,60 +49,51 @@ class DelayBasedBwe {
     ~Result() = default;
     bool updated;
     bool probe;
-    int64_t target_bitrate = int64_t::Zero();
+    DataRate target_bitrate = DataRate::Zero();
     bool recovered_from_overuse;
     BandwidthUsage delay_detector_state;
   };
 
-  explicit DelayBasedBwe(const FieldTrialsView* key_value_config,
-                         RtcEventLog* event_log,
-                         NetworkStatePredictor* network_state_predictor);
-
-  DelayBasedBwe() = delete;
+  DelayBasedBwe();
   DelayBasedBwe(const DelayBasedBwe&) = delete;
   DelayBasedBwe& operator=(const DelayBasedBwe&) = delete;
 
   virtual ~DelayBasedBwe();
 
-  Result IncomingPacketFeedbackVector(
-      const TransportPacketsFeedback& msg, std::optional<int64_t> acked_bitrate,
-      std::optional<int64_t> probe_bitrate,
-      std::optional<NetworkStateEstimate> network_estimate, bool in_alr);
-  void OnRttUpdate(int64_t avg_rtt);
-  bool LatestEstimate(std::vector<uint32_t>* ssrcs, int64_t* bitrate) const;
-  void SetStartBitrate(int64_t start_bitrate);
-  void SetMinBitrate(int64_t min_bitrate);
-  int64_t GetExpectedBwePeriod() const;
-  int64_t TriggerOveruse(int64_t at_time, std::optional<int64_t> link_capacity);
-  int64_t last_estimate() const { return prev_bitrate_; }
+  Result IncomingPacketFeedbackVector(const TransportPacketsFeedback& msg,
+                                      std::optional<DataRate> acked_bitrate,
+                                      std::optional<DataRate> probe_bitrate,
+                                      bool in_alr);
+  void OnRttUpdate(TimeDelta avg_rtt);
+  bool LatestEstimate(std::vector<uint32_t>* ssrcs, DataRate* bitrate) const;
+  void SetStartBitrate(DataRate start_bitrate);
+  void SetMinBitrate(DataRate min_bitrate);
+  TimeDelta GetExpectedBwePeriod() const;
+  DataRate TriggerOveruse(Timestamp at_time,
+                          std::optional<DataRate> link_capacity);
+  DataRate last_estimate() const { return prev_bitrate_; }
   BandwidthUsage last_state() const { return prev_state_; }
 
  private:
   friend class GoogCcStatePrinter;
   void IncomingPacketFeedback(const PacketResult& packet_feedback,
-                              int64_t at_time);
-  Result MaybeUpdateEstimate(std::optional<int64_t> acked_bitrate,
-                             std::optional<int64_t> probe_bitrate,
-                             std::optional<NetworkStateEstimate> state_estimate,
+                              Timestamp at_time);
+  Result MaybeUpdateEstimate(std::optional<DataRate> acked_bitrate,
+                             std::optional<DataRate> probe_bitrate,
                              bool recovered_from_overuse, bool in_alr,
-                             int64_t at_time);
+                             Timestamp at_time);
   // Updates the current remote rate estimate and returns true if a valid
   // estimate exists.
-  bool UpdateEstimate(int64_t at_time, std::optional<int64_t> acked_bitrate,
-                      int64_t* target_rate);
-
-  rtc::RaceChecker network_race_;
-  RtcEventLog* const event_log_;
-  const FieldTrialsView* const key_value_config_;
+  bool UpdateEstimate(Timestamp at_time, std::optional<DataRate> acked_bitrate,
+                      DataRate* target_rate);
 
   // Alternatively, run two separate overuse detectors for audio and video,
   // and fall back to the audio one if we haven't seen a video packet in a
   // while.
   BweSeparateAudioPacketsSettings separate_audio_;
   int64_t audio_packets_since_last_video_;
-  int64_t last_video_packet_recv_time_;
+  Timestamp last_video_packet_recv_time_;
 
-  NetworkStatePredictor* network_state_predictor_;
   std::unique_ptr<InterArrival> video_inter_arrival_;
   std::unique_ptr<InterArrivalDelta> video_inter_arrival_delta_;
   std::unique_ptr<DelayIncreaseDetectorInterface> video_delay_detector_;
@@ -105,11 +102,13 @@ class DelayBasedBwe {
   std::unique_ptr<DelayIncreaseDetectorInterface> audio_delay_detector_;
   DelayIncreaseDetectorInterface* active_delay_detector_;
 
-  int64_t last_seen_packet_;
+  Timestamp last_seen_packet_;
   bool uma_recorded_;
   AimdRateControl rate_control_;
-  int64_t prev_bitrate_;
+  DataRate prev_bitrate_;
   BandwidthUsage prev_state_;
 };
 
-#endif
+}  // namespace webrtc
+
+#endif  // MODULES_CONGESTION_CONTROLLER_GOOG_CC_DELAY_BASED_BWE_H_

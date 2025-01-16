@@ -1,17 +1,26 @@
 /*
- * @Author: DI JUNKUN
- * @Date: 2025-01-14
- * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
+ *  Copyright (c) 2017 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef _BITRATE_ESTIMATOR_H_
-#define _BITRATE_ESTIMATOR_H_
+#ifndef MODULES_CONGESTION_CONTROLLER_GOOG_CC_BITRATE_ESTIMATOR_H_
+#define MODULES_CONGESTION_CONTROLLER_GOOG_CC_BITRATE_ESTIMATOR_H_
 
 #include <stdint.h>
 
 #include <optional>
 
+#include "api/units/data_rate.h"
+#include "api/units/data_size.h"
+#include "api/units/timestamp.h"
 #include "constrained.h"
+
+namespace webrtc {
 
 // Computes a bayesian estimate of the throughput given acks containing
 // the arrival time and payload size. Samples which are far from the current
@@ -20,12 +29,12 @@
 // unrelated to congestion.
 class BitrateEstimator {
  public:
-  explicit BitrateEstimator();
+  BitrateEstimator();
   virtual ~BitrateEstimator();
-  virtual void Update(int64_t at_time, int64_t amount, bool in_alr);
+  virtual void Update(Timestamp at_time, DataSize amount, bool in_alr);
 
-  virtual std::optional<int64_t> bitrate() const;
-  std::optional<int64_t> PeekRate() const;
+  virtual std::optional<DataRate> bitrate() const;
+  std::optional<DataRate> PeekRate() const;
 
   virtual void ExpectFastRateChange();
 
@@ -38,13 +47,15 @@ class BitrateEstimator {
   double uncertainty_scale_;
   double uncertainty_scale_in_alr_;
   double small_sample_uncertainty_scale_;
-  int64_t small_sample_threshold_;
-  int64_t uncertainty_symmetry_cap_;
-  int64_t estimate_floor_;
+  DataSize small_sample_threshold_;
+  DataRate uncertainty_symmetry_cap_;
+  DataRate estimate_floor_;
   int64_t current_window_ms_;
   int64_t prev_time_ms_;
   float bitrate_estimate_kbps_;
   float bitrate_estimate_var_;
 };
 
-#endif
+}  // namespace webrtc
+
+#endif  // MODULES_CONGESTION_CONTROLLER_GOOG_CC_BITRATE_ESTIMATOR_H_

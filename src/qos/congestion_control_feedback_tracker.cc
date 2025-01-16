@@ -1,14 +1,29 @@
+
+/*
+ *  Copyright (c) 2024 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
+ */
+
 #include "congestion_control_feedback_tracker.h"
 
-#include <algorithm>
 #include <cstdint>
 #include <tuple>
 #include <vector>
 
-#include "log.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
+#include "congestion_control_feedback.h"
+#include "rtp_packet_received.h"
+
+namespace webrtc {
 
 void CongestionControlFeedbackTracker::ReceivedPacket(
-    RtpPacketReceived& packet) {
+    const RtpPacketReceived& packet) {
   int64_t unwrapped_sequence_number =
       unwrapper_.Unwrap(packet.SequenceNumber());
   if (last_sequence_number_in_feedback_ &&
@@ -26,13 +41,13 @@ void CongestionControlFeedbackTracker::ReceivedPacket(
     // received.
     last_sequence_number_in_feedback_ = unwrapped_sequence_number - 1;
   }
-  packets_.push_back({packet.Ssrc(), unwrapped_sequence_number,
-                      packet.arrival_time(), packet.ecn()});
+  packets_.emplace_back(packet.Ssrc(), unwrapped_sequence_number,
+                        packet.arrival_time(), packet.ecn());
 }
 
 void CongestionControlFeedbackTracker::AddPacketsToFeedback(
-    int64_t feedback_time,
-    std::vector<CongestionControlFeedback::PacketInfo>& packet_feedback) {
+    Timestamp feedback_time,
+    std::vector<rtcp::CongestionControlFeedback::PacketInfo>& packet_feedback) {
   if (packets_.empty()) {
     return;
   }
@@ -51,17 +66,8 @@ void CongestionControlFeedbackTracker::AddPacketsToFeedback(
   for (int64_t sequence_number = *last_sequence_number_in_feedback_ + 1;
        sequence_number <= packets_.back().unwrapped_sequence_number;
        ++sequence_number) {
-    if (packet_it == packets_.end()) {
-      LOG_FATAL("Invalid packet_it");
-      return;
-    }
-    if (ssrc != packet_it->ssrc) {
-      LOG_FATAL("Invalid ssrc");
-      return;
-    }
-
-    EcnMarking ecn = EcnMarking::kNotEct;
-    int64_t arrival_time_offset = std::numeric_limits<int64_t>::min();
+    rtc::EcnMarking ecn = rtc::EcnMarking::kNotEct;
+    TimeDelta arrival_time_offset = TimeDelta::MinusInfinity();
 
     if (sequence_number == packet_it->unwrapped_sequence_number) {
       arrival_time_offset = feedback_time - packet_it->arrival_time;
@@ -70,22 +76,24 @@ void CongestionControlFeedbackTracker::AddPacketsToFeedback(
       while (packet_it != packets_.end() &&
              packet_it->unwrapped_sequence_number == sequence_number) {
         // According to RFC 8888:
-        // If duplicate copies of a particular RTP packet are received, then the
-        // arrival time of the first copy to arrive MUST be reported. If any of
-        // the copies of the duplicated packet are ECN-CE marked, then an ECN-CE
-        // mark MUST be reported for that packet; otherwise, the ECN mark of the
-        // first copy to arrive is reported.
-        if (packet_it->ecn == EcnMarking::kCe) {
-          ecn = EcnMarking::kCe;
+        // If duplicate copies of a particular RTP packet are received, then
+        // the arrival time of the first copy to arrive MUST be reported. If
+        // any of the copies of the duplicated packet are ECN-CE marked, then
+        // an ECN-CE mark MUST be reported for that packet; otherwise, the ECN
+        // mark of the first copy to arrive is reported.
+        if (packet_it->ecn == rtc::EcnMarking::kCe) {
+          ecn = rtc::EcnMarking::kCe;
         }
-        LOG_WARN("Received duplicate packet ssrc: {} seq: {} ecn: {}", ssrc,
+        LOG_WARN("Received duplicate packet ssrc:{} seq:{} ecn:{}", ssrc,
                  static_cast<uint16_t>(sequence_number), static_cast<int>(ecn));
         ++packet_it;
       }
     }  // else - the packet has not been received yet.
-    packet_feedback.push_back({ssrc, static_cast<uint16_t>(sequence_number),
-                               arrival_time_offset, ecn});
+    packet_feedback.emplace_back(ssrc, static_cast<uint16_t>(sequence_number),
+                                 arrival_time_offset, ecn);
   }
   last_sequence_number_in_feedback_ = packets_.back().unwrapped_sequence_number;
   packets_.clear();
 }
+
+}  // namespace webrtc

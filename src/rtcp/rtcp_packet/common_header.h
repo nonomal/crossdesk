@@ -13,13 +13,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
-class RtcpCommonHeader {
+namespace webrtc {
+namespace rtcp {
+class CommonHeader {
  public:
   static constexpr size_t kHeaderSizeBytes = 4;
 
-  RtcpCommonHeader() {}
-  RtcpCommonHeader(const RtcpCommonHeader&) = default;
-  RtcpCommonHeader& operator=(const RtcpCommonHeader&) = default;
+  CommonHeader() {}
+  CommonHeader(const CommonHeader&) = default;
+  CommonHeader& operator=(const CommonHeader&) = default;
 
   bool Parse(const uint8_t* buffer, size_t size_bytes);
 
@@ -45,4 +47,6 @@ class RtcpCommonHeader {
   uint32_t payload_size_ = 0;
   const uint8_t* payload_ = nullptr;
 };
+}  // namespace rtcp
+}  // namespace webrtc
 #endif  // MODULES_RTP_RTCP_SOURCE_RTCP_PACKET_COMMON_HEADER_H_

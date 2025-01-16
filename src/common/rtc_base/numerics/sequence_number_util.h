@@ -1,16 +1,22 @@
 /*
- * @Author: DI JUNKUN
- * @Date: 2025-01-08
- * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef _SEQUENCE_NUMBER_UTIL_H_
-#define _SEQUENCE_NUMBER_UTIL_H_
+#ifndef RTC_BASE_NUMERICS_SEQUENCE_NUMBER_UTIL_H_
+#define RTC_BASE_NUMERICS_SEQUENCE_NUMBER_UTIL_H_
 
 #include <limits>
 #include <type_traits>
 
 #include "mod_ops.h"
+
+namespace webrtc {
 
 // Test if the sequence number `a` is ahead or at sequence number `b`.
 //
@@ -70,4 +76,6 @@ struct DescendingSeqNumComp {
   bool operator()(T a, T b) const { return AheadOf<T, M>(b, a); }
 };
 
-#endif
+}  // namespace webrtc
+
+#endif  // RTC_BASE_NUMERICS_SEQUENCE_NUMBER_UTIL_H_

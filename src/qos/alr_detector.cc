@@ -10,17 +10,19 @@
 
 #include "alr_detector.h"
 
-#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <memory>
 #include <optional>
 
+#include "rtc_base/time_utils.h"
+
+namespace webrtc {
+
 AlrDetector::AlrDetector(AlrDetectorConfig config)
     : conf_(config), alr_budget_(0, true) {}
 
 AlrDetector::AlrDetector() : alr_budget_(0, true) {}
-
 AlrDetector::~AlrDetector() {}
 
 void AlrDetector::OnBytesSent(size_t bytes_sent, int64_t send_time_ms) {
@@ -38,10 +40,7 @@ void AlrDetector::OnBytesSent(size_t bytes_sent, int64_t send_time_ms) {
   bool state_changed = false;
   if (alr_budget_.budget_ratio() > conf_.start_budget_level_ratio &&
       !alr_started_time_ms_) {
-    alr_started_time_ms_.emplace(
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
+    alr_started_time_ms_.emplace(rtc::TimeMillis());
     state_changed = true;
   } else if (alr_budget_.budget_ratio() < conf_.stop_budget_level_ratio &&
              alr_started_time_ms_) {
@@ -60,3 +59,5 @@ std::optional<int64_t> AlrDetector::GetApplicationLimitedRegionStartTime()
     const {
   return alr_started_time_ms_;
 }
+
+}  // namespace webrtc

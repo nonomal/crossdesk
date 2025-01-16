@@ -7,6 +7,7 @@
 #include "acknowledged_bitrate_estimator.h"
 #include "alr_detector.h"
 #include "congestion_window_pushback_controller.h"
+#include "delay_based_bwe.h"
 #include "network_types.h"
 #include "send_side_bandwidth_estimation.h"
 

@@ -13,6 +13,8 @@
 #include "byte_io.h"
 #include "log.h"
 
+namespace webrtc {
+namespace rtcp {
 //    0                   1           1       2                   3
 //    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -24,14 +26,14 @@
 //   --------------------------------+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //
 // Common header for all RTCP packets, 4 octets.
-bool RtcpCommonHeader::Parse(const uint8_t* buffer, size_t size_bytes) {
+bool CommonHeader::Parse(const uint8_t* buffer, size_t size_bytes) {
   const uint8_t kVersion = 2;
 
   if (size_bytes < kHeaderSizeBytes) {
     LOG_WARN(
-        "Too little data ({}) remaining in buffer to parse RTCP header (4 "
-        "bytes)",
-        size_bytes);
+        "Too little data ({} byte{}) remaining in buffer to parse RTCP header "
+        "(4 bytes).",
+        size_bytes, (size_bytes != 1 ? "s" : ""));
     return false;
   }
 
@@ -51,8 +53,8 @@ bool RtcpCommonHeader::Parse(const uint8_t* buffer, size_t size_bytes) {
 
   if (size_bytes < kHeaderSizeBytes + payload_size_) {
     LOG_WARN(
-        "Buffer too small ({}) to fit an RtcpPacket with a header and ({} "
-        "bytes)",
+        "Buffer too small ({} bytes) to fit an RtcpPacket with a header and {} "
+        "bytes.",
         size_bytes, payload_size_);
     return false;
   }
@@ -60,21 +62,20 @@ bool RtcpCommonHeader::Parse(const uint8_t* buffer, size_t size_bytes) {
   if (has_padding) {
     if (payload_size_ == 0) {
       LOG_WARN(
-          "Invalid RTCP header: Padding bit set but 0 payload size "
-          "specified");
+          "Invalid RTCP header: Padding bit set but 0 payload size specified.");
       return false;
     }
 
     padding_size_ = payload_[payload_size_ - 1];
     if (padding_size_ == 0) {
       LOG_WARN(
-          "Invalid RTCP header: Padding bit set but 0 padding size specified");
+          "Invalid RTCP header: Padding bit set but 0 padding size specified.");
       return false;
     }
     if (padding_size_ > payload_size_) {
       LOG_WARN(
           "Invalid RTCP header: Too many padding bytes ({}) for a packet "
-          "payload size of ({}) bytes",
+          "payload size of {} bytes.",
           padding_size_, payload_size_);
       return false;
     }
@@ -82,3 +83,5 @@ bool RtcpCommonHeader::Parse(const uint8_t* buffer, size_t size_bytes) {
   }
   return true;
 }
+}  // namespace rtcp
+}  // namespace webrtc

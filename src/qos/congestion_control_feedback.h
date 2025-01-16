@@ -1,19 +1,27 @@
 /*
- * @Author: DI JUNKUN
- * @Date: 2024-12-18
- * Copyright (c) 2024 by DI JUNKUN, All Rights Reserved.
+ *  Copyright (c) 2024 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
  */
-
-#ifndef _CONGESTION_CONTROL_FEEDBACK_H_
-#define _CONGESTION_CONTROL_FEEDBACK_H_
+#ifndef MODULES_RTP_RTCP_SOURCE_RTCP_PACKET_CONGESTION_CONTROL_FEEDBACK_H_
+#define MODULES_RTP_RTCP_SOURCE_RTCP_PACKET_CONGESTION_CONTROL_FEEDBACK_H_
 
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <vector>
 
-#include "enc_mark.h"
+#include "api/array_view.h"
+#include "api/units/time_delta.h"
+#include "common_header.h"
+#include "rtc_base/network/ecn_marking.h"
 #include "rtp_feedback.h"
+
+namespace webrtc {
+namespace rtcp {
 
 // Congestion control feedback message as specified in
 // https://www.rfc-editor.org/rfc/rfc8888.html
@@ -24,8 +32,8 @@ class CongestionControlFeedback : public RtpFeedback {
     uint16_t sequence_number = 0;
     //  Time offset from report timestamp. Minus infinity if the packet has not
     //  been received.
-    int64_t arrival_time_offset = std::numeric_limits<int64_t>::min();
-    EcnMarking ecn = EcnMarking::kNotEct;
+    TimeDelta arrival_time_offset = TimeDelta::MinusInfinity();
+    rtc::EcnMarking ecn = rtc::EcnMarking::kNotEct;
   };
 
   static constexpr uint8_t kFeedbackMessageType = 11;
@@ -37,9 +45,9 @@ class CongestionControlFeedback : public RtpFeedback {
                             uint32_t report_timestamp_compact_ntp);
   CongestionControlFeedback() = default;
 
-  bool Parse(const RtcpCommonHeader& packet);
+  bool Parse(const CommonHeader& packet);
 
-  std::vector<PacketInfo> packets() const { return packets_; }
+  rtc::ArrayView<const PacketInfo> packets() const { return packets_; }
 
   uint32_t report_timestamp_compact_ntp() const {
     return report_timestamp_compact_ntp_;
@@ -55,4 +63,7 @@ class CongestionControlFeedback : public RtpFeedback {
   uint32_t report_timestamp_compact_ntp_ = 0;
 };
 
-#endif
+}  // namespace rtcp
+}  // namespace webrtc
+
+#endif  //  MODULES_RTP_RTCP_SOURCE_RTCP_PACKET_CONGESTION_CONTROL_FEEDBACK_H_

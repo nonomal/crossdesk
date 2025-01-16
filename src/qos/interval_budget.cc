@@ -14,6 +14,9 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "rtc_base/numerics/safe_conversions.h"
+
+namespace webrtc {
 namespace {
 constexpr int64_t kWindowMs = 500;
 }
@@ -51,7 +54,7 @@ void IntervalBudget::UseBudget(size_t bytes) {
 }
 
 size_t IntervalBudget::bytes_remaining() const {
-  return static_cast<size_t>(std::max<int64_t>(0, bytes_remaining_));
+  return rtc::saturated_cast<size_t>(std::max<int64_t>(0, bytes_remaining_));
 }
 
 double IntervalBudget::budget_ratio() const {
@@ -60,3 +63,5 @@ double IntervalBudget::budget_ratio() const {
 }
 
 int IntervalBudget::target_rate_kbps() const { return target_rate_kbps_; }
+
+}  // namespace webrtc

@@ -41,7 +41,9 @@ target("log")
 
 target("common")
     set_kind("object")
-    add_files("src/common/common.cpp")
+    add_files("src/common/common.cpp", 
+    "src/common/rtc_base/numerics/*.cc",
+    "src/common/api/units/*.cc")
     add_includedirs("src/common", {public = true})
 
 target("inih")
@@ -100,7 +102,7 @@ target("ws")
 
 target("rtp")
     set_kind("object")
-    add_deps("log", "frame", "ringbuffer", "thread", "rtcp", "fec", "statistics")
+    add_deps("log", "common", "frame", "ringbuffer", "thread", "rtcp", "fec", "statistics")
     add_files("src/rtp/*.cpp", 
     "src/rtp/rtp_packet/*.cpp")
     add_includedirs("src/rtp", 
@@ -120,7 +122,8 @@ target("rtcp")
 target("qos")
     set_kind("object")
     add_deps("log", "rtp", "rtcp")
-    add_files("src/qos/*.cpp")
+    add_files("src/qos/*.cc", 
+    "src/qos/*.cpp")
     add_includedirs("src/qos", {public = true})
 
 target("channel")

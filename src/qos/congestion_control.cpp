@@ -122,10 +122,6 @@ NetworkControlUpdate CongestionControl::OnTransportPacketsFeedback(
     }
   }
 
-  if (network_estimator_) {
-    network_estimator_->OnTransportPacketsFeedback(report);
-    SetNetworkStateEstimate(network_estimator_->GetCurrentEstimate());
-  }
   std::optional<int64_t> probe_bitrate =
       probe_bitrate_estimator_->FetchAndResetLastEstimatedBitrate();
   if (ignore_probes_lower_than_network_estimate_ && probe_bitrate &&

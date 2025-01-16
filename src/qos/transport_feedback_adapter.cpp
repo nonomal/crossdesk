@@ -127,7 +127,7 @@ TransportFeedbackAdapter::ProcessCongestionControlFeedback(
         packet_info.arrival_time_offset !=
             std::numeric_limits<int64_t>::max()) {
       result.receive_time = current_offset_ - packet_info.arrival_time_offset;
-      supports_ecn &= packet_info.ecn != EcnMarking::kNotEct;
+      supports_ecn &= packet_info.ecn != rtc::EcnMarking::kNotEct;
     }
     result.ecn = packet_info.ecn;
     packet_result_vector.push_back(result);

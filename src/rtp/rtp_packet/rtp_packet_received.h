@@ -1,20 +1,36 @@
 /*
- * @Author: DI JUNKUN
- * @Date: 2024-12-18
- * Copyright (c) 2024 by DI JUNKUN, All Rights Reserved.
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
  */
+#ifndef MODULES_RTP_RTCP_SOURCE_RTP_PACKET_RECEIVED_H_
+#define MODULES_RTP_RTCP_SOURCE_RTP_PACKET_RECEIVED_H_
 
-#ifndef _RTP_PACKET_RECEIVED_H_
-#define _RTP_PACKET_RECEIVED_H_
+#include <stdint.h>
 
-#include <limits>
+#include <utility>
 
-#include "enc_mark.h"
+#include "api/array_view.h"
+#include "api/ref_counted_base.h"
+#include "api/scoped_refptr.h"
+#include "api/units/timestamp.h"
+#include "rtc_base/network/ecn_marking.h"
+#include "rtp_header.h"
 #include "rtp_packet.h"
 
+namespace webrtc {
+// Class to hold rtp packet with metadata for receiver side.
+// The metadata is not parsed from the rtp packet, but may be derived from the
+// data that is parsed from the rtp packet.
 class RtpPacketReceived : public RtpPacket {
  public:
   RtpPacketReceived();
+  explicit RtpPacketReceived(
+      webrtc::Timestamp arrival_time = webrtc::Timestamp::MinusInfinity());
   RtpPacketReceived(const RtpPacketReceived& packet);
   RtpPacketReceived(RtpPacketReceived&& packet);
 
@@ -23,14 +39,19 @@ class RtpPacketReceived : public RtpPacket {
 
   ~RtpPacketReceived();
 
- public:
-  int64_t arrival_time() const { return arrival_time_; }
-  void set_arrival_time(int64_t time) { arrival_time_ = time; }
+  // TODO(bugs.webrtc.org/15054): Remove this function when all code is updated
+  // to use RtpPacket directly.
+  void GetHeader(RTPHeader* header) const;
+
+  // Time in local time base as close as it can to packet arrived on the
+  // network.
+  webrtc::Timestamp arrival_time() const { return arrival_time_; }
+  void set_arrival_time(webrtc::Timestamp time) { arrival_time_ = time; }
 
   // Explicit Congestion Notification (ECN), RFC-3168, Section 5.
   // Used by L4S: https://www.rfc-editor.org/rfc/rfc9331.html
-  EcnMarking ecn() const { return ecn_; }
-  void set_ecn(EcnMarking ecn) { ecn_ = ecn; }
+  rtc::EcnMarking ecn() const { return ecn_; }
+  void set_ecn(rtc::EcnMarking ecn) { ecn_ = ecn; }
 
   // Flag if packet was recovered via RTX or FEC.
   bool recovered() const { return recovered_; }
@@ -41,11 +62,22 @@ class RtpPacketReceived : public RtpPacket {
     payload_type_frequency_ = value;
   }
 
+  // An application can attach arbitrary data to an RTP packet using
+  // `additional_data`. The additional data does not affect WebRTC processing.
+  rtc::scoped_refptr<rtc::RefCountedBase> additional_data() const {
+    return additional_data_;
+  }
+  void set_additional_data(rtc::scoped_refptr<rtc::RefCountedBase> data) {
+    additional_data_ = std::move(data);
+  }
+
  private:
-  int64_t arrival_time_ = std::numeric_limits<int64_t>::min();
-  EcnMarking ecn_ = EcnMarking::kNotEct;
+  webrtc::Timestamp arrival_time_ = Timestamp::MinusInfinity();
+  rtc::EcnMarking ecn_ = rtc::EcnMarking::kNotEct;
   int payload_type_frequency_ = 0;
   bool recovered_ = false;
+  rtc::scoped_refptr<rtc::RefCountedBase> additional_data_;
 };
 
-#endif
+}  // namespace webrtc
+#endif  // MODULES_RTP_RTCP_SOURCE_RTP_PACKET_RECEIVED_H_

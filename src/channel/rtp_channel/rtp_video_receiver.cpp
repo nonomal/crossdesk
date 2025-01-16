@@ -50,7 +50,7 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
 
   rtp_packet_received.set_arrival_time(
       std::chrono::system_clock::now().time_since_epoch().count());
-  rtp_packet_received.set_ecn(EcnMarking::kEct0);
+  rtp_packet_received.set_ecn(rtc::EcnMarking::kEct0);
   rtp_packet_received.set_recovered(false);
   rtp_packet_received.set_payload_type_frequency(0);
   receive_side_congestion_controller_.OnReceivedPacket(

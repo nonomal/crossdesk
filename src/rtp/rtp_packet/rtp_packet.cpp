@@ -35,6 +35,7 @@ void RtpPacket::ParseRtpData() {
 
 RtpPacket::RtpPacket() : buffer_(new uint8_t[DEFAULT_MTU]), size_(DEFAULT_MTU) {
   memset(buffer_, 0, DEFAULT_MTU);
+  ParseRtpData();
 }
 
 RtpPacket::RtpPacket(const uint8_t *buffer, uint32_t size) {
@@ -48,6 +49,7 @@ RtpPacket::RtpPacket(const uint8_t *buffer, uint32_t size) {
     size_ = size;
 
     // TryToDecodeH264RtpPacket(buffer_);
+    ParseRtpData();
   }
 }
 
@@ -62,6 +64,7 @@ RtpPacket::RtpPacket(const RtpPacket &rtp_packet) {
     size_ = rtp_packet.size_;
 
     // TryToDecodeH264RtpPacket(buffer_);
+    ParseRtpData();
   }
 }
 
@@ -72,6 +75,7 @@ RtpPacket::RtpPacket(RtpPacket &&rtp_packet)
   rtp_packet.size_ = 0;
 
   // TryToDecodeH264RtpPacket(buffer_);
+  ParseRtpData();
 }
 
 // RtpPacket &RtpPacket::operator=(const RtpPacket &rtp_packet) {

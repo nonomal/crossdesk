@@ -1,11 +1,15 @@
 /*
- * @Author: DI JUNKUN
- * @Date: 2025-01-14
- * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef _ALR_DETECTOR_H_
-#define _ALR_DETECTOR_H_
+#ifndef MODULES_CONGESTION_CONTROLLER_GOOG_CC_ALR_DETECTOR_H_
+#define MODULES_CONGESTION_CONTROLLER_GOOG_CC_ALR_DETECTOR_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -14,6 +18,10 @@
 #include <optional>
 
 #include "interval_budget.h"
+
+namespace webrtc {
+
+class RtcEventLog;
 
 struct AlrDetectorConfig {
   // Sent traffic ratio as a function of network capacity used to determine
@@ -56,5 +64,6 @@ class AlrDetector {
   IntervalBudget alr_budget_;
   std::optional<int64_t> alr_started_time_ms_;
 };
+}  // namespace webrtc
 
-#endif
+#endif  // MODULES_CONGESTION_CONTROLLER_GOOG_CC_ALR_DETECTOR_H_

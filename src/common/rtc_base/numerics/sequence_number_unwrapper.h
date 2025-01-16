@@ -1,11 +1,15 @@
 /*
- * @Author: DI JUNKUN
- * @Date: 2025-01-08
- * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
+ *  Copyright (c) 2022 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#ifndef _SEQUENCE_NUMBER_UNWRAPPER_H_
-#define _SEQUENCE_NUMBER_UNWRAPPER_H_
+#ifndef RTC_BASE_NUMERICS_SEQUENCE_NUMBER_UNWRAPPER_H_
+#define RTC_BASE_NUMERICS_SEQUENCE_NUMBER_UNWRAPPER_H_
 
 #include <stdint.h>
 
@@ -14,6 +18,8 @@
 #include <type_traits>
 
 #include "sequence_number_util.h"
+
+namespace webrtc {
 
 // A sequence number unwrapper where the first unwrapped value equals the
 // first value being unwrapped.
@@ -70,4 +76,6 @@ class SeqNumUnwrapper {
 using RtpTimestampUnwrapper = SeqNumUnwrapper<uint32_t>;
 using RtpSequenceNumberUnwrapper = SeqNumUnwrapper<uint16_t>;
 
-#endif
+}  // namespace webrtc
+
+#endif  // RTC_BASE_NUMERICS_SEQUENCE_NUMBER_UNWRAPPER_H_

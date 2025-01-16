@@ -1,3 +1,13 @@
+/*
+ *  Copyright (c) 2024 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
+ */
+
 #include "congestion_control_feedback.h"
 
 #include <algorithm>
@@ -6,10 +16,17 @@
 #include <utility>
 #include <vector>
 
+#include "api/array_view.h"
+#include "api/units/time_delta.h"
+#include "api/units/timestamp.h"
 #include "byte_io.h"
+#include "common_header.h"
 #include "log.h"
+#include "rtc_base/network/ecn_marking.h"
 
-// rfc8888 - RTP Congestion Control Feedback
+namespace webrtc {
+namespace rtcp {
+
 /*
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      |V=2|P| FMT=11  |   PT = 205    |          length               |
@@ -38,23 +55,6 @@
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
 
-// for this implementation, only one stream is supported.
-/*
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |V=2|P| FMT=11  |   PT = 205    |          length               |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |                 SSRC of RTCP packet sender                    |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |                   SSRC of 1st RTP Stream                      |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |          begin_seq            |          num_reports          |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |R|ECN|  Arrival time offset    | ...                           .
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |                 Report Timestamp (32 bits)                    |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-*/
-
 namespace {
 
 constexpr size_t kSenderSsrcLength = 4;
@@ -78,60 +78,55 @@ constexpr uint16_t kEcnCe = 0x03;
 // measurement. If the measurement is unavailable or if the arrival time of the
 // RTP packet is after the time represented by the RTS field, then an ATO value
 // of 0x1FFF MUST be reported for the packet.
-uint16_t To13bitAto(int64_t arrival_time_offset) {
-  if (arrival_time_offset < 0) {
+uint16_t To13bitAto(TimeDelta arrival_time_offset) {
+  if (arrival_time_offset < TimeDelta::Zero()) {
     return 0x1FFF;
   }
-  return std::min(static_cast<int64_t>(1024 * (arrival_time_offset / 1000)),
-                  int64_t{0x1FFE});
+  return std::min(
+      static_cast<int64_t>(1024 * arrival_time_offset.seconds<float>()),
+      int64_t{0x1FFE});
 }
 
-int64_t AtoToTimeDelta(uint16_t receive_info) {
+TimeDelta AtoToTimeDelta(uint16_t receive_info) {
   // receive_info
   // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   // |R|ECN|  Arrival time offset    |
   // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-  // ato -> second
   const uint16_t ato = receive_info & 0x1FFF;
   if (ato == 0x1FFE) {
-    return std::numeric_limits<int64_t>::max();
+    return TimeDelta::PlusInfinity();
   }
   if (ato == 0x1FFF) {
-    return std::numeric_limits<int64_t>::min();
+    return TimeDelta::MinusInfinity();
   }
-  return ato / 1024;
+  return TimeDelta::Seconds(ato) / 1024;
 }
 
-uint16_t To2BitEcn(EcnMarking ecn_marking) {
+uint16_t To2BitEcn(rtc::EcnMarking ecn_marking) {
   switch (ecn_marking) {
-    case EcnMarking::kNotEct:
+    case rtc::EcnMarking::kNotEct:
       return 0;
-    case EcnMarking::kEct1:
+    case rtc::EcnMarking::kEct1:
       return kEcnEct1 << 13;
-    case EcnMarking::kEct0:
+    case rtc::EcnMarking::kEct0:
       return kEcnEct0 << 13;
-    case EcnMarking::kCe:
+    case rtc::EcnMarking::kCe:
       return kEcnCe << 13;
-    default: {
-      LOG_FATAL("Unexpected ecn marking: {}", static_cast<int>(ecn_marking));
-      return 0;
-    }
   }
 }
 
-EcnMarking ToEcnMarking(uint16_t receive_info) {
+rtc::EcnMarking ToEcnMarking(uint16_t receive_info) {
   const uint16_t ecn = (receive_info >> 13) & 0b11;
   if (ecn == kEcnEct1) {
-    return EcnMarking::kEct1;
+    return rtc::EcnMarking::kEct1;
   }
   if (ecn == kEcnEct0) {
-    return EcnMarking::kEct0;
+    return rtc::EcnMarking::kEct0;
   }
   if (ecn == kEcnCe) {
-    return EcnMarking::kCe;
+    return rtc::EcnMarking::kCe;
   }
-  return EcnMarking::kNotEct;
+  return rtc::EcnMarking::kNotEct;
 }
 
 }  // namespace
@@ -145,9 +140,9 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
                                        size_t max_length,
                                        PacketReadyCallback callback) const {
   // Ensure there is enough room for this packet.
-  // while (*position + BlockLength() > max_length) {
-  //   if (!OnBufferFull(buffer, position, callback)) return false;
-  // }
+  while (*position + BlockLength() > max_length) {
+    if (!OnBufferFull(buffer, position, callback)) return false;
+  }
   const size_t position_end = *position + BlockLength();
 
   //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -161,14 +156,14 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
   *position += 4;
 
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  //   |                   SSRC of 1st RTP Stream                      |
+  //   |                   SSRC of nth RTP Stream                      |
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   //   |          begin_seq            |          num_reports          |
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   //   |R|ECN|  Arrival time offset    | ...                           .
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-  auto write_report_for_ssrc = [&](std::vector<PacketInfo> packets) {
+  //   .                                                               .
+  auto write_report_for_ssrc = [&](rtc::ArrayView<const PacketInfo> packets) {
     // SSRC of nth RTP stream.
     ByteWriter<uint32_t>::WriteBigEndian(&buffer[*position], packets[0].ssrc);
     *position += 4;
@@ -180,27 +175,18 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
     // num_reports
     uint16_t num_reports = packets.size();
 
-    if (static_cast<uint16_t>(packets[packets.size() - 1].sequence_number -
-                              packets[0].sequence_number + 1) !=
-        packets.size()) {
-      LOG_FATAL("Expected continous rtp sequence numbers");
-      return false;
-    }
-
     // Each report block MUST NOT include more than 16384 packet metric
     // blocks (i.e., it MUST NOT report on more than one quarter of the
     // sequence number space in a single report).
     if (num_reports > 16384) {
-      LOG_FATAL("Unexpected number of reports: {}", num_reports);
-      return false;
+      LOG_ERROR("Unexpected number of reports:{}", num_reports);
+      return;
     }
     ByteWriter<uint16_t>::WriteBigEndian(&buffer[*position], num_reports);
     *position += 2;
 
     for (const PacketInfo& packet : packets) {
-      bool received =
-          (packet.arrival_time_offset != std::numeric_limits<int64_t>::min()) &&
-          (packet.arrival_time_offset != std::numeric_limits<int64_t>::max());
+      bool received = packet.arrival_time_offset.IsFinite();
       uint16_t packet_info = 0;
       if (received) {
         packet_info = 0x8000 | To2BitEcn(packet.ecn) |
@@ -214,17 +200,20 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
       ByteWriter<uint16_t>::WriteBigEndian(&buffer[*position], 0);
       *position += 2;
     }
-
-    return true;
   };
 
-  if (!packets_.empty()) {
+  rtc::ArrayView<const PacketInfo> remaining(packets_);
+  while (!remaining.empty()) {
     int number_of_packets_for_ssrc = 0;
-    uint32_t ssrc = packets_[0].ssrc;
-    for (const PacketInfo& packet_info : packets_) {
+    uint32_t ssrc = remaining[0].ssrc;
+    for (const PacketInfo& packet_info : remaining) {
+      if (packet_info.ssrc != ssrc) {
+        break;
+      }
       ++number_of_packets_for_ssrc;
     }
-    write_report_for_ssrc(packets_);
+    write_report_for_ssrc(remaining.subview(0, number_of_packets_for_ssrc));
+    remaining = remaining.subview(number_of_packets_for_ssrc);
   }
 
   //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -234,9 +223,6 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
                                        report_timestamp_compact_ntp_);
   *position += 4;
 
-  if (*position != position_end) {
-    return false;
-  }
   return true;
 }
 
@@ -257,6 +243,15 @@ size_t CongestionControlFeedback::BlockLength() const {
 
   uint32_t ssrc = packets_.front().ssrc;
   uint16_t first_sequence_number = packets_.front().sequence_number;
+  for (size_t i = 0; i < packets_.size(); ++i) {
+    if (packets_[i].ssrc != ssrc) {
+      uint16_t number_of_packets =
+          packets_[i - 1].sequence_number - first_sequence_number + 1;
+      total_size += increase_size_per_ssrc(number_of_packets);
+      ssrc = packets_[i].ssrc;
+      first_sequence_number = packets_[i].sequence_number;
+    }
+  }
   uint16_t number_of_packets =
       packets_.back().sequence_number - first_sequence_number + 1;
   total_size += increase_size_per_ssrc(number_of_packets);
@@ -264,7 +259,7 @@ size_t CongestionControlFeedback::BlockLength() const {
   return total_size;
 }
 
-bool CongestionControlFeedback::Parse(const RtcpCommonHeader& packet) {
+bool CongestionControlFeedback::Parse(const rtcp::CommonHeader& packet) {
   const uint8_t* payload = packet.payload();
   const uint8_t* payload_end = packet.payload() + packet.payload_size_bytes();
 
@@ -300,11 +295,10 @@ bool CongestionControlFeedback::Parse(const RtcpCommonHeader& packet) {
 
       uint16_t seq_no = base_seqno + i;
       bool received = (packet_info & 0x8000);
-      packets_.push_back(PacketInfo{ssrc, seq_no,
-                                    received
-                                        ? AtoToTimeDelta(packet_info)
-                                        : std::numeric_limits<int64_t>::min(),
-                                    ToEcnMarking(packet_info)});
+      packets_.push_back(
+          {ssrc, seq_no,
+           received ? AtoToTimeDelta(packet_info) : TimeDelta::MinusInfinity(),
+           ToEcnMarking(packet_info)});
     }
     if (num_reports % 2) {
       // 2 bytes padding
@@ -313,3 +307,5 @@ bool CongestionControlFeedback::Parse(const RtcpCommonHeader& packet) {
   }
   return payload == payload_end;
 }
+}  // namespace rtcp
+}  // namespace webrtc

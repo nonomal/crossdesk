@@ -278,48 +278,48 @@ class RtpPacket {
 
  public:
   // Get Header
-  uint32_t Verion() {
-    ParseRtpData();
+  uint32_t Verion() const {
+    // // ParseRtpData();
     return version_;
   }
-  bool HasPadding() {
-    ParseRtpData();
+  bool HasPadding() const {
+    // ParseRtpData();
     return has_padding_;
   }
-  bool HasExtension() {
-    ParseRtpData();
+  bool HasExtension() const {
+    // ParseRtpData();
     return has_extension_;
   }
-  bool Marker() {
-    ParseRtpData();
+  bool Marker() const {
+    // // ParseRtpData();
     return marker_;
   }
-  PAYLOAD_TYPE PayloadType() {
-    ParseRtpData();
+  PAYLOAD_TYPE PayloadType() const {
+    // ParseRtpData();
     return PAYLOAD_TYPE(payload_type_);
   }
-  uint16_t SequenceNumber() {
-    ParseRtpData();
+  uint16_t SequenceNumber() const {
+    // ParseRtpData();
     return sequence_number_;
   }
-  uint64_t Timestamp() {
-    ParseRtpData();
+  uint64_t Timestamp() const {
+    // ParseRtpData();
     return timestamp_;
   }
-  uint32_t Ssrc() {
-    ParseRtpData();
+  uint32_t Ssrc() const {
+    // ParseRtpData();
     return ssrc_;
   }
-  std::vector<uint32_t> Csrcs() {
-    ParseRtpData();
+  std::vector<uint32_t> Csrcs() const {
+    // ParseRtpData();
     return csrcs_;
   };
-  uint16_t ExtensionProfile() {
-    ParseRtpData();
+  uint16_t ExtensionProfile() const {
+    // ParseRtpData();
     return extension_profile_;
   }
   const uint8_t *ExtensionData() {
-    ParseRtpData();
+    // ParseRtpData();
     return extension_data_;
   }
 
@@ -336,13 +336,21 @@ class RtpPacket {
 
   // Payload
   const uint8_t *Payload() {
-    ParseRtpData();
+    // ParseRtpData();
     return payload_;
   };
   size_t PayloadSize() {
-    ParseRtpData();
+    // ParseRtpData();
     return payload_size_;
   }
+
+  size_t headers_size() const { return 12; }
+
+  size_t payload_size() const { return payload_size_; }
+
+  bool has_padding() const { return buffer_[0] & 0x20; }
+
+  size_t padding_size() const { return padding_size_; }
 
   // Entire RTP buffer
   const uint8_t *Buffer() const { return buffer_; }
@@ -350,20 +358,20 @@ class RtpPacket {
 
   // NAL
   NAL_UNIT_TYPE NalUnitType() {
-    ParseRtpData();
+    // ParseRtpData();
     return nal_unit_type_;
   }
   bool FuAStart() {
-    ParseRtpData();
+    // ParseRtpData();
     return fu_header_.start;
   }
   bool FuAEnd() {
-    ParseRtpData();
+    // ParseRtpData();
     return fu_header_.end;
   }
 
   bool Av1FrameStart() {
-    ParseRtpData();
+    // ParseRtpData();
     int z, y, w, n;
     GetAv1AggrHeader(z, y, w, n);
     // return !z && !y;
@@ -378,7 +386,7 @@ class RtpPacket {
   }
 
   bool Av1FrameEnd() {
-    ParseRtpData();
+    // ParseRtpData();
     int z, y, w, n;
     GetAv1AggrHeader(z, y, w, n);
     // return z && !y;
@@ -421,6 +429,7 @@ class RtpPacket {
   // Payload
   uint8_t *payload_ = nullptr;
   size_t payload_size_ = 0;
+  size_t padding_size_ = 0;
 
   // Entire RTP buffer
   uint8_t *buffer_ = nullptr;
