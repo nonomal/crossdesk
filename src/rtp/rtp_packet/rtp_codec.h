@@ -36,7 +36,7 @@ class RtpCodec {
   uint8_t version_ = 0;
   bool has_padding_ = false;
   bool has_extension_ = false;
-  uint32_t total_csrc_number_ = 0;
+  uint32_t csrc_count_ = 0;
   bool marker_ = false;
   uint32_t payload_type_ = 0;
   uint16_t sequence_number_ = 0;

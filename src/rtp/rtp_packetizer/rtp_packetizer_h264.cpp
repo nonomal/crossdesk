@@ -1,0 +1,266 @@
+#include "rtp_packetizer_h264.h"
+
+RtpPacketizerH264::RtpPacketizerH264()
+    : version_(kRtpVersion),
+      has_padding_(false),
+      has_extension_(true),
+      csrc_count_(0),
+      marker_(false),
+      payload_type_(RtpPacket::PAYLOAD_TYPE::H264),
+      sequence_number_(1),
+      timestamp_(0),
+      ssrc_(0),
+      profile_(0),
+      extension_profile_(0),
+      extension_len_(0),
+      extension_data_(nullptr) {}
+
+RtpPacketizerH264::~RtpPacketizerH264() {}
+
+std::vector<RtpPacket> RtpPacketizerH264::Build(uint8_t* payload,
+                                                uint32_t payload_size) {
+  uint32_t last_packet_size = payload_size % MAX_NALU_LEN;
+  uint32_t packet_num =
+      payload_size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
+
+  // TODO: use frame timestamp
+  timestamp_ = std::chrono::duration_cast<std::chrono::microseconds>(
+                   std::chrono::system_clock::now().time_since_epoch())
+                   .count();
+
+  for (uint32_t index = 0; index < packet_num; index++) {
+    version_ = kRtpVersion;
+    has_padding_ = false;
+    has_extension_ = true;
+    csrc_count_ = 0;
+    marker_ = index == packet_num - 1 ? 1 : 0;
+    payload_type_ = RtpPacket::PAYLOAD_TYPE(payload_type_);
+    sequence_number_++;
+    timestamp_ = timestamp_;
+    ssrc_ = ssrc_;
+
+    if (!csrc_count_) {
+      csrcs_ = csrcs_;
+    }
+
+    RtpPacket::FU_INDICATOR fu_indicator;
+    fu_indicator.forbidden_bit = 0;
+    fu_indicator.nal_reference_idc = 0;
+    fu_indicator.nal_unit_type = FU_A;
+
+    RtpPacket::FU_HEADER fu_header;
+    fu_header.start = index == 0 ? 1 : 0;
+    fu_header.end = index == packet_num - 1 ? 1 : 0;
+    fu_header.remain_bit = 0;
+    fu_header.nal_unit_type = FU_A;
+
+    rtp_packet_frame_.clear();
+    rtp_packet_frame_.push_back((version_ << 6) | (has_padding_ << 5) |
+                                (has_extension_ << 4) | csrc_count_);
+    rtp_packet_frame_.push_back((marker_ << 7) | payload_type_);
+    rtp_packet_frame_.push_back((sequence_number_ >> 8) & 0xFF);
+    rtp_packet_frame_.push_back(sequence_number_ & 0xFF);
+    rtp_packet_frame_.push_back((timestamp_ >> 24) & 0xFF);
+    rtp_packet_frame_.push_back((timestamp_ >> 16) & 0xFF);
+    rtp_packet_frame_.push_back((timestamp_ >> 8) & 0xFF);
+    rtp_packet_frame_.push_back(timestamp_ & 0xFF);
+    rtp_packet_frame_.push_back((ssrc_ >> 24) & 0xFF);
+    rtp_packet_frame_.push_back((ssrc_ >> 16) & 0xFF);
+    rtp_packet_frame_.push_back((ssrc_ >> 8) & 0xFF);
+    rtp_packet_frame_.push_back(ssrc_ & 0xFF);
+
+    for (uint32_t index = 0; index < csrc_count_ && !csrcs_.empty(); index++) {
+      rtp_packet_frame_.push_back((csrcs_[index] >> 24) & 0xFF);
+      rtp_packet_frame_.push_back((csrcs_[index] >> 16) & 0xFF);
+      rtp_packet_frame_.push_back((csrcs_[index] >> 8) & 0xFF);
+      rtp_packet_frame_.push_back(csrcs_[index] & 0xFF);
+    }
+
+    if (has_extension_) {
+      extension_profile_ = kOneByteExtensionProfileId;
+      extension_len_ = 5;
+
+      uint32_t abs_send_time =
+          std::chrono::duration_cast<std::chrono::microseconds>(
+              std::chrono::system_clock::now().time_since_epoch())
+              .count();
+
+      rtp_packet_frame_.push_back(extension_profile_ >> 8);
+      rtp_packet_frame_.push_back(extension_profile_ & 0xff);
+      rtp_packet_frame_.push_back((extension_len_ >> 8) & 0xFF);
+      rtp_packet_frame_.push_back(extension_len_ & 0xFF);
+      rtp_packet_frame_.push_back(0x00);
+      rtp_packet_frame_.push_back(0x02);
+      rtp_packet_frame_.push_back((abs_send_time >> 16) & 0xFF);
+      rtp_packet_frame_.push_back((abs_send_time >> 8) & 0xFF);
+      rtp_packet_frame_.push_back(abs_send_time & 0xFF);
+    }
+
+    rtp_packet_frame_.push_back(fu_indicator.forbidden_bit << 7 |
+                                fu_indicator.nal_reference_idc << 6 |
+                                fu_indicator.nal_unit_type);
+
+    rtp_packet_frame_.push_back(fu_header.start << 7 | fu_header.end << 6 |
+                                fu_header.remain_bit << 1 |
+                                fu_header.nal_unit_type);
+
+    if (index == packet_num - 1 && last_packet_size > 0) {
+      rtp_packet_frame_.insert(rtp_packet_frame_.end(), payload,
+                               payload + last_packet_size);
+    } else {
+      rtp_packet_frame_.insert(rtp_packet_frame_.end(), payload,
+                               payload + MAX_NALU_LEN);
+    }
+
+    RtpPacket rtp_packet;
+    rtp_packet.Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
+
+    packets.emplace_back(rtp_packet);
+  }
+}
+
+// bool BuildFec(uint8_t* payload, uint32_t payload_size) {
+//   uint8_t** fec_packets =
+//       fec_encoder_.Encode((const char*)payload, payload_size);
+//   if (nullptr == fec_packets) {
+//     LOG_ERROR("Invalid fec_packets");
+//     return;
+//   }
+//   uint8_t num_of_total_packets = 0;
+//   uint8_t num_of_source_packets = 0;
+//   unsigned int last_packet_size = 0;
+//   fec_encoder_.GetFecPacketsParams(payload_size, num_of_total_packets,
+//                                    num_of_source_packets, last_packet_size);
+
+//   timestamp_ = std::chrono::duration_cast<std::chrono::microseconds>(
+//                    std::chrono::system_clock::now().time_since_epoch())
+//                    .count();
+
+//   for (uint8_t index = 0; index < num_of_total_packets; index++) {
+//     RtpPacket rtp_packet;
+//     if (index < num_of_source_packets) {
+//       rtp_packet.SetVerion(kRtpVersion);
+//       rtp_packet.SetHasPadding(false);
+//       rtp_packet.SetHasExtension(has_extension_);
+//       rtp_packet.SetMarker(index == num_of_source_packets - 1 ? 1 : 0);
+//       rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE::H264_FEC_SOURCE);
+//       rtp_packet.SetSequenceNumber(sequence_number_++);
+//       rtp_packet.SetTimestamp(timestamp_);
+//       rtp_packet.SetSsrc(ssrc_);
+
+//       if (!csrcs_.empty()) {
+//         rtp_packet.SetCsrcs(csrcs_);
+//       }
+
+//       if (has_extension_) {
+//         rtp_packet.SetExtensionProfile(extension_profile_);
+//         rtp_packet.SetExtensionData(extension_data_, extension_len_);
+//       }
+
+//       RtpPacket::FU_INDICATOR fu_indicator;
+//       fu_indicator.forbidden_bit = 0;
+//       fu_indicator.nal_reference_idc = 0;
+//       fu_indicator.nal_unit_type = FU_A;
+
+//       RtpPacket::FU_HEADER fu_header;
+//       fu_header.start = index == 0 ? 1 : 0;
+//       fu_header.end = index == num_of_source_packets - 1 ? 1 : 0;
+//       fu_header.remain_bit = 0;
+//       fu_header.nal_unit_type = FU_A;
+
+//       rtp_packet.SetFuIndicator(fu_indicator);
+//       rtp_packet.SetFuHeader(fu_header);
+
+//       if (index == num_of_source_packets - 1) {
+//         if (last_packet_size > 0) {
+//           rtp_packet.EncodeH264FecSource(fec_packets[index],
+//           last_packet_size,
+//                                          index, num_of_source_packets);
+//         } else {
+//           rtp_packet.EncodeH264FecSource(fec_packets[index], MAX_NALU_LEN,
+//                                          index, num_of_source_packets);
+//         }
+//       } else {
+//         rtp_packet.EncodeH264FecSource(fec_packets[index], MAX_NALU_LEN,
+//         index,
+//                                        num_of_source_packets);
+//       }
+
+//     } else if (index >= num_of_source_packets && index <
+//     num_of_total_packets) {
+//       rtp_packet.SetVerion(kRtpVersion);
+//       rtp_packet.SetHasPadding(false);
+//       rtp_packet.SetHasExtension(has_extension_);
+//       rtp_packet.SetMarker(index == num_of_total_packets - 1 ? 1 : 0);
+//       rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE::H264_FEC_REPAIR);
+//       rtp_packet.SetSequenceNumber(sequence_number_++);
+//       rtp_packet.SetTimestamp(timestamp_);
+//       rtp_packet.SetSsrc(ssrc_);
+
+//       if (!csrcs_.empty()) {
+//         rtp_packet.SetCsrcs(csrcs_);
+//       }
+
+//       if (has_extension_) {
+//         rtp_packet.SetExtensionProfile(extension_profile_);
+//         rtp_packet.SetExtensionData(extension_data_, extension_len_);
+//       }
+//       rtp_packet.EncodeH264FecRepair(fec_packets[index], MAX_NALU_LEN, index,
+//                                      num_of_source_packets);
+//     }
+//     packets.emplace_back(rtp_packet);
+
+//     // if (index < num_of_source_packets) {
+//     //   rtp_packet.EncodeH264Fua(fec_packets[index], MAX_NALU_LEN);
+//     //   packets.emplace_back(rtp_packet);
+//     // }
+//   }
+
+//   fec_encoder_.ReleaseFecPackets(fec_packets, payload_size);
+//   return;
+// }
+
+// if (payload_size <= MAX_NALU_LEN) {
+//   RtpPacket rtp_packet;
+//   rtp_packet.SetVerion(kRtpVersion);
+//   rtp_packet.SetHasPadding(false);
+
+//   has_extension_ = true;
+//   uint32_t abs_send_time =
+//       std::chrono::duration_cast<std::chrono::microseconds>(
+//           std::chrono::system_clock::now().time_since_epoch())
+//           .count();
+//   rtp_packet.SetAbsoluteSendTimestamp(abs_send_time);
+
+//   rtp_packet.SetHasExtension(has_extension_);
+//   rtp_packet.SetMarker(1);
+//   rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));
+//   rtp_packet.SetSequenceNumber(sequence_number_++);
+
+//   timestamp_ = std::chrono::duration_cast<std::chrono::microseconds>(
+//                    std::chrono::system_clock::now().time_since_epoch())
+//                    .count();
+
+//   rtp_packet.SetTimestamp(timestamp_);
+//   rtp_packet.SetSsrc(ssrc_);
+
+//   if (!csrcs_.empty()) {
+//     rtp_packet.SetCsrcs(csrcs_);
+//   }
+
+//   if (has_extension_) {
+//     rtp_packet.SetExtensionProfile(extension_profile_);
+//     rtp_packet.SetExtensionData(extension_data_, extension_len_);
+//   }
+
+//   RtpPacket::FU_INDICATOR fu_indicator;
+//   fu_indicator.forbidden_bit = 0;
+//   fu_indicator.nal_reference_idc = 1;
+//   fu_indicator.nal_unit_type = NALU;
+//   rtp_packet.SetFuIndicator(fu_indicator);
+
+//   rtp_packet.EncodeH264Nalu(payload, payload_size);
+//   packets.emplace_back(rtp_packet);
+
+//   return true;
+// }

@@ -33,18 +33,21 @@ RtpPacketReceived& RtpPacketReceived::operator=(RtpPacketReceived&& packet) =
 RtpPacketReceived::~RtpPacketReceived() {}
 
 void RtpPacketReceived::GetHeader(RTPHeader* header) const {
-  header->markerBit = Marker();
-  header->payloadType = PayloadType();
-  header->sequenceNumber = SequenceNumber();
-  header->timestamp = Timestamp();
-  header->ssrc = Ssrc();
+  header->version = Version();
+  header->has_padding_ = HasPadding();
+  header->has_extension_ = HasExtension();
+  header->csrc_count_ = Csrcs().size();
+  header->marker_ = Marker();
+  header->payload_type_ = PayloadType();
+  header->sequence_number_ = SequenceNumber();
+  header->timestamp_ = Timestamp();
+  header->ssrc_ = Ssrc();
   std::vector<uint32_t> csrcs = Csrcs();
-  header->numCSRCs = rtc::dchecked_cast<uint8_t>(csrcs.size());
   for (size_t i = 0; i < csrcs.size(); ++i) {
-    header->arrOfCSRCs[i] = csrcs[i];
+    header->csrc_[i] = csrcs[i];
   }
-  header->paddingLength = padding_size();
-  header->headerLength = headers_size();
+  header->padding_len = padding_size();
+  header->header_len = headers_size();
 }
 
 }  // namespace webrtc
