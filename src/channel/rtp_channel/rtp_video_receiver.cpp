@@ -4,6 +4,8 @@
 #include "log.h"
 #include "rtcp_sender.h"
 
+#define SAVE_RTP_RECV_STREAM 1
+
 #define NV12_BUFFER_SIZE (1280 * 720 * 3 / 2)
 #define RTCP_RR_INTERVAL 1000
 
@@ -33,6 +35,13 @@ RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics)
           }),
       clock_(Clock::GetRealTimeClock()) {
   rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
+
+#ifdef SAVE_RTP_RECV_STREAM
+  file_rtp_recv_ = fopen("rtp_recv_stream.h264", "w+b");
+  if (!file_rtp_recv_) {
+    LOG_WARN("Fail to open rtp_recv_stream.h264");
+  }
+#endif
 }
 
 RtpVideoReceiver::~RtpVideoReceiver() {
@@ -48,6 +57,14 @@ RtpVideoReceiver::~RtpVideoReceiver() {
   }
 
   SSRCManager::Instance().DeleteSsrc(feedback_ssrc_);
+
+#ifdef SAVE_RTP_RECV_STREAM
+  if (file_rtp_recv_) {
+    fflush(file_rtp_recv_);
+    fclose(file_rtp_recv_);
+    file_rtp_recv_ = nullptr;
+  }
+#endif
 }
 
 void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
@@ -55,6 +72,14 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
   }
+
+  // #ifdef SAVE_RTP_RECV_STREAM
+  //   // fwrite((unsigned char*)rtp_packet.Buffer().data(), 1,
+  //   rtp_packet.Size(),
+  //   //        file_rtp_recv_);
+  //   fwrite((unsigned char*)rtp_packet.Payload(), 1, rtp_packet.PayloadSize(),
+  //          file_rtp_recv_);
+  // #endif
 
   webrtc::RtpPacketReceived rtp_packet_received;
   rtp_packet_received.Build(rtp_packet.Buffer().data(), rtp_packet.Size());
@@ -437,6 +462,10 @@ bool RtpVideoReceiver::Process() {
       // last_complete_frame_ts_ = now_complete_frame_ts;
 
       on_receive_complete_frame_(video_frame);
+#ifdef SAVE_RTP_RECV_STREAM
+      fwrite((unsigned char*)video_frame.Buffer(), 1, video_frame.Size(),
+             file_rtp_recv_);
+#endif
     }
   }
 

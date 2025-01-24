@@ -2,7 +2,13 @@
 
 #include <string>
 
-RtpPacket::RtpPacket() {}
+static FILE *file_1_ = nullptr;
+static FILE *file_2_ = nullptr;
+
+RtpPacket::RtpPacket() {
+  if (file_1_ == nullptr) file_1_ = fopen("file_1_.h264", "w+b");
+  if (file_2_ == nullptr) file_2_ = fopen("file_2_.h264", "w+b");
+}
 
 RtpPacket::RtpPacket(size_t size) : buffer_(size) {}
 
@@ -14,19 +20,32 @@ RtpPacket &RtpPacket::operator=(const RtpPacket &rtp_packet) = default;
 
 RtpPacket &RtpPacket::operator=(RtpPacket &&rtp_packet) = default;
 
-RtpPacket::~RtpPacket() = default;
+RtpPacket::~RtpPacket() {
+  // if (file_1_ != nullptr) {
+  //   fclose(file_1_);
+  //   file_1_ = nullptr;
+  // }
+  // if (file_2_ != nullptr) {
+  //   fclose(file_2_);
+  //   file_2_ = nullptr;
+  // }
+}
 
 bool RtpPacket::Build(const uint8_t *buffer, uint32_t size) {
+  fwrite((unsigned char *)buffer, 1, size, file_1_);
   if (!Parse(buffer, size)) {
     LOG_WARN("RtpPacket::Build: parse failed");
     return false;
   }
   buffer_.SetData(buffer, size);
+  fwrite((unsigned char *)Payload(), 1, PayloadSize(), file_2_);
   size_ = size;
   return true;
 }
 
 bool RtpPacket::Parse(const uint8_t *buffer, uint32_t size) {
+  payload_offset_ = 0;
+
   if (size < kFixedHeaderSize) {
     LOG_WARN("RtpPacket::Parse: size is too small");
     return false;
@@ -45,7 +64,7 @@ bool RtpPacket::Parse(const uint8_t *buffer, uint32_t size) {
     LOG_WARN("RtpPacket::Parse: csrc count is too large");
     return false;
   }
-  payload_offset_++;
+  payload_offset_ += 1;
 
   // 2nd byte
   marker_ = (buffer[payload_offset_] >> 7) & 0x01;
@@ -99,18 +118,21 @@ bool RtpPacket::Parse(const uint8_t *buffer, uint32_t size) {
         (buffer[payload_offset_] << 8) | buffer[payload_offset_ + 1];
     extension_len_ =
         (buffer[payload_offset_ + 2] << 8) | buffer[payload_offset_ + 3];
+    payload_offset_ += 4;
 
-    if (payload_offset_ + extension_len_ > size) {
+    if (payload_offset_ + extension_len_ * 4 > size) {
       LOG_WARN("RtpPacket::Parse: extension len is too large");
       return false;
     }
 
-    size_t offset = payload_offset_ + 4;
-    while (offset < size && extension_len_ > 0) {
+    size_t offset = payload_offset_;
+    size_t total_ext_len = extension_len_ * 4;
+    while (offset < payload_offset_ + total_ext_len) {
       uint8_t id = buffer[offset] >> 4;
       uint8_t len = (buffer[offset] & 0x0F) + 1;
-      if (offset + 1 + len > size) {
-        break;
+      if (offset + 1 + len > payload_offset_ + total_ext_len) {
+        LOG_WARN("RtpPacket::Parse: extension data is too large");
+        return false;
       }
       Extension extension;
       extension.id = id;
@@ -119,7 +141,7 @@ bool RtpPacket::Parse(const uint8_t *buffer, uint32_t size) {
       extensions_.push_back(extension);
       offset += 1 + len;
     }
-    payload_offset_ += extension_len_;
+    payload_offset_ += total_ext_len;
   }
 
   if (has_padding_ && payload_offset_ < size) {
@@ -137,6 +159,7 @@ bool RtpPacket::Parse(const uint8_t *buffer, uint32_t size) {
     LOG_WARN("RtpPacket::Parse: payload size is too large");
     return false;
   }
+
   payload_size_ = size - payload_offset_ - padding_size_;
 
   return true;

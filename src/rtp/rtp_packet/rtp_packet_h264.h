@@ -26,6 +26,7 @@ class RtpPacketH264 : public RtpPacket {
  private:
   rtp::FU_INDICATOR fu_indicator_;
   rtp::FU_HEADER fu_header_;
+  bool fu_info_got_ = false;
 };
 
 #endif

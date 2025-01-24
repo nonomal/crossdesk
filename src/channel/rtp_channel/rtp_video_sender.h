@@ -40,6 +40,9 @@ class RtpVideoSender : public ThreadBase {
   uint32_t last_send_rtcp_sr_packet_ts_ = 0;
   uint32_t total_rtp_payload_sent_ = 0;
   uint32_t total_rtp_packets_sent_ = 0;
+
+ private:
+  FILE *file_rtp_sent_ = nullptr;
 };
 
 #endif

@@ -269,6 +269,10 @@ class RtpPacket {
   bool has_padding() const { return buffer_[0] & 0x20; }
   size_t padding_size() const { return padding_size_; }
   size_t size() const { return size_; }
+  void add_offset_to_payload(size_t offset) {
+    payload_offset_ += offset;
+    payload_size_ -= offset;
+  }
 
  private:
   // Common header

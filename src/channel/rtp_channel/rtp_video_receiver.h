@@ -102,6 +102,9 @@ class RtpVideoReceiver : public ThreadBase {
   ReceiveSideCongestionController receive_side_congestion_controller_;
   RtcpFeedbackSenderInterface* active_remb_module_;
   uint32_t feedback_ssrc_ = 0;
+
+ private:
+  FILE* file_rtp_recv_ = nullptr;
 };
 
 #endif

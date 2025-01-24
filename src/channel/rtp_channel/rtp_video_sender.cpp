@@ -4,17 +4,34 @@
 
 #include "log.h"
 
+#define SAVE_RTP_SENT_STREAM 1
+
 #define RTCP_SR_INTERVAL 1000
 
 RtpVideoSender::RtpVideoSender() {}
 
 RtpVideoSender::RtpVideoSender(std::shared_ptr<IOStatistics> io_statistics)
-    : io_statistics_(io_statistics) {}
+    : io_statistics_(io_statistics) {
+#ifdef SAVE_RTP_SENT_STREAM
+  file_rtp_sent_ = fopen("rtp_sent_stream.h264", "w+b");
+  if (!file_rtp_sent_) {
+    LOG_WARN("Fail to open rtp_sent_stream.h264");
+  }
+#endif
+}
 
 RtpVideoSender::~RtpVideoSender() {
   if (rtp_statistics_) {
     rtp_statistics_->Stop();
   }
+
+#ifdef SAVE_RTP_SENT_STREAM
+  if (file_rtp_sent_) {
+    fflush(file_rtp_sent_);
+    fclose(file_rtp_sent_);
+    file_rtp_sent_ = nullptr;
+  }
+#endif
 }
 
 void RtpVideoSender::Enqueue(std::vector<RtpPacket>& rtp_packets) {
@@ -44,6 +61,13 @@ int RtpVideoSender::SendRtpPacket(RtpPacket& rtp_packet) {
     LOG_ERROR("Send rtp packet failed");
     return -1;
   }
+
+#ifdef SAVE_RTP_SENT_STREAM
+  // fwrite((unsigned char*)rtp_packet.Buffer().data(), 1, rtp_packet.Size(),
+  //        file_rtp_sent_);
+  fwrite((unsigned char*)rtp_packet.Payload(), 1, rtp_packet.PayloadSize(),
+         file_rtp_sent_);
+#endif
 
   last_send_bytes_ += (uint32_t)rtp_packet.Size();
   total_rtp_payload_sent_ += (uint32_t)rtp_packet.PayloadSize();
