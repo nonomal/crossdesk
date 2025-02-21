@@ -39,5 +39,7 @@ typedef struct {
 } FU_HEADER;
 
 typedef enum { UNKNOWN = 0, NALU = 1, FU_A = 28, FU_B = 29 } NAL_UNIT_TYPE;
+
+const int kVideoPayloadTypeFrequency = 90000;
 }  // namespace rtp
 #endif

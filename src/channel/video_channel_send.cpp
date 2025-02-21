@@ -63,7 +63,7 @@ int VideoChannelSend::SendVideo(
     std::vector<std::shared_ptr<RtpPacket>> rtp_packets =
         rtp_packetizer_->Build((uint8_t*)encoded_frame->Buffer(),
                                (uint32_t)encoded_frame->Size(), true);
-    rtp_video_sender_->Enqueue(rtp_packets);
+    rtp_video_sender_->Enqueue(rtp_packets, encoded_frame->CaptureTimestamp());
   }
 
   return 0;

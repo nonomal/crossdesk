@@ -44,14 +44,21 @@ RtpVideoSender::~RtpVideoSender() {
 }
 
 void RtpVideoSender::Enqueue(
-    std::vector<std::shared_ptr<RtpPacket>>& rtp_packets) {
+    std::vector<std::shared_ptr<RtpPacket>>& rtp_packets,
+    int64_t capture_timestamp) {
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
   }
 
   for (auto& rtp_packet : rtp_packets) {
-    rtp_packe_queue_.push(std::move(rtp_packet));
+    std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send =
+        std::dynamic_pointer_cast<webrtc::RtpPacketToSend>(rtp_packet);
+    rtp_packet_to_send->set_capture_time(
+        webrtc::Timestamp::Millis(capture_timestamp));
+    rtp_packet_to_send->set_transport_sequence_number(transport_seq_++);
+    rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kVideo);
+    rtp_packet_queue_.push(std::move(rtp_packet_to_send));
   }
 }
 
@@ -65,34 +72,32 @@ void RtpVideoSender::SetOnSentPacketFunc(
   on_sent_packet_func_ = on_sent_packet_func;
 }
 
-int RtpVideoSender::SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet) {
+int RtpVideoSender::SendRtpPacket(
+    std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send) {
   if (!data_send_func_) {
     LOG_ERROR("data_send_func_ is nullptr");
     return -1;
   }
 
   if (on_sent_packet_func_) {
-    std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send =
-        std::dynamic_pointer_cast<webrtc::RtpPacketToSend>(rtp_packet);
-    rtp_packet_to_send->set_transport_sequence_number(transport_seq_++);
-    rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kVideo);
     on_sent_packet_func_(*rtp_packet_to_send);
     rtp_packet_history_->AddPacket(rtp_packet_to_send, clock_->CurrentTime());
   }
 
-  if (0 != data_send_func_((const char*)rtp_packet->Buffer().data(),
-                           rtp_packet->Size())) {
+  last_rtp_timestamp_ = rtp_packet_to_send->capture_time().ms();
+  if (0 != data_send_func_((const char*)rtp_packet_to_send->Buffer().data(),
+                           rtp_packet_to_send->Size())) {
     // LOG_ERROR("Send rtp packet failed");
     return -1;
   }
 
 #ifdef SAVE_RTP_SENT_STREAM
-  fwrite((unsigned char*)rtp_packet->Payload(), 1, rtp_packet->PayloadSize(),
-         file_rtp_sent_);
+  fwrite((unsigned char*)rtp_packet_to_send->Payload(), 1,
+         rtp_packet_to_send->PayloadSize(), file_rtp_sent_);
 #endif
 
-  last_send_bytes_ += (uint32_t)rtp_packet->Size();
-  total_rtp_payload_sent_ += (uint32_t)rtp_packet->PayloadSize();
+  last_send_bytes_ += (uint32_t)rtp_packet_to_send->Size();
+  total_rtp_payload_sent_ += (uint32_t)rtp_packet_to_send->PayloadSize();
   total_rtp_packets_sent_++;
 
   if (io_statistics_) {
@@ -103,13 +108,17 @@ int RtpVideoSender::SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet) {
   if (CheckIsTimeSendSR()) {
     SenderReport rtcp_sr;
     rtcp_sr.SetSenderSsrc(ssrc_);
-    rtcp_sr.SetTimestamp(0);
-    rtcp_sr.SetNtpTimestamp(0);
+
+    uint32_t rtp_timestamp =
+        last_rtp_timestamp_ +
+        ((clock_->CurrentTime().us() + 500) / 1000 - last_frame_capture_time_) *
+            rtp::kVideoPayloadTypeFrequency;
+    rtcp_sr.SetTimestamp(rtp_timestamp);
+    rtcp_sr.SetNtpTimestamp((uint64_t)clock_->CurrentNtpTime());
     rtcp_sr.SetSenderPacketCount(total_rtp_packets_sent_);
     rtcp_sr.SetSenderOctetCount(total_rtp_payload_sent_);
 
     RtcpReportBlock report;
-
     report.SetMediaSsrc(ssrc_);
     report.SetFractionLost(0);
     report.SetCumulativeLost(0);
@@ -162,11 +171,11 @@ bool RtpVideoSender::Process() {
   last_send_bytes_ = 0;
 
   for (size_t i = 0; i < 10; i++)
-    if (!rtp_packe_queue_.isEmpty()) {
-      std::shared_ptr<RtpPacket> rtp_packet;
-      pop_success = rtp_packe_queue_.pop(rtp_packet);
+    if (!rtp_packet_queue_.isEmpty()) {
+      std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send;
+      pop_success = rtp_packet_queue_.pop(rtp_packet_to_send);
       if (pop_success) {
-        SendRtpPacket(rtp_packet);
+        SendRtpPacket(rtp_packet_to_send);
       }
     }
 

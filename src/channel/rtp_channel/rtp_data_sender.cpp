@@ -30,7 +30,7 @@ void RtpDataSender::Enqueue(
   }
 
   for (auto& rtp_packet : rtp_packets) {
-    rtp_packe_queue_.push(rtp_packet);
+    rtp_packet_queue_.push(rtp_packet);
   }
 }
 
@@ -139,9 +139,9 @@ bool RtpDataSender::Process() {
   last_send_bytes_ = 0;
 
   for (size_t i = 0; i < 10; i++)
-    if (!rtp_packe_queue_.isEmpty()) {
+    if (!rtp_packet_queue_.isEmpty()) {
       std::shared_ptr<RtpPacket> rtp_packet;
-      rtp_packe_queue_.pop(rtp_packet);
+      rtp_packet_queue_.pop(rtp_packet);
       SendRtpPacket(rtp_packet);
     }
 

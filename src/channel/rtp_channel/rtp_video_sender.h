@@ -22,14 +22,16 @@ class RtpVideoSender : public ThreadBase {
   virtual ~RtpVideoSender();
 
  public:
-  void Enqueue(std::vector<std::shared_ptr<RtpPacket>> &rtp_packets);
+  void Enqueue(std::vector<std::shared_ptr<RtpPacket>> &rtp_packets,
+               int64_t capture_timestamp);
   void SetSendDataFunc(std::function<int(const char *, size_t)> data_send_func);
   void SetOnSentPacketFunc(
       std::function<void(const webrtc::RtpPacketToSend &)> on_sent_packet_func);
   uint32_t GetSsrc() { return ssrc_; }
 
  private:
-  int SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet);
+  int SendRtpPacket(
+      std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send);
   int SendRtcpSR(SenderReport &rtcp_sr);
 
   bool CheckIsTimeSendSR();
@@ -41,7 +43,7 @@ class RtpVideoSender : public ThreadBase {
   std::function<int(const char *, size_t)> data_send_func_ = nullptr;
   std::function<void(const webrtc::RtpPacketToSend &)> on_sent_packet_func_ =
       nullptr;
-  RingBuffer<std::shared_ptr<RtpPacket>> rtp_packe_queue_;
+  RingBuffer<std::shared_ptr<webrtc::RtpPacketToSend>> rtp_packet_queue_;
 
  private:
   uint32_t ssrc_ = 0;
@@ -53,6 +55,9 @@ class RtpVideoSender : public ThreadBase {
   uint32_t last_send_rtcp_sr_packet_ts_ = 0;
   uint32_t total_rtp_payload_sent_ = 0;
   uint32_t total_rtp_packets_sent_ = 0;
+
+  uint32_t last_rtp_timestamp_ = 0;
+  int64_t last_frame_capture_time_ = 0;
 
  private:
   int64_t transport_seq_ = 0;

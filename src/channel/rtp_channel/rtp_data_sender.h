@@ -39,7 +39,7 @@ class RtpDataSender : public ThreadBase {
 
  private:
   std::function<int(const char *, size_t)> data_send_func_ = nullptr;
-  RingBuffer<std::shared_ptr<RtpPacket>> rtp_packe_queue_;
+  RingBuffer<std::shared_ptr<RtpPacket>> rtp_packet_queue_;
 
  private:
   uint32_t ssrc_ = 0;
