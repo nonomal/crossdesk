@@ -17,7 +17,7 @@
 #include "api/array_view.h"
 #include "api/transport/ecn_marking.h"
 #include "api/units/time_delta.h"
-#include "common_header.h"
+#include "rtcp_common_header.h"
 #include "rtp_feedback.h"
 
 namespace webrtc {
@@ -45,7 +45,7 @@ class CongestionControlFeedback : public RtpFeedback {
                             uint32_t report_timestamp_compact_ntp);
   CongestionControlFeedback() = default;
 
-  bool Parse(const CommonHeader& packet);
+  bool Parse(const RtcpCommonHeader& packet);
 
   rtc::ArrayView<const PacketInfo> packets() const { return packets_; }
 

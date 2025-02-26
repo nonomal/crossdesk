@@ -43,6 +43,9 @@ class RtpVideoReceiver : public ThreadBase,
       std::function<void(VideoFrame&)> on_receive_complete_frame) {
     on_receive_complete_frame_ = on_receive_complete_frame;
   }
+  uint32_t GetSsrc() { return ssrc_; }
+  uint32_t GetRemoteSsrc() { return remote_ssrc_; }
+  void OnSenderReport(int64_t now_time, uint64_t ntp_time);
 
  private:
   void ProcessAv1RtpPacket(RtpPacketAv1& rtp_packet_av1);
@@ -114,14 +117,18 @@ class RtpVideoReceiver : public ThreadBase,
   int rtcp_tcc_interval_ms_ = 200;
 
  private:
+  uint32_t ssrc_ = 0;
+  uint32_t remote_ssrc_ = 0;
   std::shared_ptr<webrtc::Clock> clock_;
   ReceiveSideCongestionController receive_side_congestion_controller_;
   RtcpFeedbackSenderInterface* active_remb_module_;
   uint32_t feedback_ssrc_ = 0;
-  uint32_t remote_ssrc_ = 0;
 
   std::unique_ptr<RtcpSender> rtcp_sender_;
   std::unique_ptr<NackRequester> nack_;
+
+  uint32_t last_sr_ = 0;
+  uint32_t last_delay_ = 0;
 
  private:
   FILE* file_rtp_recv_ = nullptr;

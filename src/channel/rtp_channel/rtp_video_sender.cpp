@@ -118,18 +118,7 @@ int RtpVideoSender::SendRtpPacket(
     rtcp_sr.SetSenderPacketCount(total_rtp_packets_sent_);
     rtcp_sr.SetSenderOctetCount(total_rtp_payload_sent_);
 
-    RtcpReportBlock report;
-    report.SetMediaSsrc(ssrc_);
-    report.SetFractionLost(0);
-    report.SetCumulativeLost(0);
-    report.SetJitter(0);
-    report.SetLastSr(0);
-    report.SetExtHighestSeqNum(0);
-    report.SetDelayLastSr(0);
-
-    rtcp_sr.SetReportBlock(report);
-    rtcp_sr.Create();
-
+    rtcp_sr.Build();
     SendRtcpSR(rtcp_sr);
   }
 

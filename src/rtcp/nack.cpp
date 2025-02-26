@@ -15,8 +15,8 @@
 #include <utility>
 
 #include "byte_io.h"
-#include "common_header.h"
 #include "log.h"
+#include "rtcp_common_header.h"
 
 namespace webrtc {
 namespace rtcp {
@@ -48,7 +48,7 @@ Nack::Nack() = default;
 Nack::Nack(const Nack& rhs) = default;
 Nack::~Nack() = default;
 
-bool Nack::Parse(const CommonHeader& packet) {
+bool Nack::Parse(const RtcpCommonHeader& packet) {
   if (packet.payload_size_bytes() < kCommonFeedbackLength + kNackItemLength) {
     LOG_WARN("Payload length {} is too small for a Nack.",
              packet.payload_size_bytes());

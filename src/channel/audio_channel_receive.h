@@ -22,7 +22,28 @@ class AudioChannelReceive {
  public:
   void Initialize(rtp::PAYLOAD_TYPE payload_type);
   void Destroy();
+
+  uint32_t GetSsrc() {
+    if (rtp_audio_receiver_) {
+      return rtp_audio_receiver_->GetSsrc();
+    }
+    return 0;
+  }
+
+  uint32_t GetRemoteSsrc() {
+    if (rtp_audio_receiver_) {
+      return rtp_audio_receiver_->GetRemoteSsrc();
+    }
+    return 0;
+  }
+
   int OnReceiveRtpPacket(const char *data, size_t size);
+
+  void OnSenderReport(int64_t now_time, uint64_t ntp_time) {
+    if (rtp_audio_receiver_) {
+      rtp_audio_receiver_->OnSenderReport(now_time, ntp_time);
+    }
+  }
 
  private:
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;

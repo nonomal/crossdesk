@@ -78,9 +78,19 @@ class SenderReport {
   void SetReportBlock(RtcpReportBlock &rtcp_report_block);
   void SetReportBlocks(std::vector<RtcpReportBlock> &rtcp_report_blocks);
 
+  uint32_t SenderSsrc() const { return sender_info_.sender_ssrc; }
+  uint64_t NtpTimestamp() const {
+    return (sender_info_.ntp_ts_msw << 32) | sender_info_.ntp_ts_lsw;
+  }
+  uint32_t Timestamp() const { return sender_info_.rtp_ts; }
+  uint32_t SenderPacketCount() const {
+    return sender_info_.sender_packet_count;
+  }
+  uint32_t SenderOctetCount() const { return sender_info_.sender_octet_count; }
+
  public:
-  const uint8_t *Create();
-  size_t Parse();
+  const uint8_t *Build();
+  size_t Parse(const RtcpCommonHeader &packet);
 
   // Entire RTP buffer
   const uint8_t *Buffer() const { return buffer_; }

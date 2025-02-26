@@ -32,6 +32,13 @@ class VideoChannelSend {
   void Initialize(rtp::PAYLOAD_TYPE payload_type);
   void Destroy();
 
+  uint32_t GetSsrc() {
+    if (rtp_video_sender_) {
+      return rtp_video_sender_->GetSsrc();
+    }
+    return 0;
+  }
+
   int SendVideo(std::shared_ptr<VideoFrameWrapper> encoded_frame);
 
   void OnCongestionControlFeedback(

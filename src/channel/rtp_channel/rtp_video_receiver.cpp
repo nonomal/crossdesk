@@ -545,3 +545,32 @@ void RtpVideoReceiver::SendLossNotification(uint16_t last_decoded_seq_num,
                                             uint16_t last_received_seq_num,
                                             bool decodability_flag,
                                             bool buffering_allowed) {}
+
+inline uint32_t DivideRoundToNearest(int64_t dividend, int64_t divisor) {
+  if (dividend < 0) {
+    int64_t half_of_divisor = divisor / 2;
+    int64_t quotient = dividend / divisor;
+    int64_t remainder = dividend % divisor;
+    if (-remainder > half_of_divisor) {
+      --quotient;
+    }
+    return quotient;
+  }
+
+  int64_t half_of_divisor = (divisor - 1) / 2;
+  int64_t quotient = dividend / divisor;
+  int64_t remainder = dividend % divisor;
+  if (remainder > half_of_divisor) {
+    ++quotient;
+  }
+  return quotient;
+}
+
+void RtpVideoReceiver::OnSenderReport(int64_t now_time, uint64_t ntp_time) {
+  last_sr_ = ((uint32_t)(ntp_time / 0x100000000) << 16) |
+             ((uint32_t)(ntp_time % 0x100000000) >> 16);
+  last_delay_ = DivideRoundToNearest(
+      (clock_->CurrentTime().us() - now_time) * 0x10000, 1000000);
+
+  LOG_WARN("OnSenderReport [{}][{}]", last_sr_, last_delay_);
+}

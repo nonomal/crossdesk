@@ -21,6 +21,14 @@ class DataChannelSend {
  public:
   void Initialize(rtp::PAYLOAD_TYPE payload_type);
   void Destroy();
+
+  uint32_t GetSsrc() {
+    if (rtp_data_sender_) {
+      return rtp_data_sender_->GetSsrc();
+    }
+    return 0;
+  }
+
   int SendData(const char *data, size_t size);
 
  private:

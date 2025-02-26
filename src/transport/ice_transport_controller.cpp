@@ -332,6 +332,24 @@ int IceTransportController::CreateAudioCodec() {
   return 0;
 }
 
+void IceTransportController::OnSenderReport(const SenderReport& sender_report) {
+  if (video_channel_receive_ &&
+      sender_report.SenderSsrc() == video_channel_receive_->GetRemoteSsrc()) {
+    video_channel_receive_->OnSenderReport(clock_->CurrentTimeUs(),
+                                           sender_report.NtpTimestamp());
+  } else if (audio_channel_receive_ &&
+             sender_report.SenderSsrc() ==
+                 audio_channel_receive_->GetRemoteSsrc()) {
+    audio_channel_receive_->OnSenderReport(clock_->CurrentTimeUs(),
+                                           sender_report.NtpTimestamp());
+  } else if (data_channel_receive_ &&
+             sender_report.SenderSsrc() ==
+                 data_channel_receive_->GetRemoteSsrc()) {
+    data_channel_receive_->OnSenderReport(clock_->CurrentTimeUs(),
+                                          sender_report.NtpTimestamp());
+  }
+}
+
 void IceTransportController::OnCongestionControlFeedback(
     const webrtc::rtcp::CongestionControlFeedback& feedback) {
   std::optional<webrtc::TransportPacketsFeedback> feedback_msg =
@@ -376,7 +394,7 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
   target_bitrate_ = update.target_rate.has_value()
                         ? update.target_rate->target_rate.bps()
                         : 0;
-  LOG_WARN("Target bitrate [{}]bps", target_bitrate_);
+  // LOG_WARN("Target bitrate [{}]bps", target_bitrate_);
   video_encoder_->SetTargetBitrate(target_bitrate_);
 }
 

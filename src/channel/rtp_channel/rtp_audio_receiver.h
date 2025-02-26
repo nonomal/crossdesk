@@ -29,6 +29,10 @@ class RtpAudioReceiver {
       std::function<void(const char*, size_t)> on_receive_data) {
     on_receive_data_ = on_receive_data;
   }
+  uint32_t GetSsrc() { return ssrc_; }
+  uint32_t GetRemoteSsrc() { return remote_ssrc_; }
+
+  void OnSenderReport(int64_t now_time, uint64_t ntp_time) {}
 
  private:
   bool CheckIsTimeSendRR();
@@ -46,6 +50,12 @@ class RtpAudioReceiver {
   uint32_t total_rtp_packets_recv_ = 0;
   uint32_t last_send_rtcp_rr_packet_ts_ = 0;
   std::function<int(const char*, size_t)> data_send_func_ = nullptr;
+
+  uint32_t ssrc_ = 0;
+  uint32_t remote_ssrc_ = 0;
+
+  uint32_t last_sr_ = 0;
+  uint32_t last_delay_ = 0;
 };
 
 #endif

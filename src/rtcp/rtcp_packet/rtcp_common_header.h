@@ -1,65 +1,50 @@
-#ifndef _RTCP_HEADER_H_
-#define _RTCP_HEADER_H_
+/*
+ * @Author: DI JUNKUN
+ * @Date: 2025-02-26
+ * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
+ */
 
-#include <cstddef>
-#include <cstdint>
+#ifndef _RTCP_COMMON_HEADER_H_
+#define _RTCP_COMMON_HEADER_H_
 
-// RTCP header
-//  0                   1                   2                   3
-//  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-// |V=2|P|   RC    |   PT=SR=200   |            length             |
-// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#include <stddef.h>
+#include <stdint.h>
 
 #include "rtcp_typedef.h"
 
 class RtcpCommonHeader {
  public:
-  typedef enum {
-    UNKNOWN = 0,
-    SR = 200,
-    RR = 201,
-    SDES = 202,
-    BYE = 203,
-    APP = 204
-  } PAYLOAD_TYPE;
+  static constexpr size_t kHeaderSizeBytes = 4;
 
- public:
-  RtcpCommonHeader();
-  RtcpCommonHeader(const uint8_t* buffer, uint32_t size);
-  ~RtcpCommonHeader();
+  RtcpCommonHeader() {}
+  RtcpCommonHeader(const RtcpCommonHeader&) = default;
+  RtcpCommonHeader& operator=(const RtcpCommonHeader&) = default;
 
- public:
-  void SetVerion(uint8_t version) { version_ = version; }
-  void SetPadding(uint8_t padding) { padding_ = padding; }
-  void SetCountOrFormat(uint8_t count_or_format) {
-    count_or_format_ = count_or_format;
-  }
-  void SetPayloadType(PAYLOAD_TYPE payload_type) {
-    payload_type_ = payload_type;
-  }
-  void SetLength(uint16_t length) { length_ = length; }
-
- public:
-  uint8_t Verion() const { return version_; }
-  uint8_t Padding() const { return padding_; }
-  uint8_t CountOrFormat() const { return count_or_format_; }
-  PAYLOAD_TYPE PayloadType() const {
-    return PAYLOAD_TYPE((uint8_t)payload_type_);
-  }
-  uint16_t Length() const { return length_; }
-
-  int Create(uint8_t version, uint8_t padding, uint8_t count_or_format,
+  int Create(uint8_t version, uint8_t has_padding, uint8_t count_or_format,
              uint8_t payload_type, uint16_t length, uint8_t* buffer);
+  bool Parse(const uint8_t* buffer, size_t size_bytes);
 
-  size_t Parse(const uint8_t* buffer);
+  uint8_t type() const { return packet_type_; }
+  // Depending on packet type same header field can be used either as count or
+  // as feedback message type (fmt). Caller expected to know how it is used.
+  uint8_t fmt() const { return count_or_format_; }
+  uint8_t count() const { return count_or_format_; }
+  size_t payload_size_bytes() const { return payload_size_; }
+  const uint8_t* payload() const { return payload_; }
+  size_t packet_size() const {
+    return kHeaderSizeBytes + payload_size_ + padding_size_;
+  }
+  // Returns pointer to the next RTCP packet in compound packet.
+  const uint8_t* NextPacket() const {
+    return payload_ + payload_size_ + padding_size_;
+  }
 
  private:
-  uint8_t version_ : 2;
-  uint8_t padding_ : 1;
-  uint8_t count_or_format_ : 5;
-  PAYLOAD_TYPE payload_type_ : 8;
-  uint16_t length_ : 16;
+  uint8_t packet_type_ = 0;
+  uint8_t count_or_format_ = 0;
+  uint8_t padding_size_ = 0;
+  uint32_t payload_size_ = 0;
+  const uint8_t* payload_ = nullptr;
 };
 
 #endif

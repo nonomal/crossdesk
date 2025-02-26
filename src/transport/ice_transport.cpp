@@ -209,7 +209,7 @@ void IceTransport::OnReceiveBuffer(NiceAgent *agent, guint stream_id,
 
 bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
                                    RtcpPacketInfo *rtcp_packet_info) {
-  CommonHeader rtcp_block;
+  RtcpCommonHeader rtcp_block;
   // If a sender report is received but no DLRR, we need to reset the
   // roundTripTime stat according to the standard, see
   // https://www.w3.org/TR/webrtc-stats/#dom-rtcremoteoutboundrtpstreamstats-roundtriptime
@@ -227,7 +227,7 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
   switch (rtcp_block.type()) {
     case RtcpPacket::RtcpPayloadType::SR:
       LOG_INFO("Sender report");
-      // valid = HandleSenderReport(rtcp_block, rtcp_packet_info);
+      valid = HandleSenderReport(rtcp_block, rtcp_packet_info);
       // received_blocks[rtcp_packet_info->remote_ssrc].sender_report = true;
       break;
     case RtcpPacket::RtcpPayloadType::RR:
@@ -301,8 +301,21 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
   return true;
 }
 
+bool IceTransport::HandleSenderReport(const RtcpCommonHeader &rtcp_block,
+                                      RtcpPacketInfo *rtcp_packet_info) {
+  SenderReport sender_report;
+  if (!sender_report.Parse(rtcp_block)) {
+    return false;
+  }
+
+  if (ice_transport_controller_) {
+    ice_transport_controller_->OnSenderReport(sender_report);
+  }
+  return true;
+}
+
 bool IceTransport::HandleCongestionControlFeedback(
-    const CommonHeader &rtcp_block, RtcpPacketInfo *rtcp_packet_info) {
+    const RtcpCommonHeader &rtcp_block, RtcpPacketInfo *rtcp_packet_info) {
   webrtc::rtcp::CongestionControlFeedback feedback;
   if (!feedback.Parse(rtcp_block) || feedback.packets().empty()) {
     return false;
@@ -319,7 +332,7 @@ bool IceTransport::HandleCongestionControlFeedback(
   return true;
 }
 
-bool IceTransport::HandleNack(const CommonHeader &rtcp_block,
+bool IceTransport::HandleNack(const RtcpCommonHeader &rtcp_block,
                               RtcpPacketInfo *rtcp_packet_info) {
   webrtc::rtcp::Nack nack;
   if (!nack.Parse(rtcp_block)) {

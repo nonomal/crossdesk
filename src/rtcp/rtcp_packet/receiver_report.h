@@ -48,8 +48,8 @@ class ReceiverReport {
   void SetReportBlock(RtcpReportBlock &rtcp_report_block);
   void SetReportBlocks(std::vector<RtcpReportBlock> &rtcp_report_blocks);
 
-  const uint8_t *Create();
-  size_t Parse(const uint8_t *buffer);
+  const uint8_t *Build();
+  size_t Parse(const RtcpCommonHeader &packet);
 
   const uint8_t *Buffer() const { return buffer_; }
   size_t Size() const { return size_; }

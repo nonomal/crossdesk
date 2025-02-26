@@ -13,7 +13,7 @@
 
 #include <vector>
 
-#include "common_header.h"
+#include "rtcp_common_header.h"
 #include "rtp_feedback.h"
 
 namespace webrtc {
@@ -26,7 +26,7 @@ class Nack : public RtpFeedback {
   ~Nack() override;
 
   // Parse assumes header is already parsed and validated.
-  bool Parse(const CommonHeader& packet);
+  bool Parse(const RtcpCommonHeader& packet);
 
   void SetPacketIds(const uint16_t* nack_list, size_t length);
   void SetPacketIds(std::vector<uint16_t> nack_list);

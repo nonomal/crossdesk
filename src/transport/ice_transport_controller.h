@@ -61,6 +61,7 @@ class IceTransportController
   void OnReceiveCompleteData(const char *data, size_t size);
 
  public:
+  void OnSenderReport(const SenderReport &sender_report);
   void OnCongestionControlFeedback(
       const webrtc::rtcp::CongestionControlFeedback &feedback);
 

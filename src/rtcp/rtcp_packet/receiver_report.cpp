@@ -19,7 +19,7 @@ void ReceiverReport::SetReportBlocks(
   reports_ = std::move(rtcp_report_blocks);
 }
 
-const uint8_t *ReceiverReport::Create() {
+const uint8_t *ReceiverReport::Build() {
   size_t buffer_size =
       DEFAULT_SR_SIZE + reports_.size() * RtcpReportBlock::kLength;
   if (!buffer_ || buffer_size != size_) {
@@ -41,13 +41,13 @@ const uint8_t *ReceiverReport::Create() {
   return buffer_;
 }
 
-size_t ReceiverReport::Parse(const uint8_t *buffer) {
+size_t ReceiverReport::Parse(const RtcpCommonHeader &packet) {
   reports_.clear();
-  size_t pos = rtcp_common_header_.Parse(buffer);
+  size_t pos = packet.payload_size_bytes();
 
-  for (int i = 0; i < rtcp_common_header_.CountOrFormat(); i++) {
+  for (int i = 0; i < rtcp_common_header_.fmt(); i++) {
     RtcpReportBlock report;
-    pos += report.Parse(buffer + pos);
+    pos += report.Parse(buffer_ + pos);
     reports_.emplace_back(std::move(report));
   }
 
