@@ -22,7 +22,8 @@ class RtpPacketizer {
   virtual ~RtpPacketizer() = default;
 
   virtual std::vector<std::shared_ptr<RtpPacket>> Build(
-      uint8_t* payload, uint32_t payload_size, bool use_rtp_packet_to_send) = 0;
+      uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
+      bool use_rtp_packet_to_send) = 0;
 };
 
 #endif

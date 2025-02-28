@@ -47,7 +47,8 @@ void RtpPacketizerGeneric::AddAbsSendTimeExtension(
 }
 
 std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerGeneric::Build(
-    uint8_t* payload, uint32_t payload_size, bool use_rtp_packet_to_send) {
+    uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
+    bool use_rtp_packet_to_send) {
   uint32_t last_packet_size = payload_size % MAX_NALU_LEN;
   uint32_t packet_num =
       payload_size / MAX_NALU_LEN + (last_packet_size ? 1 : 0);

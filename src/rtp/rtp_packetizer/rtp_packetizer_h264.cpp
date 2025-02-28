@@ -1,5 +1,7 @@
 #include "rtp_packetizer_h264.h"
 
+static int kMsToRtpTimestamp = 90;
+
 RtpPacketizerH264::RtpPacketizerH264(uint32_t ssrc)
     : version_(kRtpVersion),
       has_padding_(false),
@@ -59,16 +61,20 @@ void RtpPacketizerH264::AddAbsSendTimeExtension(
 }
 
 std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::Build(
-    uint8_t* payload, uint32_t payload_size, bool use_rtp_packet_to_send) {
+    uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
+    bool use_rtp_packet_to_send) {
   if (payload_size <= MAX_NALU_LEN) {
-    return BuildNalu(payload, payload_size, use_rtp_packet_to_send);
+    return BuildNalu(payload, payload_size, capture_timestamp_ms,
+                     use_rtp_packet_to_send);
   } else {
-    return BuildFua(payload, payload_size, use_rtp_packet_to_send);
+    return BuildFua(payload, payload_size, capture_timestamp_ms,
+                    use_rtp_packet_to_send);
   }
 }
 
 std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::BuildNalu(
-    uint8_t* payload, uint32_t payload_size, bool use_rtp_packet_to_send) {
+    uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
+    bool use_rtp_packet_to_send) {
   std::vector<std::shared_ptr<RtpPacket>> rtp_packets;
 
   version_ = kRtpVersion;
@@ -78,9 +84,7 @@ std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::BuildNalu(
   marker_ = 1;
   payload_type_ = rtp::PAYLOAD_TYPE(payload_type_);
   sequence_number_++;
-  timestamp_ = std::chrono::duration_cast<std::chrono::microseconds>(
-                   std::chrono::system_clock::now().time_since_epoch())
-                   .count();
+  timestamp_ = kMsToRtpTimestamp * static_cast<uint32_t>(capture_timestamp_ms);
 
   if (!csrc_count_) {
   }
@@ -138,7 +142,8 @@ std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::BuildNalu(
 }
 
 std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::BuildFua(
-    uint8_t* payload, uint32_t payload_size, bool use_rtp_packet_to_send) {
+    uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
+    bool use_rtp_packet_to_send) {
   std::vector<std::shared_ptr<RtpPacket>> rtp_packets;
 
   uint32_t last_packet_size = payload_size % MAX_NALU_LEN;

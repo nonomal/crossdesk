@@ -23,10 +23,10 @@ class VideoFrameWrapper : public VideoFrame {
   VideoFrameWrapper() = delete;
   ~VideoFrameWrapper() = default;
 
-  int64_t CaptureTimestamp() { return capture_timestamp_; }
+  int64_t CaptureTimestamp() { return capture_timestamp_ms_; }
 
-  void SetCaptureTimestamp(int64_t capture_timestamp) {
-    capture_timestamp_ = capture_timestamp;
+  void SetCaptureTimestamp(int64_t capture_timestamp_ms) {
+    capture_timestamp_ms_ = capture_timestamp_ms;
   }
 
   VideoFrameType FrameType() { return frame_type_; }
@@ -46,7 +46,7 @@ class VideoFrameWrapper : public VideoFrame {
   }
 
  private:
-  int64_t capture_timestamp_ = 0;
+  int64_t capture_timestamp_ms_ = 0;
   VideoFrameType frame_type_ = VideoFrameType::kVideoFrameDelta;
   uint32_t encoded_width_ = 0;
   uint32_t encoded_height_ = 0;

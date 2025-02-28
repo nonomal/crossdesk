@@ -48,7 +48,7 @@ void DataChannelSend::Destroy() {
 int DataChannelSend::SendData(const char *data, size_t size) {
   if (rtp_data_sender_ && rtp_packetizer_) {
     std::vector<std::shared_ptr<RtpPacket>> rtp_packets =
-        rtp_packetizer_->Build((uint8_t *)data, (uint32_t)size, true);
+        rtp_packetizer_->Build((uint8_t *)data, (uint32_t)size, 0, true);
     rtp_data_sender_->Enqueue(rtp_packets);
   }
 

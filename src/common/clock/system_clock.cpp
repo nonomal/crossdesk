@@ -78,6 +78,17 @@ int64_t SystemClock::CurrentNtpTime() {
   return ConvertToNtpTime(CurrentTimeNs());
 }
 
+int64_t SystemClock::CurrentNtpTimeMs() {
+  int64_t ntp_ts = ConvertToNtpTime(CurrentTimeNs());
+  uint32_t seconds = static_cast<uint32_t>(ntp_ts / 1000000000);
+  uint32_t fractions = static_cast<uint32_t>(ntp_ts % 1000000000);
+
+  static constexpr double kNtpFracPerMs = 4.294967296E6;  // 2^32 / 1000.
+  const double frac_ms = static_cast<double>(fractions) / kNtpFracPerMs;
+  return 1000 * static_cast<int64_t>(seconds) +
+         static_cast<int64_t>(frac_ms + 0.5);
+}
+
 int64_t SystemClock::CurrentUtcTimeNs() {
 #if defined(__POSIX__)
   struct timeval time;

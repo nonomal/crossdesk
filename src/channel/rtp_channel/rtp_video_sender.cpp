@@ -45,7 +45,7 @@ RtpVideoSender::~RtpVideoSender() {
 
 void RtpVideoSender::Enqueue(
     std::vector<std::shared_ptr<RtpPacket>>& rtp_packets,
-    int64_t capture_timestamp) {
+    int64_t capture_timestamp_ms) {
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
@@ -55,7 +55,7 @@ void RtpVideoSender::Enqueue(
     std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send =
         std::dynamic_pointer_cast<webrtc::RtpPacketToSend>(rtp_packet);
     rtp_packet_to_send->set_capture_time(
-        webrtc::Timestamp::Millis(capture_timestamp));
+        webrtc::Timestamp::Millis(capture_timestamp_ms));
     rtp_packet_to_send->set_transport_sequence_number(transport_seq_++);
     rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kVideo);
     rtp_packet_queue_.push(std::move(rtp_packet_to_send));
@@ -93,7 +93,7 @@ int RtpVideoSender::SendRtpPacket(
 
 #ifdef SAVE_RTP_SENT_STREAM
   fwrite((unsigned char*)rtp_packet_to_send->Payload(), 1,
-         rtp_packet_to_send->PayloadSize(), file_rtp_sent_);
+         x rtp_packet_to_send->PayloadSize(), file_rtp_sent_);
 #endif
 
   last_send_bytes_ += (uint32_t)rtp_packet_to_send->Size();

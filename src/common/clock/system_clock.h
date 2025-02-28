@@ -23,6 +23,7 @@ class SystemClock {
   int64_t CurrentTimeNs();
 
   int64_t CurrentNtpTime();
+  int64_t CurrentNtpTimeMs();
 
   int64_t CurrentUtcTime();
   int64_t CurrentUtcTimeMs();
