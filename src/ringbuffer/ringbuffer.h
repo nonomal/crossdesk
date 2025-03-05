@@ -58,9 +58,9 @@ class RingBuffer {
     m_data = nullptr;
   }
 
-  inline bool isEmpty() const { return m_front == m_rear; }
+  bool isEmpty() const { return m_front == m_rear; }
 
-  inline bool isFull() const { return m_front == (m_rear + 1) % m_size; }
+  bool isFull() const { return m_front == (m_rear + 1) % m_size; }
 
   bool push(const T& value) {
     if (isFull()) {
@@ -86,7 +86,7 @@ class RingBuffer {
     return true;
   }
 
-  inline bool pop(T& value) {
+  bool pop(T& value) {
     if (isEmpty()) {
       return false;
     }
@@ -95,11 +95,17 @@ class RingBuffer {
     return true;
   }
 
-  inline unsigned int front() const { return m_front; }
+  unsigned int front() const { return m_front; }
 
-  inline unsigned int rear() const { return m_rear; }
+  unsigned int rear() const { return m_rear; }
 
-  inline unsigned int size() const { return m_size; }
+  unsigned int size() const { return m_size; }
+
+  bool clear() {
+    m_front = 0;
+    m_rear = 0;
+    return true;
+  }
 
  private:
   unsigned int m_size;
