@@ -310,7 +310,7 @@ int AomAv1Encoder::Encode(
   frame_for_encode_->stride[AOM_PLANE_V] = 0;
 
   VideoFrameType frame_type;
-  if (0 == seq_++ % 300) {
+  if (0 == seq_++ % key_frame_interval_) {
     force_i_frame_flags_ = AOM_EFLAG_FORCE_KF;
     frame_type = VideoFrameType::kVideoFrameKey;
   } else {

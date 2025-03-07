@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "congestion_control_feedback.h"
+#include "fir.h"
 #include "nack.h"
 #include "report_block_data.h"
 

@@ -53,6 +53,8 @@ class IceTransportController
   int SendAudio(const char *data, size_t size);
   int SendData(const char *data, size_t size);
 
+  void FullIntraRequest() { b_force_i_frame_ = true; }
+
   int OnReceiveVideoRtpPacket(const char *data, size_t size);
   int OnReceiveAudioRtpPacket(const char *data, size_t size);
   int OnReceiveDataRtpPacket(const char *data, size_t size);

@@ -223,7 +223,7 @@ int OpenH264Encoder::Encode(
              video_frame->height, yuv420p_frame_);
 
   VideoFrameType frame_type;
-  if (0 == seq_++ % 300) {
+  if (0 == seq_++ % key_frame_interval_) {
     ForceIdr();
     frame_type = VideoFrameType::kVideoFrameKey;
   } else {

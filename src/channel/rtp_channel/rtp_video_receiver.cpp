@@ -2,6 +2,7 @@
 
 #include "api/ntp/ntp_time_util.h"
 #include "common.h"
+#include "fir.h"
 #include "log.h"
 #include "nack.h"
 #include "rtcp_sender.h"
@@ -670,7 +671,15 @@ void RtpVideoReceiver::SendNack(const std::vector<uint16_t>& nack_list,
   }
 }
 
-void RtpVideoReceiver::RequestKeyFrame() {}
+void RtpVideoReceiver::RequestKeyFrame() {
+  ++sequence_number_fir_;
+  webrtc::rtcp::Fir fir;
+  fir.SetSenderSsrc(ssrc_);
+  fir.AddRequestTo(remote_ssrc_, sequence_number_fir_);
+
+  rtcp_sender_->AppendPacket(fir);
+  rtcp_sender_->Send();
+}
 
 void RtpVideoReceiver::SendLossNotification(uint16_t last_decoded_seq_num,
                                             uint16_t last_received_seq_num,

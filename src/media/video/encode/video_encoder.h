@@ -11,6 +11,7 @@
 #include "video_frame_wrapper.h"
 #include "x.h"
 
+#define I_FRAME_INTERVAL 3000
 class VideoEncoder {
  public:
   virtual int Init() = 0;
@@ -24,7 +25,7 @@ class VideoEncoder {
 
   virtual int SetTargetBitrate(int bitrate) = 0;
 
-  virtual int GetResolution(int& width, int& height) = 0;
+  virtual int GetResolution(int* width, int* height) = 0;
 
   virtual std::string GetEncoderName() = 0;
 

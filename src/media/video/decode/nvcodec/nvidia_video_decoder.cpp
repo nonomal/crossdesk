@@ -75,7 +75,7 @@ int NvidiaVideoDecoder::Decode(
 #endif
 
   if ((*(data + 4) & 0x1f) == 0x07) {
-    // LOG_WARN("Receive key frame");
+    LOG_WARN("Receive key frame");
   }
 
   int num_frame_returned = decoder->Decode(data, (int)size);

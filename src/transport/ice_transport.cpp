@@ -241,6 +241,9 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
         case webrtc::rtcp::Nack::kFeedbackMessageType:
           valid = HandleNack(rtcp_block, rtcp_packet_info);
           break;
+        case webrtc::rtcp::Fir::kFeedbackMessageType:
+          valid = HandleFir(rtcp_block, rtcp_packet_info);
+          break;
         default:
           break;
       }
@@ -406,6 +409,21 @@ bool IceTransport::HandleNack(const RtcpCommonHeader &rtcp_block,
   // }
 
   return true;
+}
+
+bool IceTransport::HandleFir(const RtcpCommonHeader &rtcp_block,
+                             RtcpPacketInfo *rtcp_packet_info) {
+  webrtc::rtcp::Fir fir;
+  if (!fir.Parse(rtcp_block)) {
+    return false;
+  }
+
+  if (ice_transport_controller_) {
+    ice_transport_controller_->FullIntraRequest();
+    return true;
+  }
+
+  return false;
 }
 
 int IceTransport::DestroyIceTransmission() {

@@ -394,7 +394,7 @@ void SendSideBandwidthEstimation::UpdateEstimate(Timestamp at_time) {
     // We only make decisions based on loss when the bitrate is above a
     // threshold. This is a crude way of handling loss which is uncorrelated
     // to congestion.
-    LOG_WARN("loss: [{}]", loss);
+    // LOG_WARN("loss: [{}]", loss);
     if (current_target_ < bitrate_threshold_ || loss <= low_loss_threshold_) {
       // Loss < 2%: Increase rate by 8% of the min bitrate in the last
       // kBweIncreaseInterval.
@@ -407,13 +407,13 @@ void SendSideBandwidthEstimation::UpdateEstimate(Timestamp at_time) {
       //   it would take over one second since the lower packet loss to achieve
       //   108kbps.
       DataRate new_bitrate = DataRate::BitsPerSec(
-          min_bitrate_history_.front().second.bps() * 1.08 + 0.5);
+          min_bitrate_history_.front().second.bps() * 1.5 + 0.5);
 
       // Add 1 kbps extra, just to make sure that we do not get stuck
       // (gives a little extra increase at low rates, negligible at higher
       // rates).
       new_bitrate += DataRate::BitsPerSec(1000);
-      LOG_WARN("new_bitrate: [{}]", ToString(new_bitrate).c_str());
+      // LOG_WARN("new_bitrate: [{}]", ToString(new_bitrate).c_str());
       UpdateTargetBitrate(new_bitrate, at_time);
       return;
     } else if (current_target_ > bitrate_threshold_) {
@@ -435,7 +435,7 @@ void SendSideBandwidthEstimation::UpdateEstimate(Timestamp at_time) {
                static_cast<double>(512 - last_fraction_loss_)) /
               512.0);
           has_decreased_since_last_fraction_loss_ = true;
-          LOG_WARN("2 new_bitrate: [{}]", ToString(new_bitrate).c_str());
+          // LOG_WARN("new_bitrate: [{}]", ToString(new_bitrate).c_str());
           UpdateTargetBitrate(new_bitrate, at_time);
           return;
         }

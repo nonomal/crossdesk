@@ -46,9 +46,9 @@ class AomAv1Encoder : public VideoEncoder {
 
   int SetTargetBitrate(int bitrate);
 
-  int GetResolution(int& width, int& height) {
-    width = frame_width_;
-    height = frame_height_;
+  int GetResolution(int* width, int* height) {
+    *width = frame_width_;
+    *height = frame_height_;
     return 0;
   }
 
@@ -67,7 +67,7 @@ class AomAv1Encoder : public VideoEncoder {
  private:
   uint32_t frame_width_ = 1280;
   uint32_t frame_height_ = 720;
-  int key_frame_interval_ = 300;
+  int key_frame_interval_ = I_FRAME_INTERVAL;
   int target_bitrate_ = 1000;
   int max_bitrate_ = 2500000;
   int max_payload_size_ = 1400;

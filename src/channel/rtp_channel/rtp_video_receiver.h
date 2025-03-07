@@ -155,6 +155,8 @@ class RtpVideoReceiver : public ThreadBase,
   uint32_t bytes_sent = 0;
   uint32_t reports_count = 0;
 
+  uint8_t sequence_number_fir_ = 0;
+
  private:
   FILE* file_rtp_recv_ = nullptr;
 };

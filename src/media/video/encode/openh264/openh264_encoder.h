@@ -33,9 +33,9 @@ class OpenH264Encoder : public VideoEncoder {
 
   int SetTargetBitrate(int bitrate);
 
-  int GetResolution(int& width, int& height) {
-    width = frame_width_;
-    height = frame_height_;
+  int GetResolution(int* width, int* height) {
+    *width = frame_width_;
+    *height = frame_height_;
     return 0;
   }
 
@@ -50,7 +50,7 @@ class OpenH264Encoder : public VideoEncoder {
  private:
   uint32_t frame_width_ = 1280;
   uint32_t frame_height_ = 720;
-  int key_frame_interval_ = 300;
+  int key_frame_interval_ = 3000;
   int target_bitrate_ = 10000000;
   int max_bitrate_ = 10000000;
   int max_payload_size_ = 1400;

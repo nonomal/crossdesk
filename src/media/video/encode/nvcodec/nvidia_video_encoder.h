@@ -4,6 +4,7 @@
 #include <functional>
 
 #include "NvEncoderCuda.h"
+#include "log.h"
 #include "video_encoder.h"
 
 class NvidiaVideoEncoder : public VideoEncoder {
@@ -22,9 +23,9 @@ class NvidiaVideoEncoder : public VideoEncoder {
 
   int SetTargetBitrate(int bitrate);
 
-  int GetResolution(int& width, int& height) {
-    width = frame_width_;
-    height = frame_height_;
+  int GetResolution(int* width, int* height) {
+    *width = frame_width_;
+    *height = frame_height_;
     return 0;
   }
 

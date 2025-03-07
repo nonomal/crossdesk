@@ -462,13 +462,16 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
   if (target_bitrate != target_bitrate_) {
     target_bitrate_ = target_bitrate;
     int width, height, target_width, target_height;
-    video_encoder_->GetResolution(width, height);
+    video_encoder_->GetResolution(&width, &height);
 
     if (0 == resolution_adapter_->GetResolution(target_bitrate_, width, height,
-                                                target_width, target_height)) {
+                                                &target_width,
+                                                &target_height)) {
       if (target_width != target_width_ || target_height != target_height_) {
         target_width_ = target_width;
         target_height_ = target_height;
+
+        b_force_i_frame_ = true;
         LOG_WARN("Set target resolution [{}x{}]", target_width_.value(),
                  target_height_.value());
       }
@@ -479,7 +482,7 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
                source_height_);
     }
     video_encoder_->SetTargetBitrate(target_bitrate_);
-    // LOG_WARN("Set target bitrate [{}]bps", target_bitrate_);
+    LOG_WARN("Set target bitrate [{}]bps", target_bitrate_);
   }
 }
 

@@ -146,6 +146,9 @@ class IceTransport {
   bool HandleNack(const RtcpCommonHeader &rtcp_block,
                   RtcpPacketInfo *rtcp_packet_info);
 
+  bool HandleFir(const RtcpCommonHeader &rtcp_block,
+                 RtcpPacketInfo *rtcp_packet_info);
+
  private:
   bool hardware_acceleration_ = false;
   bool use_trickle_ice_ = true;
