@@ -966,6 +966,9 @@ int Render::Run() {
         if (props->stream_texture_) {
           if (props->video_width_ != props->texture_width_ ||
               props->video_height_ != props->texture_height_) {
+            LOG_WARN("Resolution changed, old: [{}x{}], new: [{}x{}]",
+                     props->texture_width_, props->texture_height_,
+                     props->video_width_, props->video_height_);
             props->texture_width_ = props->video_width_;
             props->texture_height_ = props->video_height_;
 
