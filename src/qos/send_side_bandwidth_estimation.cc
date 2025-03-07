@@ -413,7 +413,7 @@ void SendSideBandwidthEstimation::UpdateEstimate(Timestamp at_time) {
       // (gives a little extra increase at low rates, negligible at higher
       // rates).
       new_bitrate += DataRate::BitsPerSec(1000);
-      LOG_WARN("1 new_bitrate: [{}]", ToString(new_bitrate).c_str());
+      LOG_WARN("new_bitrate: [{}]", ToString(new_bitrate).c_str());
       UpdateTargetBitrate(new_bitrate, at_time);
       return;
     } else if (current_target_ > bitrate_threshold_) {

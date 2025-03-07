@@ -218,9 +218,12 @@ target("media")
         "src/media/video/decode/aom", {public = true})
     end
     add_files("src/media/audio/encode/*.cpp",
-        "src/media/audio/decode/*.cpp")
+        "src/media/audio/decode/*.cpp",
+        "src/media/resolution_adapter/*.cpp")
     add_includedirs("src/media/audio/encode",
-        "src/media/audio/decode", "src/interface", {public = true})
+        "src/media/audio/decode",
+        "src/media/resolution_adapter",
+        "src/interface", {public = true})
 
 target("pc")
     set_kind("object")

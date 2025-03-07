@@ -24,6 +24,8 @@ class VideoEncoder {
 
   virtual int SetTargetBitrate(int bitrate) = 0;
 
+  virtual int GetResolution(int& width, int& height) = 0;
+
   virtual std::string GetEncoderName() = 0;
 
   VideoEncoder() = default;

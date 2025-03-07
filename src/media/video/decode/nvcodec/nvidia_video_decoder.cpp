@@ -44,7 +44,8 @@ int NvidiaVideoDecoder::Init() {
     return -1;
   }
 
-  decoder = new NvDecoder(cuContext, false, cudaVideoCodec_H264, true);
+  decoder = new NvDecoder(cuContext, false, cudaVideoCodec_H264, true, false,
+                          nullptr, nullptr, false, 4096, 2160, 1000, false);
 
 #ifdef SAVE_DECODED_NV12_STREAM
   file_nv12_ = fopen("decoded_nv12_stream.yuv", "w+b");

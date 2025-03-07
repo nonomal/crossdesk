@@ -13,6 +13,8 @@ IceTransportController::IceTransportController(
     : last_report_block_time_(
           webrtc::Timestamp::Millis(webrtc_clock_->TimeInMilliseconds())),
       b_force_i_frame_(true),
+      target_width_(1280),
+      target_height_(720),
       video_codec_inited_(false),
       audio_codec_inited_(false),
       load_nvcodec_dll_success_(false),
@@ -50,6 +52,7 @@ void IceTransportController::Create(
   CreateAudioCodec();
 
   controller_ = std::make_unique<CongestionControl>();
+  resolution_adapter_ = std::make_unique<ResolutionAdapter>();
 
   video_channel_send_ = std::make_unique<VideoChannelSend>(
       clock_, ice_agent, ice_io_statistics,
@@ -126,6 +129,8 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
     LOG_ERROR("Video Encoder not created");
     return -1;
   }
+  source_width_ = video_frame->width;
+  source_height_ = video_frame->height;
 
   if (b_force_i_frame_) {
     video_encoder_->ForceIdr();
@@ -133,8 +138,24 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
     b_force_i_frame_ = false;
   }
 
+  bool need_to_release = false;
+
+  XVideoFrame new_frame;
+  new_frame.data = nullptr;
+  new_frame.width = video_frame->width;
+  new_frame.height = video_frame->height;
+  if (target_width_.has_value() && target_height_.has_value()) {
+    if (target_width_.value() < video_frame->width &&
+        target_height_.value() < video_frame->height) {
+      resolution_adapter_->ResolutionDowngrade(
+          video_frame, target_width_.value(), target_height_.value(),
+          &new_frame);
+      need_to_release = true;
+    }
+  }
+
   int ret = video_encoder_->Encode(
-      video_frame,
+      need_to_release ? &new_frame : video_frame,
       [this](std::shared_ptr<VideoFrameWrapper> encoded_frame) -> int {
         if (video_channel_send_) {
           video_channel_send_->SendVideo(encoded_frame);
@@ -142,6 +163,10 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
 
         return 0;
       });
+
+  if (need_to_release) {
+    delete[] new_frame.data;
+  }
 
   if (0 != ret) {
     LOG_ERROR("Encode failed");
@@ -429,11 +454,33 @@ void IceTransportController::OnSentRtpPacket(
 void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
   // UpdateControlState();
 
-  target_bitrate_ = update.target_rate.has_value()
-                        ? update.target_rate->target_rate.bps()
-                        : 0;
-  // LOG_WARN("Target bitrate [{}]bps", target_bitrate_);
-  video_encoder_->SetTargetBitrate(target_bitrate_);
+  int target_bitrate = update.target_rate.has_value()
+                           ? (update.target_rate->target_rate.bps() == 0
+                                  ? target_bitrate_
+                                  : update.target_rate->target_rate.bps())
+                           : target_bitrate_;
+  if (target_bitrate != target_bitrate_) {
+    target_bitrate_ = target_bitrate;
+    int width, height, target_width, target_height;
+    video_encoder_->GetResolution(width, height);
+
+    if (0 == resolution_adapter_->GetResolution(target_bitrate_, width, height,
+                                                target_width, target_height)) {
+      if (target_width != target_width_ || target_height != target_height_) {
+        target_width_ = target_width;
+        target_height_ = target_height;
+        LOG_WARN("Set target resolution [{}x{}]", target_width_.value(),
+                 target_height_.value());
+      }
+    } else {
+      target_width_.reset();
+      target_height_.reset();
+      LOG_WARN("Use original resolution [{}x{}]", source_width_,
+               source_height_);
+    }
+    video_encoder_->SetTargetBitrate(target_bitrate_);
+    // LOG_WARN("Set target bitrate [{}]bps", target_bitrate_);
+  }
 }
 
 void IceTransportController::UpdateControlState() {

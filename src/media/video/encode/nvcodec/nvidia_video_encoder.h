@@ -22,6 +22,12 @@ class NvidiaVideoEncoder : public VideoEncoder {
 
   int SetTargetBitrate(int bitrate);
 
+  int GetResolution(int& width, int& height) {
+    width = frame_width_;
+    height = frame_height_;
+    return 0;
+  }
+
   std::string GetEncoderName() { return "NvidiaH264"; }
 
  private:

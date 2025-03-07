@@ -20,6 +20,7 @@
 #include "data_channel_receive.h"
 #include "data_channel_send.h"
 #include "ice_agent.h"
+#include "resolution_adapter.h"
 #include "transport_feedback_adapter.h"
 #include "video_channel_receive.h"
 #include "video_channel_send.h"
@@ -108,10 +109,15 @@ class IceTransportController
  private:
   std::unique_ptr<VideoEncoder> video_encoder_ = nullptr;
   std::unique_ptr<VideoDecoder> video_decoder_ = nullptr;
+  std::unique_ptr<ResolutionAdapter> resolution_adapter_ = nullptr;
   bool b_force_i_frame_;
   bool video_codec_inited_;
   bool load_nvcodec_dll_success_;
   bool hardware_acceleration_;
+  int source_width_;
+  int source_height_;
+  std::optional<int> target_width_;
+  std::optional<int> target_height_;
 
  private:
   std::unique_ptr<AudioEncoder> audio_encoder_ = nullptr;

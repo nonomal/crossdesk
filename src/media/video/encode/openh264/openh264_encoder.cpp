@@ -367,6 +367,10 @@ int OpenH264Encoder::ForceIdr() {
 }
 
 int OpenH264Encoder::SetTargetBitrate(int bitrate) {
+  if (!openh264_encoder_) {
+    return -1;
+  }
+
   target_bitrate_ = bitrate;
   encoder_params_.iTargetBitrate = target_bitrate_;
 
