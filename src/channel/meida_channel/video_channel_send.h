@@ -28,6 +28,14 @@ class VideoChannelSend {
                        on_sent_packet_func_);
   ~VideoChannelSend();
 
+  void SetEnqueuePacketsFunc(
+      std::function<
+          void(std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>&)>
+          enqueue_packets_func);
+
+  std::vector<std::unique_ptr<RtpPacket>> GeneratePadding(
+      uint32_t payload_size, int64_t capture_timestamp_ms);
+
  public:
   void Initialize(rtp::PAYLOAD_TYPE payload_type);
   void Destroy();

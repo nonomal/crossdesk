@@ -31,25 +31,27 @@ class RtpPacketHistory {
 
  public:
   void SetRtt(webrtc::TimeDelta rtt);
-  void AddPacket(std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet,
+  void AddPacket(std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet,
                  webrtc::Timestamp send_time);
   void RemoveDeadPackets();
 
  private:
-  std::shared_ptr<webrtc::RtpPacketToSend> RemovePacket(int packet_index);
+  std::unique_ptr<webrtc::RtpPacketToSend> RemovePacket(int packet_index);
   int GetPacketIndex(uint16_t sequence_number) const;
 
  private:
   struct RtpPacketToSendInfo {
     RtpPacketToSendInfo() = default;
-    RtpPacketToSendInfo(std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet,
+    RtpPacketToSendInfo(std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet,
                         webrtc::Timestamp send_time, uint64_t index)
-        : rtp_packet(rtp_packet), send_time(send_time), index(index) {}
+        : rtp_packet(std::move(rtp_packet)),
+          send_time(send_time),
+          index(index) {}
     RtpPacketToSendInfo(RtpPacketToSendInfo&&) = default;
     RtpPacketToSendInfo& operator=(RtpPacketToSendInfo&&) = default;
     ~RtpPacketToSendInfo() = default;
 
-    std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet;
+    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet;
     webrtc::Timestamp send_time = webrtc::Timestamp::Zero();
     uint64_t index;
   };

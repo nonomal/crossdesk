@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 
 int RingBufferDummy();
 
@@ -62,37 +63,25 @@ class RingBuffer {
 
   bool isFull() const { return m_front == (m_rear + 1) % m_size; }
 
-  bool push(const T& value) {
+  bool push(T value) {
     if (isFull()) {
       return false;
     }
     if (!m_data) {
       return false;
     }
-    m_data[m_rear] = value;
+    m_data[m_rear] = std::move(value);
     m_rear = (m_rear + 1) % m_size;
     return true;
   }
 
-  bool push(const T* value) {
-    if (isFull()) {
-      return false;
-    }
-    if (!m_data) {
-      return false;
-    }
-    m_data[m_rear] = *value;
-    m_rear = (m_rear + 1) % m_size;
-    return true;
-  }
-
-  bool pop(T& value) {
+  std::optional<T> pop() {
     if (isEmpty()) {
-      return false;
+      return std::nullopt;
     }
-    value = m_data[m_front];
+    std::optional<T> value = std::move(m_data[m_front]);
     m_front = (m_front + 1) % m_size;
-    return true;
+    return value;
   }
 
   unsigned int front() const { return m_front; }

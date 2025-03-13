@@ -110,6 +110,9 @@ void IceTransport::OnIceStateChange(NiceAgent *agent, guint stream_id,
     if (state == NICE_COMPONENT_STATE_READY ||
         state == NICE_COMPONENT_STATE_CONNECTED) {
       ice_io_statistics_->Start();
+      if (ice_transport_controller_) {
+        ice_transport_controller_->UpdateNetworkAvaliablity(true);
+      }
     }
 
     on_ice_status_change_(nice_component_state_to_string(state),
@@ -202,6 +205,8 @@ void IceTransport::OnReceiveBuffer(NiceAgent *agent, guint stream_id,
       // LOG_ERROR("Rtcp packet [{}]", (uint8_t)(buffer[1]));
       RtcpPacketInfo rtcp_packet_info;
       ParseRtcpPacket((const uint8_t *)buffer, size, &rtcp_packet_info);
+    } else if (CheckIsRtpPaddingPacket(buffer, size)) {
+      // LOG_WARN("Rtp padding packet");
     } else {
       LOG_ERROR("Unknown packet");
     }
@@ -920,7 +925,22 @@ uint8_t IceTransport::CheckIsRtpPacket(const char *buffer, size_t size) {
   }
 
   uint8_t payload_type = buffer[1] & 0x7F;
-  if (payload_type >= 96 && payload_type <= 127) {
+  if (payload_type == 96 || payload_type == 99 || payload_type == 111 ||
+      payload_type == 127) {
+    return payload_type;
+  } else {
+    return 0;
+  }
+}
+
+uint8_t IceTransport::CheckIsRtpPaddingPacket(const char *buffer, size_t size) {
+  if (size < 2) {
+    return 0;
+  }
+
+  uint8_t payload_type = buffer[1] & 0x7F;
+  if (payload_type == 95 || payload_type == 98 || payload_type == 110 ||
+      payload_type == 126) {
     return payload_type;
   } else {
     return 0;

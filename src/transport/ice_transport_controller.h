@@ -58,6 +58,8 @@ class IceTransportController
 
   void FullIntraRequest() { b_force_i_frame_ = true; }
 
+  void UpdateNetworkAvaliablity(bool network_available);
+
   int OnReceiveVideoRtpPacket(const char *data, size_t size);
   int OnReceiveAudioRtpPacket(const char *data, size_t size);
   int OnReceiveDataRtpPacket(const char *data, size_t size);

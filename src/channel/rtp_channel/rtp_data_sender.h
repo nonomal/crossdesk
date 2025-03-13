@@ -24,14 +24,14 @@ class RtpDataSender : public ThreadBase {
   virtual ~RtpDataSender();
 
  public:
-  void Enqueue(std::vector<std::shared_ptr<RtpPacket>> rtp_packets);
+  void Enqueue(std::vector<std::unique_ptr<RtpPacket>> rtp_packets);
   void SetSendDataFunc(std::function<int(const char *, size_t)> data_send_func);
   uint32_t GetSsrc() { return ssrc_; }
   void OnReceiverReport(const ReceiverReport &receiver_report) {}
 
  private:
  private:
-  int SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet);
+  int SendRtpPacket(std::unique_ptr<RtpPacket> rtp_packet);
   int SendRtcpSR(SenderReport &rtcp_sr);
 
   bool CheckIsTimeSendSR();
@@ -41,7 +41,7 @@ class RtpDataSender : public ThreadBase {
 
  private:
   std::function<int(const char *, size_t)> data_send_func_ = nullptr;
-  RingBuffer<std::shared_ptr<RtpPacket>> rtp_packet_queue_;
+  RingBuffer<std::unique_ptr<RtpPacket>> rtp_packet_queue_;
 
  private:
   uint32_t ssrc_ = 0;

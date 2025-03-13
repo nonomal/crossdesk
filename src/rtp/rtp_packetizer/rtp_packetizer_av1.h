@@ -15,9 +15,15 @@ class RtpPacketizerAv1 : public RtpPacketizer {
 
   virtual ~RtpPacketizerAv1();
 
-  std::vector<std::shared_ptr<RtpPacket>> Build(
+  std::vector<std::unique_ptr<RtpPacket>> Build(
       uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
       bool use_rtp_packet_to_send) override;
+
+  std::vector<std::unique_ptr<RtpPacket>> BuildPadding(
+      uint32_t payload_size, int64_t capture_timestamp_ms,
+      bool use_rtp_packet_to_send) override {
+    return std::vector<std::unique_ptr<RtpPacket>>{};
+  };
 
  private:
   uint8_t version_;

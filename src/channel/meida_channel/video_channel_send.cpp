@@ -48,6 +48,21 @@ void VideoChannelSend::Initialize(rtp::PAYLOAD_TYPE payload_type) {
   rtp_video_sender_->Start();
 }
 
+void VideoChannelSend::SetEnqueuePacketsFunc(
+    std::function<void(std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>&)>
+        enqueue_packets_func) {
+  rtp_video_sender_->SetEnqueuePacketsFunc(enqueue_packets_func);
+}
+
+std::vector<std::unique_ptr<RtpPacket>> VideoChannelSend::GeneratePadding(
+    uint32_t payload_size, int64_t capture_timestamp_ms) {
+  if (rtp_packetizer_) {
+    return rtp_packetizer_->BuildPadding(payload_size, capture_timestamp_ms,
+                                         true);
+  }
+  return std::vector<std::unique_ptr<RtpPacket>>{};
+}
+
 void VideoChannelSend::Destroy() {
   if (rtp_video_sender_) {
     rtp_video_sender_->Stop();
@@ -57,11 +72,12 @@ void VideoChannelSend::Destroy() {
 int VideoChannelSend::SendVideo(
     std::shared_ptr<VideoFrameWrapper> encoded_frame) {
   if (rtp_video_sender_ && rtp_packetizer_) {
-    std::vector<std::shared_ptr<RtpPacket>> rtp_packets =
+    std::vector<std::unique_ptr<RtpPacket>> rtp_packets =
         rtp_packetizer_->Build((uint8_t*)encoded_frame->Buffer(),
                                (uint32_t)encoded_frame->Size(),
                                encoded_frame->CaptureTimestamp(), true);
-    rtp_video_sender_->Enqueue(rtp_packets, encoded_frame->CaptureTimestamp());
+    rtp_video_sender_->Enqueue(std::move(rtp_packets),
+                               encoded_frame->CaptureTimestamp());
   }
 
   return 0;

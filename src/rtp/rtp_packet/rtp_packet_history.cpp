@@ -17,7 +17,7 @@ void RtpPacketHistory::SetRtt(webrtc::TimeDelta rtt) {
 }
 
 void RtpPacketHistory::AddPacket(
-    std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet,
+    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet,
     webrtc::Timestamp send_time) {
   RemoveDeadPackets();
   const uint16_t rtp_seq_no = rtp_packet->SequenceNumber();
@@ -40,7 +40,7 @@ void RtpPacketHistory::AddPacket(
     rtp_packet_history_.emplace_back();
   }
 
-  rtp_packet_history_[packet_index] = {rtp_packet, send_time,
+  rtp_packet_history_[packet_index] = {std::move(rtp_packet), send_time,
                                        packets_inserted_++};
 }
 
@@ -79,10 +79,10 @@ void RtpPacketHistory::RemoveDeadPackets() {
   }
 }
 
-std::shared_ptr<webrtc::RtpPacketToSend> RtpPacketHistory::RemovePacket(
+std::unique_ptr<webrtc::RtpPacketToSend> RtpPacketHistory::RemovePacket(
     int packet_index) {
   // Move the packet out from the StoredPacket container.
-  std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet =
+  std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet =
       std::move(rtp_packet_history_[packet_index].rtp_packet);
   if (packet_index == 0) {
     while (!rtp_packet_history_.empty() &&

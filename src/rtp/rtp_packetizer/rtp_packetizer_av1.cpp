@@ -4,10 +4,10 @@ RtpPacketizerAv1::RtpPacketizerAv1(uint32_t ssrc) {}
 
 RtpPacketizerAv1::~RtpPacketizerAv1() {}
 
-std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerAv1::Build(
+std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerAv1::Build(
     uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
     bool use_rtp_packet_to_send) {
-  std::vector<std::shared_ptr<RtpPacket>> rtp_packets;
+  std::vector<std::unique_ptr<RtpPacket>> rtp_packets;
 
   return rtp_packets;
 }

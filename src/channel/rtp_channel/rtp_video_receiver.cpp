@@ -532,9 +532,8 @@ bool RtpVideoReceiver::CheckIsTimeSendRR() {
 
 bool RtpVideoReceiver::Process() {
   if (!compelete_video_frame_queue_.isEmpty()) {
-    VideoFrame video_frame;
-    compelete_video_frame_queue_.pop(video_frame);
-    if (on_receive_complete_frame_) {
+    std::optional<VideoFrame> video_frame = compelete_video_frame_queue_.pop();
+    if (on_receive_complete_frame_ && video_frame) {
       // auto now_complete_frame_ts =
       //     std::chrono::duration_cast<std::chrono::milliseconds>(
       //         std::chrono::system_clock::now().time_since_epoch())
@@ -543,7 +542,7 @@ bool RtpVideoReceiver::Process() {
       // LOG_ERROR("Duration {}", duration);
       // last_complete_frame_ts_ = now_complete_frame_ts;
 
-      on_receive_complete_frame_(video_frame);
+      on_receive_complete_frame_(*video_frame);
       // #ifdef SAVE_RTP_RECV_STREAM
       //       fwrite((unsigned char*)video_frame.Buffer(), 1,
       //       video_frame.Size(),

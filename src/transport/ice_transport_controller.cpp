@@ -42,6 +42,7 @@ void IceTransportController::Create(
     std::shared_ptr<IOStatistics> ice_io_statistics,
     OnReceiveVideo on_receive_video, OnReceiveAudio on_receive_audio,
     OnReceiveData on_receive_data, void* user_data) {
+  ice_agent_ = ice_agent;
   remote_user_id_ = remote_user_id;
   on_receive_video_ = on_receive_video;
   on_receive_audio_ = on_receive_audio;
@@ -53,6 +54,16 @@ void IceTransportController::Create(
 
   controller_ = std::make_unique<CongestionControl>();
   packet_sender_ = std::make_unique<PacketSender>(ice_agent, webrtc_clock_);
+  packet_sender_->SetPacingRates(DataRate::BitsPerSec(300000),
+                                 DataRate::Zero());
+  packet_sender_->SetOnSentPacketFunc(
+      [this](const webrtc::RtpPacketToSend& packet) {
+        if (ice_agent_) {
+          ice_agent_->Send((const char*)packet.Buffer().data(), packet.Size());
+          OnSentRtpPacket(packet);
+        }
+      });
+
   resolution_adapter_ = std::make_unique<ResolutionAdapter>();
 
   video_channel_send_ = std::make_unique<VideoChannelSend>(
@@ -60,6 +71,13 @@ void IceTransportController::Create(
       [this](const webrtc::RtpPacketToSend& packet) {
         OnSentRtpPacket(packet);
       });
+
+  packet_sender_->SetGeneratePaddingFunc(
+      [this](uint32_t size, int64_t capture_timestamp_ms)
+          -> std::vector<std::unique_ptr<RtpPacket>> {
+        return video_channel_send_->GeneratePadding(size, capture_timestamp_ms);
+      });
+
   audio_channel_send_ =
       std::make_unique<AudioChannelSend>(ice_agent, ice_io_statistics);
   data_channel_send_ =
@@ -68,6 +86,10 @@ void IceTransportController::Create(
   video_channel_send_->Initialize(video_codec_payload_type);
   audio_channel_send_->Initialize(rtp::PAYLOAD_TYPE::OPUS);
   data_channel_send_->Initialize(rtp::PAYLOAD_TYPE::DATA);
+
+  video_channel_send_->SetEnqueuePacketsFunc(
+      [this](std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>& packets)
+          -> void { packet_sender_->EnqueuePackets(std::move(packets)); });
 
   std::weak_ptr<IceTransportController> weak_self = shared_from_this();
   video_channel_receive_ = std::make_unique<VideoChannelReceive>(
@@ -161,6 +183,7 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
       [this](std::shared_ptr<VideoFrameWrapper> encoded_frame) -> int {
         if (video_channel_send_) {
           video_channel_send_->SendVideo(encoded_frame);
+          LOG_WARN("SendVideo rtp packets");
         }
 
         return 0;
@@ -203,6 +226,17 @@ int IceTransportController::SendData(const char* data, size_t size) {
   }
 
   return 0;
+}
+
+void IceTransportController::UpdateNetworkAvaliablity(bool network_available) {
+  if (controller_) {
+    webrtc::NetworkAvailability msg;
+    msg.at_time =
+        webrtc::Timestamp::Millis(webrtc_clock_->TimeInMilliseconds());
+    msg.network_available = network_available;
+    controller_->OnNetworkAvailability(msg);
+    packet_sender_->EnsureStarted();
+  }
 }
 
 int IceTransportController::OnReceiveVideoRtpPacket(const char* data,
@@ -486,7 +520,7 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
         target_height_.reset();
       }
       video_encoder_->SetTargetBitrate(target_bitrate_);
-      LOG_WARN("Set target bitrate [{}]bps", target_bitrate_);
+      // LOG_WARN("Set target bitrate [{}]bps", target_bitrate_);
     }
   }
 

@@ -163,6 +163,7 @@ SendSideBandwidthEstimation::SendSideBandwidthEstimation()
       low_loss_threshold_(kDefaultLowLossThreshold),
       high_loss_threshold_(kDefaultHighLossThreshold),
       bitrate_threshold_(kDefaultBitrateThreshold),
+      loss_based_state_(LossBasedState::kDelayBasedEstimate),
       disable_receiver_limit_caps_only_(false) {
   // rtt_backoff_ =
 }
@@ -407,7 +408,7 @@ void SendSideBandwidthEstimation::UpdateEstimate(Timestamp at_time) {
       //   it would take over one second since the lower packet loss to achieve
       //   108kbps.
       DataRate new_bitrate = DataRate::BitsPerSec(
-          min_bitrate_history_.front().second.bps() * 1.5 + 0.5);
+          min_bitrate_history_.front().second.bps() * 1.08 + 0.5);
 
       // Add 1 kbps extra, just to make sure that we do not get stuck
       // (gives a little extra increase at low rates, negligible at higher

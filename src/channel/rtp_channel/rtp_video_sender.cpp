@@ -44,22 +44,26 @@ RtpVideoSender::~RtpVideoSender() {
 }
 
 void RtpVideoSender::Enqueue(
-    std::vector<std::shared_ptr<RtpPacket>>& rtp_packets,
+    std::vector<std::unique_ptr<RtpPacket>>& rtp_packets,
     int64_t capture_timestamp_ms) {
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
   }
 
+  std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> to_send_rtp_packets;
   for (auto& rtp_packet : rtp_packets) {
-    std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send =
-        std::dynamic_pointer_cast<webrtc::RtpPacketToSend>(rtp_packet);
+    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send(
+        static_cast<webrtc::RtpPacketToSend*>(rtp_packet.release()));
     rtp_packet_to_send->set_capture_time(
         webrtc::Timestamp::Millis(capture_timestamp_ms));
     rtp_packet_to_send->set_transport_sequence_number(transport_seq_++);
     rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kVideo);
-    rtp_packet_queue_.push(std::move(rtp_packet_to_send));
+    // rtp_packet_queue_.push(std::move(rtp_packet_to_send));
+
+    to_send_rtp_packets.push_back(std::move(rtp_packet_to_send));
   }
+  enqueue_packets_func_(std::move(to_send_rtp_packets));
 }
 
 void RtpVideoSender::SetSendDataFunc(
@@ -72,16 +76,17 @@ void RtpVideoSender::SetOnSentPacketFunc(
   on_sent_packet_func_ = on_sent_packet_func;
 }
 
+void RtpVideoSender::SetEnqueuePacketsFunc(
+    std::function<void(std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>&)>
+        enqueue_packets_func) {
+  enqueue_packets_func_ = enqueue_packets_func;
+}
+
 int RtpVideoSender::SendRtpPacket(
-    std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send) {
+    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send) {
   if (!data_send_func_) {
     LOG_ERROR("data_send_func_ is nullptr");
     return -1;
-  }
-
-  if (on_sent_packet_func_) {
-    on_sent_packet_func_(*rtp_packet_to_send);
-    rtp_packet_history_->AddPacket(rtp_packet_to_send, clock_->CurrentTime());
   }
 
   last_rtp_timestamp_ = rtp_packet_to_send->capture_time().ms();
@@ -124,6 +129,12 @@ int RtpVideoSender::SendRtpPacket(
     SendRtcpSR(rtcp_sr);
   }
 
+  if (on_sent_packet_func_) {
+    on_sent_packet_func_(*rtp_packet_to_send);
+    rtp_packet_history_->AddPacket(std::move(rtp_packet_to_send),
+                                   clock_->CurrentTime());
+  }
+
   return 0;
 }
 
@@ -164,10 +175,10 @@ bool RtpVideoSender::Process() {
 
   for (size_t i = 0; i < 10; i++)
     if (!rtp_packet_queue_.isEmpty()) {
-      std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send;
-      pop_success = rtp_packet_queue_.pop(rtp_packet_to_send);
-      if (pop_success) {
-        SendRtpPacket(rtp_packet_to_send);
+      std::optional<std::unique_ptr<webrtc::RtpPacketToSend>>
+          rtp_packet_to_send = rtp_packet_queue_.pop();
+      if (rtp_packet_to_send) {
+        SendRtpPacket(std::move(*rtp_packet_to_send));
       }
     }
 

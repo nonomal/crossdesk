@@ -26,23 +26,30 @@ BandwidthLimitedCause GetBandwidthLimitedCause(LossBasedState loss_based_state,
                                                BandwidthUsage bandwidth_usage) {
   if (bandwidth_usage == BandwidthUsage::kBwOverusing ||
       bandwidth_usage == BandwidthUsage::kBwUnderusing) {
+    LOG_ERROR("kDelayBasedLimitedDelayIncreased");
     return BandwidthLimitedCause::kDelayBasedLimitedDelayIncreased;
   } else if (is_rtt_above_limit) {
+    LOG_ERROR("kDelayBasedLimitedDelayIncreased");
     return BandwidthLimitedCause::kRttBasedBackOffHighRtt;
   }
   switch (loss_based_state) {
     case LossBasedState::kDecreasing:
       // Probes may not be sent in this state.
+      LOG_ERROR("kLossLimitedBwe");
       return BandwidthLimitedCause::kLossLimitedBwe;
     case webrtc::LossBasedState::kIncreaseUsingPadding:
       // Probes may not be sent in this state.
+      LOG_ERROR("kLossLimitedBwe");
       return BandwidthLimitedCause::kLossLimitedBwe;
     case LossBasedState::kIncreasing:
+      LOG_ERROR("kLossLimitedBweIncreasing");
       // Probes may be sent in this state.
       return BandwidthLimitedCause::kLossLimitedBweIncreasing;
     case LossBasedState::kDelayBasedEstimate:
+      // LOG_ERROR("kDelayBasedLimited");
       return BandwidthLimitedCause::kDelayBasedLimited;
     default:
+      LOG_ERROR("kLossLimitedBwe");
       return BandwidthLimitedCause::kLossLimitedBwe;
   }
 }
@@ -87,6 +94,13 @@ CongestionControl::CongestionControl()
 
 CongestionControl::~CongestionControl() {}
 
+NetworkControlUpdate CongestionControl::OnNetworkAvailability(
+    NetworkAvailability msg) {
+  NetworkControlUpdate update;
+  update.probe_cluster_configs = probe_controller_->OnNetworkAvailability(msg);
+  return update;
+}
+
 NetworkControlUpdate CongestionControl::OnProcessInterval(ProcessInterval msg) {
   NetworkControlUpdate update;
   if (initial_config_) {
@@ -122,7 +136,6 @@ NetworkControlUpdate CongestionControl::OnProcessInterval(ProcessInterval msg) {
   auto probes = probe_controller_->Process(msg.at_time);
   update.probe_cluster_configs.insert(update.probe_cluster_configs.end(),
                                       probes.begin(), probes.end());
-
   update.congestion_window = current_data_window_;
 
   MaybeTriggerOnNetworkChanged(&update, msg.at_time);
@@ -407,8 +420,10 @@ void CongestionControl::MaybeTriggerOnNetworkChanged(
     update->probe_cluster_configs.insert(update->probe_cluster_configs.end(),
                                          probes.begin(), probes.end());
     update->pacer_config = GetPacingRates(at_time);
-    // LOG_INFO("bwe {} pushback_target_bps={} estimate_bps={}", at_time.ms(),
-    //          last_pushback_target_rate_.bps(), loss_based_target_rate.bps());
+    // LOG_INFO("bwe {} pushback_target_bps={} estimate_bps={}",
+    // at_time.ms(),
+    //          last_pushback_target_rate_.bps(),
+    //          loss_based_target_rate.bps());
   }
 }
 

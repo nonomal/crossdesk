@@ -23,14 +23,14 @@ RtpAudioSender::~RtpAudioSender() {
 }
 
 void RtpAudioSender::Enqueue(
-    std::vector<std::shared_ptr<RtpPacket>> rtp_packets) {
+    std::vector<std::unique_ptr<RtpPacket>> rtp_packets) {
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
   }
 
   for (auto& rtp_packet : rtp_packets) {
-    rtp_packet_queue_.push(rtp_packet);
+    rtp_packet_queue_.push(std::move(rtp_packet));
   }
 }
 
@@ -39,7 +39,7 @@ void RtpAudioSender::SetSendDataFunc(
   data_send_func_ = data_send_func;
 }
 
-int RtpAudioSender::SendRtpPacket(std::shared_ptr<RtpPacket> rtp_packet) {
+int RtpAudioSender::SendRtpPacket(std::unique_ptr<RtpPacket> rtp_packet) {
   if (!data_send_func_) {
     LOG_ERROR("data_send_func_ is nullptr");
     return -1;
@@ -141,9 +141,11 @@ bool RtpAudioSender::Process() {
 
   for (size_t i = 0; i < 10; i++)
     if (!rtp_packet_queue_.isEmpty()) {
-      std::shared_ptr<RtpPacket> rtp_packet;
-      rtp_packet_queue_.pop(rtp_packet);
-      SendRtpPacket(rtp_packet);
+      std::optional<std::unique_ptr<RtpPacket>> rtp_packet =
+          rtp_packet_queue_.pop();
+      if (rtp_packet) {
+        SendRtpPacket(std::move(*rtp_packet));
+      }
     }
 
   if (rtp_statistics_) {

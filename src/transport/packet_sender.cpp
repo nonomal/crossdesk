@@ -3,116 +3,244 @@
 
 #include "log.h"
 
+const int PacketSender::kNoPacketHoldback = -1;
+
 PacketSender::PacketSender(std::shared_ptr<IceAgent> ice_agent,
                            std::shared_ptr<webrtc::Clock> clock)
     : ice_agent_(ice_agent),
       clock_(clock),
-      pacing_controller_(clock.get(), this) {}
+      pacing_controller_(clock.get(), this),
+      max_hold_back_window_(webrtc::TimeDelta::Millis(5)),
+      max_hold_back_window_in_packets_(3),
+      next_process_time_(webrtc::Timestamp::MinusInfinity()),
+      is_started_(false),
+      is_shutdown_(false),
+      packet_size_(/*alpha=*/0.95),
+      include_overhead_(false) {}
 
 PacketSender::~PacketSender() {}
 
-// int PacketSender::SendPacket(const char *data, size_t size) {
-//   LOG_INFO("Send packet, size: %d", size);
-//   return ice_agent_->Send(data, size);
-// }
+std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>
+PacketSender::GeneratePadding(webrtc::DataSize size) {
+  std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> to_send_rtp_packets;
+  std::vector<std::unique_ptr<RtpPacket>> rtp_packets =
+      generat_padding_func_(size.bytes(), clock_->CurrentTime().ms());
+  // for (auto &packet : rtp_packets) {
+  //   std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send(
+  //       static_cast<webrtc::RtpPacketToSend *>(packet.release()));
+  //   to_send_rtp_packets.push_back(std::move(rtp_packet_to_send));
+  // }
 
-// void PacketSender::CreateProbeClusters(
-//     std::vector<webrtc::ProbeClusterConfig> probe_cluster_configs) {
-//   pacing_controller_.CreateProbeClusters(probe_cluster_configs);
-//   MaybeScheduleProcessPackets();
-// }
+  return to_send_rtp_packets;
+}
 
-// void PacketSender::MaybeScheduleProcessPackets() {
-//   if (!processing_packets_)
-//     MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
-// }
+void PacketSender::SetSendBurstInterval(webrtc::TimeDelta burst_interval) {
+  pacing_controller_.SetSendBurstInterval(burst_interval);
+}
 
-// void PacketSender::MaybeProcessPackets(
-//     webrtc::Timestamp scheduled_process_time) {
-//   if (is_shutdown_ || !is_started_) {
-//     return;
-//   }
+void PacketSender::SetAllowProbeWithoutMediaPacket(bool allow) {
+  pacing_controller_.SetAllowProbeWithoutMediaPacket(allow);
+}
 
-//   // Protects against re-entry from transport feedback calling into the task
-//   // queue pacer.
-//   processing_packets_ = true;
-//   auto cleanup = std::unique_ptr<void, std::function<void(void *)>>(
-//       nullptr, [this](void *) { processing_packets_ = false; });
+void PacketSender::EnsureStarted() {
+  is_started_ = true;
+  MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+}
 
-//   webrtc::Timestamp next_send_time = pacing_controller_.NextSendTime();
-//   const webrtc::Timestamp now = clock_->CurrentTime();
-//   webrtc::TimeDelta early_execute_margin =
-//       pacing_controller_.IsProbing()
-//           ? webrtc::PacingController::kMaxEarlyProbeProcessing
-//           : webrtc::TimeDelta::Zero();
+void PacketSender::Pause() { pacing_controller_.Pause(); }
 
-//   // Process packets and update stats.
-//   while (next_send_time <= now + early_execute_margin) {
-//     pacing_controller_.ProcessPackets();
-//     next_send_time = pacing_controller_.NextSendTime();
+void PacketSender::Resume() {
+  pacing_controller_.Resume();
+  MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+}
 
-//     // Probing state could change. Get margin after process packets.
-//     early_execute_margin =
-//         pacing_controller_.IsProbing()
-//             ? webrtc::PacingController::kMaxEarlyProbeProcessing
-//             : webrtc::TimeDelta::Zero();
-//   }
-//   UpdateStats();
+void PacketSender::SetCongested(bool congested) {
+  pacing_controller_.SetCongested(congested);
+  MaybeScheduleProcessPackets();
+}
 
-//   // Ignore retired scheduled task, otherwise reset `next_process_time_`.
-//   if (scheduled_process_time.IsFinite()) {
-//     if (scheduled_process_time != next_process_time_) {
-//       return;
-//     }
-//     next_process_time_ = webrtc::Timestamp::MinusInfinity();
-//   }
+void PacketSender::SetPacingRates(webrtc::DataRate pacing_rate,
+                                  webrtc::DataRate padding_rate) {
+  pacing_controller_.SetPacingRates(pacing_rate, padding_rate);
+  MaybeScheduleProcessPackets();
+}
 
-//   // Do not hold back in probing.
-//   webrtc::TimeDelta hold_back_window = webrtc::TimeDelta::Zero();
-//   if (!pacing_controller_.IsProbing()) {
-//     hold_back_window = max_hold_back_window_;
-//     webrtc::DataRate pacing_rate = pacing_controller_.pacing_rate();
-//     if (max_hold_back_window_in_packets_ != kNoPacketHoldback &&
-//         !pacing_rate.IsZero() &&
-//         packet_size_.filtered() != rtc::ExpFilter::kValueUndefined) {
-//       webrtc::TimeDelta avg_packet_send_time =
-//           webrtc::DataSize::Bytes(packet_size_.filtered()) / pacing_rate;
-//       hold_back_window =
-//           std::min(hold_back_window,
-//                    avg_packet_send_time * max_hold_back_window_in_packets_);
-//     }
-//   }
+void PacketSender::EnqueuePackets(
+    std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> packets) {
+  // task_queue_->PostTask()
+  for (auto &packet : packets) {
+    size_t packet_size = packet->payload_size() + packet->padding_size();
+    if (include_overhead_) {
+      packet_size += packet->headers_size();
+    }
+    packet_size_.Apply(1, packet_size);
+    pacing_controller_.EnqueuePacket(std::move(packet));
+  }
+  MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+}
 
-//   // Calculate next process time.
-//   webrtc::TimeDelta time_to_next_process =
-//       std::max(hold_back_window, next_send_time - now -
-//       early_execute_margin);
-//   next_send_time = now + time_to_next_process;
+void PacketSender::RemovePacketsForSsrc(uint32_t ssrc) {
+  // task_queue_->PostTask(SafeTask(safety_.flag(), [this, ssrc] {
+  pacing_controller_.RemovePacketsForSsrc(ssrc);
+  MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+  // }));
+}
 
-//   // If no in flight task or in flight task is later than `next_send_time`,
-//   // schedule a new one. Previous in flight task will be retired.
-//   if (next_process_time_.IsMinusInfinity() ||
-//       next_process_time_ > next_send_time) {
-//     // Prefer low precision if allowed and not probing.
-//     task_queue_->PostDelayedHighPrecisionTask(
-//         SafeTask(
-//             safety_.flag(),
-//             [this, next_send_time]() { MaybeProcessPackets(next_send_time);
-//             }),
-//         time_to_next_process.RoundUpTo(webrtc::TimeDelta::Millis(1)));
-//     next_process_time_ = next_send_time;
-//   }
-// }
+void PacketSender::SetAccountForAudioPackets(bool account_for_audio) {
+  pacing_controller_.SetAccountForAudioPackets(account_for_audio);
+  MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+}
 
-// void PacketSender::UpdateStats() {
-//   Stats new_stats;
-//   new_stats.expected_queue_time = pacing_controller_.ExpectedQueueTime();
-//   new_stats.first_sent_packet_time =
-//   pacing_controller_.FirstSentPacketTime();
-//   new_stats.oldest_packet_enqueue_time =
-//       pacing_controller_.OldestPacketEnqueueTime();
-//   new_stats.queue_size = pacing_controller_.QueueSizeData();
-//   OnStatsUpdated(new_stats);
-// }
+void PacketSender::SetIncludeOverhead() {
+  include_overhead_ = true;
+  pacing_controller_.SetIncludeOverhead();
+  MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+}
 
-// PacketSender::Stats PacketSender::GetStats() const { return current_stats_; }
+void PacketSender::SetTransportOverhead(webrtc::DataSize overhead_per_packet) {
+  pacing_controller_.SetTransportOverhead(overhead_per_packet);
+  MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+}
+
+void PacketSender::SetQueueTimeLimit(webrtc::TimeDelta limit) {
+  pacing_controller_.SetQueueTimeLimit(limit);
+  MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+}
+
+webrtc::TimeDelta PacketSender::ExpectedQueueTime() const {
+  return GetStats().expected_queue_time;
+}
+
+webrtc::DataSize PacketSender::QueueSizeData() const {
+  return GetStats().queue_size;
+}
+
+std::optional<webrtc::Timestamp> PacketSender::FirstSentPacketTime() const {
+  return GetStats().first_sent_packet_time;
+}
+
+webrtc::TimeDelta PacketSender::OldestPacketWaitTime() const {
+  webrtc::Timestamp oldest_packet = GetStats().oldest_packet_enqueue_time;
+  if (oldest_packet.IsInfinite()) {
+    return webrtc::TimeDelta::Zero();
+  }
+
+  // (webrtc:9716): The clock is not always monotonic.
+  webrtc::Timestamp current = clock_->CurrentTime();
+  if (current < oldest_packet) {
+    return webrtc::TimeDelta::Zero();
+  }
+
+  return current - oldest_packet;
+}
+
+void PacketSender::CreateProbeClusters(
+    std::vector<webrtc::ProbeClusterConfig> probe_cluster_configs) {
+  pacing_controller_.CreateProbeClusters(probe_cluster_configs);
+  MaybeScheduleProcessPackets();
+}
+
+void PacketSender::OnStatsUpdated(const Stats &stats) {
+  current_stats_ = stats;
+}
+
+void PacketSender::MaybeScheduleProcessPackets() {
+  LOG_ERROR("x1");
+  if (!processing_packets_) {
+    LOG_ERROR("x2");
+    MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+  }
+}
+
+void PacketSender::MaybeProcessPackets(
+    webrtc::Timestamp scheduled_process_time) {
+  if (is_shutdown_ || !is_started_) {
+    LOG_ERROR("shutdown {}, started {}", is_shutdown_, is_started_);
+    return;
+  }
+
+  // Protects against re-entry from transport feedback calling into the task
+  // queue pacer.
+  processing_packets_ = true;
+  // auto cleanup = std::unique_ptr<void, std::function<void(void *)>>(
+  //     nullptr, [this](void *) { processing_packets_ = false; });
+
+  webrtc::Timestamp next_send_time = pacing_controller_.NextSendTime();
+  const webrtc::Timestamp now = clock_->CurrentTime();
+  webrtc::TimeDelta early_execute_margin =
+      pacing_controller_.IsProbing()
+          ? webrtc::PacingController::kMaxEarlyProbeProcessing
+          : webrtc::TimeDelta::Zero();
+
+  // Process packets and update stats.
+  while (next_send_time <= now + early_execute_margin) {
+    pacing_controller_.ProcessPackets();
+    next_send_time = pacing_controller_.NextSendTime();
+
+    // Probing state could change. Get margin after process packets.
+    early_execute_margin =
+        pacing_controller_.IsProbing()
+            ? webrtc::PacingController::kMaxEarlyProbeProcessing
+            : webrtc::TimeDelta::Zero();
+  }
+
+  UpdateStats();
+
+  // Ignore retired scheduled task, otherwise reset `next_process_time_`.
+  if (scheduled_process_time.IsFinite()) {
+    if (scheduled_process_time != next_process_time_) {
+      return;
+    }
+    next_process_time_ = webrtc::Timestamp::MinusInfinity();
+  }
+
+  // Do not hold back in probing.
+  webrtc::TimeDelta hold_back_window = webrtc::TimeDelta::Zero();
+  if (!pacing_controller_.IsProbing()) {
+    hold_back_window = max_hold_back_window_;
+    webrtc::DataRate pacing_rate = pacing_controller_.pacing_rate();
+    if (max_hold_back_window_in_packets_ != kNoPacketHoldback &&
+        !pacing_rate.IsZero() &&
+        packet_size_.filtered() != rtc::ExpFilter::kValueUndefined) {
+      webrtc::TimeDelta avg_packet_send_time =
+          webrtc::DataSize::Bytes(packet_size_.filtered()) / pacing_rate;
+      hold_back_window =
+          std::min(hold_back_window,
+                   avg_packet_send_time * max_hold_back_window_in_packets_);
+    }
+  }
+
+  // Calculate next process time.
+  webrtc::TimeDelta time_to_next_process =
+      std::max(hold_back_window, next_send_time - now - early_execute_margin);
+  next_send_time = now + time_to_next_process;
+
+  // If no in flight task or in flight task is later than `next_send_time`,
+  // schedule a new one. Previous in flight task will be retired.
+  if (next_process_time_.IsMinusInfinity() ||
+      next_process_time_ > next_send_time) {
+    // Prefer low precision if allowed and not probing.
+    // task_queue_->PostDelayedHighPrecisionTask(
+    //     SafeTask(
+    //         safety_.flag(),
+    //         [this, next_send_time]() { MaybeProcessPackets(next_send_time);
+    //         }),
+    MaybeProcessPackets(next_send_time);
+    time_to_next_process.RoundUpTo(webrtc::TimeDelta::Millis(1));
+    next_process_time_ = next_send_time;
+  }
+
+  processing_packets_ = false;
+}
+
+void PacketSender::UpdateStats() {
+  Stats new_stats;
+  new_stats.expected_queue_time = pacing_controller_.ExpectedQueueTime();
+  new_stats.first_sent_packet_time = pacing_controller_.FirstSentPacketTime();
+  new_stats.oldest_packet_enqueue_time =
+      pacing_controller_.OldestPacketEnqueueTime();
+  new_stats.queue_size = pacing_controller_.QueueSizeData();
+  OnStatsUpdated(new_stats);
+}
+
+PacketSender::Stats PacketSender::GetStats() const { return current_stats_; }

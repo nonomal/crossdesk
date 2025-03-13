@@ -397,6 +397,8 @@ void PacingController::ProcessPackets() {
   if (now + early_execute_margin < target_send_time) {
     // We are too early, but if queue is empty still allow draining some debt.
     // Probing is allowed to be sent up to kMinSleepTime early.
+    LOG_ERROR("!!!!!!! too early, target_send_time {}, now {}, {}",
+              target_send_time.ms(), now.ms(), early_execute_margin.ms());
     UpdateBudgetWithElapsedTime(UpdateTimeAndGetElapsed(now));
     return;
   }
@@ -664,8 +666,8 @@ void PacingController::MaybeUpdateMediaRateDueToLongQueue(Timestamp now) {
     DataRate min_rate_needed = queue_size_data / avg_time_left;
     if (min_rate_needed > pacing_rate_) {
       adjusted_media_rate_ = min_rate_needed;
-      LOG_INFO("bwe:large_pacing_queue pacing_rate_kbps={}",
-               pacing_rate_.kbps());
+      // LOG_INFO("bwe:large_pacing_queue pacing_rate_kbps={}",
+      //           pacing_rate_.kbps());
     }
   }
 }

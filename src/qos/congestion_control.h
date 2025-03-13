@@ -23,6 +23,8 @@ class CongestionControl {
   ~CongestionControl();
 
  public:
+  NetworkControlUpdate OnNetworkAvailability(NetworkAvailability msg);
+
   NetworkControlUpdate OnProcessInterval(ProcessInterval msg);
 
   NetworkControlUpdate OnTransportLossReport(TransportLossReport msg);

@@ -46,7 +46,7 @@ void RtpPacketizerGeneric::AddAbsSendTimeExtension(
   rtp_packet_frame.push_back(abs_send_time & 0xFF);
 }
 
-std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerGeneric::Build(
+std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerGeneric::Build(
     uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
     bool use_rtp_packet_to_send) {
   uint32_t last_packet_size = payload_size % MAX_NALU_LEN;
@@ -58,7 +58,7 @@ std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerGeneric::Build(
                            std::chrono::system_clock::now().time_since_epoch())
                            .count();
 
-  std::vector<std::shared_ptr<RtpPacket>> rtp_packets;
+  std::vector<std::unique_ptr<RtpPacket>> rtp_packets;
 
   for (uint32_t index = 0; index < packet_num; index++) {
     version_ = kRtpVersion;
@@ -109,12 +109,12 @@ std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerGeneric::Build(
     }
 
     if (use_rtp_packet_to_send) {
-      std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet =
+      std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet =
           std::make_unique<webrtc::RtpPacketToSend>();
       rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
       rtp_packets.emplace_back(std::move(rtp_packet));
     } else {
-      std::shared_ptr<RtpPacket> rtp_packet = std::make_unique<RtpPacket>();
+      std::unique_ptr<RtpPacket> rtp_packet = std::make_unique<RtpPacket>();
       rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
       rtp_packets.emplace_back(std::move(rtp_packet));
     }

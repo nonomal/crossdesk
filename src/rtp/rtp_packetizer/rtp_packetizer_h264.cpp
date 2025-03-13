@@ -60,7 +60,7 @@ void RtpPacketizerH264::AddAbsSendTimeExtension(
   rtp_packet_frame.push_back(abs_send_time & 0xFF);
 }
 
-std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::Build(
+std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerH264::Build(
     uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
     bool use_rtp_packet_to_send) {
   if (payload_size <= MAX_NALU_LEN) {
@@ -72,10 +72,10 @@ std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::Build(
   }
 }
 
-std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::BuildNalu(
+std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerH264::BuildNalu(
     uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
     bool use_rtp_packet_to_send) {
-  std::vector<std::shared_ptr<RtpPacket>> rtp_packets;
+  std::vector<std::unique_ptr<RtpPacket>> rtp_packets;
 
   version_ = kRtpVersion;
   has_padding_ = false;
@@ -128,12 +128,12 @@ std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::BuildNalu(
                            payload + payload_size);
 
   if (use_rtp_packet_to_send) {
-    std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet =
-        std::make_shared<webrtc::RtpPacketToSend>();
+    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet =
+        std::make_unique<webrtc::RtpPacketToSend>();
     rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
     rtp_packets.emplace_back(std::move(rtp_packet));
   } else {
-    std::shared_ptr<RtpPacket> rtp_packet = std::make_shared<RtpPacket>();
+    std::unique_ptr<RtpPacket> rtp_packet = std::make_unique<RtpPacket>();
     rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
     rtp_packets.emplace_back(std::move(rtp_packet));
   }
@@ -141,10 +141,10 @@ std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::BuildNalu(
   return rtp_packets;
 }
 
-std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::BuildFua(
+std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerH264::BuildFua(
     uint8_t* payload, uint32_t payload_size, int64_t capture_timestamp_ms,
     bool use_rtp_packet_to_send) {
-  std::vector<std::shared_ptr<RtpPacket>> rtp_packets;
+  std::vector<std::unique_ptr<RtpPacket>> rtp_packets;
 
   uint32_t last_packet_size = payload_size % MAX_NALU_LEN;
   uint32_t packet_num =
@@ -227,15 +227,74 @@ std::vector<std::shared_ptr<RtpPacket>> RtpPacketizerH264::BuildFua(
     }
 
     if (use_rtp_packet_to_send) {
-      std::shared_ptr<webrtc::RtpPacketToSend> rtp_packet =
-          std::make_shared<webrtc::RtpPacketToSend>();
+      std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet =
+          std::make_unique<webrtc::RtpPacketToSend>();
       rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
       rtp_packets.emplace_back(std::move(rtp_packet));
     } else {
-      std::shared_ptr<RtpPacket> rtp_packet = std::make_shared<RtpPacket>();
+      std::unique_ptr<RtpPacket> rtp_packet = std::make_unique<RtpPacket>();
       rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
       rtp_packets.emplace_back(std::move(rtp_packet));
     }
+  }
+
+  return rtp_packets;
+}
+
+std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerH264::BuildPadding(
+    uint32_t payload_size, int64_t capture_timestamp_ms,
+    bool use_rtp_packet_to_send) {
+  std::vector<std::unique_ptr<RtpPacket>> rtp_packets;
+
+  version_ = kRtpVersion;
+  has_padding_ = true;
+  has_extension_ = true;
+  csrc_count_ = 0;
+  marker_ = 0;
+  uint8_t payload_type = rtp::PAYLOAD_TYPE(payload_type_ - 1);
+  sequence_number_++;
+  timestamp_ = kMsToRtpTimestamp * static_cast<uint32_t>(capture_timestamp_ms);
+
+  rtp_packet_frame_.clear();
+  rtp_packet_frame_.push_back((version_ << 6) | (has_padding_ << 5) |
+                              (has_extension_ << 4) | csrc_count_);
+  rtp_packet_frame_.push_back((marker_ << 7) | payload_type);
+  rtp_packet_frame_.push_back((sequence_number_ >> 8) & 0xFF);
+  rtp_packet_frame_.push_back(sequence_number_ & 0xFF);
+  rtp_packet_frame_.push_back((timestamp_ >> 24) & 0xFF);
+  rtp_packet_frame_.push_back((timestamp_ >> 16) & 0xFF);
+  rtp_packet_frame_.push_back((timestamp_ >> 8) & 0xFF);
+  rtp_packet_frame_.push_back(timestamp_ & 0xFF);
+  rtp_packet_frame_.push_back((ssrc_ >> 24) & 0xFF);
+  rtp_packet_frame_.push_back((ssrc_ >> 16) & 0xFF);
+  rtp_packet_frame_.push_back((ssrc_ >> 8) & 0xFF);
+  rtp_packet_frame_.push_back(ssrc_ & 0xFF);
+
+  for (uint32_t index = 0; index < csrc_count_ && !csrcs_.empty(); index++) {
+    rtp_packet_frame_.push_back((csrcs_[index] >> 24) & 0xFF);
+    rtp_packet_frame_.push_back((csrcs_[index] >> 16) & 0xFF);
+    rtp_packet_frame_.push_back((csrcs_[index] >> 8) & 0xFF);
+    rtp_packet_frame_.push_back(csrcs_[index] & 0xFF);
+  }
+
+  if (has_extension_) {
+    AddAbsSendTimeExtension(rtp_packet_frame_);
+  }
+
+  // Add padding bytes
+  uint32_t padding_size = payload_size;
+  rtp_packet_frame_.insert(rtp_packet_frame_.end(), padding_size - 1, 0);
+  rtp_packet_frame_.push_back(padding_size);
+
+  if (use_rtp_packet_to_send) {
+    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet =
+        std::make_unique<webrtc::RtpPacketToSend>();
+    rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
+    rtp_packets.emplace_back(std::move(rtp_packet));
+  } else {
+    std::unique_ptr<RtpPacket> rtp_packet = std::make_unique<RtpPacket>();
+    rtp_packet->Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
+    rtp_packets.emplace_back(std::move(rtp_packet));
   }
 
   return rtp_packets;
