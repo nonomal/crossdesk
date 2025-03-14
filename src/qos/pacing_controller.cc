@@ -412,6 +412,7 @@ void PacingController::ProcessPackets() {
   PacedPacketInfo pacing_info;
   DataSize recommended_probe_size = DataSize::Zero();
   bool is_probing = prober_.is_probing();
+  LOG_WARN("is probing");
   if (is_probing) {
     // Probe timing is sensitive, and handled explicitly by BitrateProber, so
     // use actual send time rather than target.
@@ -433,7 +434,8 @@ void PacingController::ProcessPackets() {
     // exhausted.
     std::unique_ptr<RtpPacketToSend> rtp_packet =
         GetPendingPacket(pacing_info, target_send_time, now);
-    if (rtp_packet == nullptr) {
+    if (!rtp_packet) {
+      LOG_WARN("rtp_packet == nullptr");
       // No packet available to send, check if we should send padding.
       if (now - target_send_time > kMaxPaddingReplayDuration) {
         // The target send time is more than `kMaxPaddingReplayDuration` behind
@@ -472,6 +474,7 @@ void PacingController::ProcessPackets() {
                        transport_overhead_per_packet_;
       }
 
+      LOG_ERROR("Send packet_size {}", rtp_packet->Size());
       packet_sender_->SendPacket(std::move(rtp_packet), pacing_info);
       for (auto& packet : packet_sender_->FetchFec()) {
         EnqueuePacket(std::move(packet));

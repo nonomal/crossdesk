@@ -25,11 +25,16 @@ PacketSender::GeneratePadding(webrtc::DataSize size) {
   std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> to_send_rtp_packets;
   std::vector<std::unique_ptr<RtpPacket>> rtp_packets =
       generat_padding_func_(size.bytes(), clock_->CurrentTime().ms());
-  // for (auto &packet : rtp_packets) {
-  //   std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send(
-  //       static_cast<webrtc::RtpPacketToSend *>(packet.release()));
-  //   to_send_rtp_packets.push_back(std::move(rtp_packet_to_send));
-  // }
+  for (auto &packet : rtp_packets) {
+    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send(
+        static_cast<webrtc::RtpPacketToSend *>(packet.release()));
+
+    rtp_packet_to_send->set_capture_time(clock_->CurrentTime());
+    rtp_packet_to_send->set_transport_sequence_number((transport_seq_)++);
+    rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kPadding);
+
+    to_send_rtp_packets.push_back(std::move(rtp_packet_to_send));
+  }
 
   return to_send_rtp_packets;
 }
@@ -67,23 +72,24 @@ void PacketSender::SetPacingRates(webrtc::DataRate pacing_rate,
 
 void PacketSender::EnqueuePackets(
     std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> packets) {
-  // task_queue_->PostTask()
-  for (auto &packet : packets) {
-    size_t packet_size = packet->payload_size() + packet->padding_size();
-    if (include_overhead_) {
-      packet_size += packet->headers_size();
+  task_queue_.PostTask([this, packets = std::move(packets)]() mutable {
+    for (auto &packet : packets) {
+      size_t packet_size = packet->payload_size() + packet->padding_size();
+      if (include_overhead_) {
+        packet_size += packet->headers_size();
+      }
+      packet_size_.Apply(1, packet_size);
+      pacing_controller_.EnqueuePacket(std::move(packet));
     }
-    packet_size_.Apply(1, packet_size);
-    pacing_controller_.EnqueuePacket(std::move(packet));
-  }
-  MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+    MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+  });
 }
 
 void PacketSender::RemovePacketsForSsrc(uint32_t ssrc) {
-  // task_queue_->PostTask(SafeTask(safety_.flag(), [this, ssrc] {
-  pacing_controller_.RemovePacketsForSsrc(ssrc);
-  MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
-  // }));
+  task_queue_.PostTask([this, ssrc] {
+    pacing_controller_.RemovePacketsForSsrc(ssrc);
+    MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+  });
 }
 
 void PacketSender::SetAccountForAudioPackets(bool account_for_audio) {

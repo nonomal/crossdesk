@@ -36,6 +36,12 @@ class VideoChannelSend {
   std::vector<std::unique_ptr<RtpPacket>> GeneratePadding(
       uint32_t payload_size, int64_t capture_timestamp_ms);
 
+  int64_t GetTransportSeqAndIncrement() {
+    int64_t transport_seq = rtp_video_sender_->GetTransportSequenceNumber();
+    rtp_video_sender_->IncrementTransportSequenceNumber();
+    return transport_seq;
+  }
+
  public:
   void Initialize(rtp::PAYLOAD_TYPE payload_type);
   void Destroy();

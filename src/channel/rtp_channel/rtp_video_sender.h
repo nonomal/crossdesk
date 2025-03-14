@@ -35,6 +35,10 @@ class RtpVideoSender : public ThreadBase {
   uint32_t GetSsrc() { return ssrc_; }
   void OnReceiverReport(const ReceiverReport &receiver_report);
 
+  int64_t GetTransportSequenceNumber() { return transport_seq_; }
+
+  void IncrementTransportSequenceNumber() { transport_seq_++; }
+
  private:
   int SendRtpPacket(
       std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send);

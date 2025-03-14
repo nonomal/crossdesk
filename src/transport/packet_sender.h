@@ -21,6 +21,7 @@
 #include "rtc_base/numerics/exp_filter.h"
 #include "rtp_packet_pacer.h"
 #include "rtp_packet_to_send.h"
+#include "task_queue.h"
 
 class PacketSender : public webrtc::RtpPacketPacer,
                      public webrtc::PacingController::PacketSender {
@@ -197,6 +198,9 @@ class PacketSender : public webrtc::RtpPacketPacer,
   Stats current_stats_;
   // Protects against ProcessPackets reentry from packet sent receipts.
   bool processing_packets_ = false;
+
+  TaskQueue task_queue_;
+  int64_t transport_seq_ = 0;
 };
 
 #endif
