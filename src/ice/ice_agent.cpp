@@ -365,7 +365,7 @@ int IceAgent::Send(const char *data, size_t size) {
   }
 
   if (destroyed_) {
-    LOG_ERROR("Nice agent is destroyed");
+    // LOG_ERROR("Nice agent is destroyed");
     return -1;
   }
 

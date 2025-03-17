@@ -50,7 +50,8 @@ void VideoChannelReceive::Destroy() {
   }
 }
 
-int VideoChannelReceive::OnReceiveRtpPacket(const char *data, size_t size) {
+int VideoChannelReceive::OnReceiveRtpPacket(const char *data, size_t size,
+                                            bool padding) {
   if (ice_io_statistics_) {
     ice_io_statistics_->UpdateVideoInboundBytes((uint32_t)size);
   }
@@ -58,7 +59,7 @@ int VideoChannelReceive::OnReceiveRtpPacket(const char *data, size_t size) {
   if (rtp_video_receiver_) {
     RtpPacket rtp_packet;
     rtp_packet.Build((uint8_t *)data, (uint32_t)size);
-    rtp_video_receiver_->InsertRtpPacket(rtp_packet);
+    rtp_video_receiver_->InsertRtpPacket(rtp_packet, padding);
   }
 
   return 0;

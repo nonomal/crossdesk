@@ -36,7 +36,7 @@ class RtpVideoReceiver : public ThreadBase,
   virtual ~RtpVideoReceiver();
 
  public:
-  void InsertRtpPacket(RtpPacket& rtp_packet);
+  void InsertRtpPacket(RtpPacket& rtp_packet, bool padding);
 
   void SetSendDataFunc(std::function<int(const char*, size_t)> data_send_func);
 

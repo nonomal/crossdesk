@@ -53,7 +53,7 @@ void IceTransportController::Create(
   CreateAudioCodec();
 
   controller_ = std::make_unique<CongestionControl>();
-  packet_sender_ = std::make_unique<PacketSender>(ice_agent, webrtc_clock_);
+  packet_sender_ = std::make_unique<PacketSenderImp>(ice_agent, webrtc_clock_);
   packet_sender_->SetPacingRates(DataRate::BitsPerSec(300000),
                                  DataRate::Zero());
   packet_sender_->SetOnSentPacketFunc(
@@ -239,9 +239,9 @@ void IceTransportController::UpdateNetworkAvaliablity(bool network_available) {
 }
 
 int IceTransportController::OnReceiveVideoRtpPacket(const char* data,
-                                                    size_t size) {
+                                                    size_t size, bool padding) {
   if (video_channel_receive_) {
-    return video_channel_receive_->OnReceiveRtpPacket(data, size);
+    return video_channel_receive_->OnReceiveRtpPacket(data, size, padding);
   }
 
   return -1;

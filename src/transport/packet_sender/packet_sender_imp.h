@@ -4,8 +4,8 @@
  * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
  */
 
-#ifndef _PACKET_SENDER_H_
-#define _PACKET_SENDER_H_
+#ifndef _PACKET_SENDER_IMP_H_
+#define _PACKET_SENDER_IMP_H_
 
 #include <memory>
 
@@ -18,19 +18,28 @@
 #include "ice_agent.h"
 #include "log.h"
 #include "pacing_controller.h"
+#include "packet_sender.h"
 #include "rtc_base/numerics/exp_filter.h"
 #include "rtp_packet_pacer.h"
 #include "rtp_packet_to_send.h"
 #include "task_queue.h"
 
-class PacketSender : public webrtc::RtpPacketPacer,
-                     public webrtc::PacingController::PacketSender {
+class PacketSenderImp : public PacketSender,
+                        public webrtc::RtpPacketPacer,
+                        public webrtc::PacingController::PacketSender {
  public:
   static const int kNoPacketHoldback;
 
-  PacketSender(std::shared_ptr<IceAgent> ice_agent,
-               std::shared_ptr<webrtc::Clock> clock);
-  ~PacketSender();
+  PacketSenderImp(std::shared_ptr<IceAgent> ice_agent,
+                  std::shared_ptr<webrtc::Clock> clock);
+  ~PacketSenderImp();
+
+ public:
+  int Send() { return 0; }
+
+  int InsertRtpPacket(std::vector<std::unique_ptr<RtpPacket>>& rtp_packets) {
+    return 0;
+  }
 
   void SetOnSentPacketFunc(
       std::function<void(const webrtc::RtpPacketToSend&)> on_sent_packet_func) {
@@ -58,7 +67,7 @@ class PacketSender : public webrtc::RtpPacketPacer,
   std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> GeneratePadding(
       webrtc::DataSize size) override;
 
-  // TODO(bugs.webrtc.org/1439830): Make pure  once subclasses adapt.
+  // TODO(bugs.webrtc.org/1439830): Make pure once subclasses adapt.
   void OnBatchComplete() override {}
 
   // TODO(bugs.webrtc.org/11340): Make pure  once downstream projects
@@ -83,7 +92,7 @@ class PacketSender : public webrtc::RtpPacketPacer,
   // Methods implementing RtpPacketSender.
 
   // Adds the packet to the queue and calls
-  // PacingController::PacketSender::SendPacket() when it's time to send.
+  // PacingController::PacketSenderImp::SendPacket() when it's time to send.
   void EnqueuePackets(
       std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> packets);
   // Remove any pending packets matching this SSRC from the packet queue.

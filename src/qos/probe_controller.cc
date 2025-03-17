@@ -531,7 +531,6 @@ std::vector<ProbeClusterConfig> ProbeController::InitiateProbing(
     }
     pending_probes.push_back(CreateProbeClusterConfig(now, bitrate));
   }
-  LOG_ERROR("2 pending probes size {}", pending_probes.size());
   time_last_probing_initiated_ = now;
   if (probe_further) {
     UpdateState(State::kWaitingForProbingResult);

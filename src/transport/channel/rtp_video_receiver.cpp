@@ -88,7 +88,7 @@ RtpVideoReceiver::~RtpVideoReceiver() {
 #endif
 }
 
-void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
+void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet, bool padding) {
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
@@ -193,6 +193,10 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
 
   //   // SendRtcpRR(rtcp_rr);
   // }
+
+  if (padding) {
+    return;
+  }
 
   if (rtp_packet.PayloadType() == rtp::PAYLOAD_TYPE::AV1) {
     RtpPacketAv1 rtp_packet_av1;

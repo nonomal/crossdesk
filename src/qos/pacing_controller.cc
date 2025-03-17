@@ -92,7 +92,9 @@ PacingController::~PacingController() = default;
 
 void PacingController::CreateProbeClusters(
     rtc::ArrayView<const ProbeClusterConfig> probe_cluster_configs) {
+  LOG_WARN("b0");
   for (const ProbeClusterConfig probe_cluster_config : probe_cluster_configs) {
+    LOG_WARN("b1");
     prober_.CreateProbeCluster(probe_cluster_config);
   }
 }

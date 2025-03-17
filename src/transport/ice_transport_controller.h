@@ -21,7 +21,7 @@
 #include "data_channel_receive.h"
 #include "data_channel_send.h"
 #include "ice_agent.h"
-#include "packet_sender.h"
+#include "packet_sender_imp.h"
 #include "resolution_adapter.h"
 #include "transport_feedback_adapter.h"
 #include "video_channel_receive.h"
@@ -60,7 +60,7 @@ class IceTransportController
 
   void UpdateNetworkAvaliablity(bool network_available);
 
-  int OnReceiveVideoRtpPacket(const char *data, size_t size);
+  int OnReceiveVideoRtpPacket(const char *data, size_t size, bool padding);
   int OnReceiveAudioRtpPacket(const char *data, size_t size);
   int OnReceiveDataRtpPacket(const char *data, size_t size);
 
@@ -107,7 +107,7 @@ class IceTransportController
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;
   std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
   std::unique_ptr<RtpPacketizer> rtp_packetizer_ = nullptr;
-  std::unique_ptr<PacketSender> packet_sender_ = nullptr;
+  std::unique_ptr<PacketSenderImp> packet_sender_ = nullptr;
   std::string remote_user_id_;
   void *user_data_ = nullptr;
 

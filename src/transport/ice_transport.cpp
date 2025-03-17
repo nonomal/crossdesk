@@ -194,7 +194,7 @@ void IceTransport::OnReceiveBuffer(NiceAgent *agent, guint stream_id,
   if (!is_closed_) {
     if (CheckIsRtpPacket(buffer, size)) {
       if (CheckIsVideoPacket(buffer, size) && ice_transport_controller_) {
-        ice_transport_controller_->OnReceiveVideoRtpPacket(buffer, size);
+        ice_transport_controller_->OnReceiveVideoRtpPacket(buffer, size, false);
       } else if (CheckIsAudioPacket(buffer, size) &&
                  ice_transport_controller_) {
         ice_transport_controller_->OnReceiveAudioRtpPacket(buffer, size);
@@ -206,7 +206,7 @@ void IceTransport::OnReceiveBuffer(NiceAgent *agent, guint stream_id,
       RtcpPacketInfo rtcp_packet_info;
       ParseRtcpPacket((const uint8_t *)buffer, size, &rtcp_packet_info);
     } else if (CheckIsRtpPaddingPacket(buffer, size)) {
-      // LOG_WARN("Rtp padding packet");
+      ice_transport_controller_->OnReceiveVideoRtpPacket(buffer, size, true);
     } else {
       LOG_ERROR("Unknown packet");
     }
