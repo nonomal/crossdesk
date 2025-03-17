@@ -183,7 +183,6 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
       [this](std::shared_ptr<VideoFrameWrapper> encoded_frame) -> int {
         if (video_channel_send_) {
           video_channel_send_->SendVideo(encoded_frame);
-          LOG_WARN("SendVideo rtp packets");
         }
 
         return 0;

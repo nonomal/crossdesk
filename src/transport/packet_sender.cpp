@@ -72,17 +72,21 @@ void PacketSender::SetPacingRates(webrtc::DataRate pacing_rate,
 
 void PacketSender::EnqueuePackets(
     std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> packets) {
-  task_queue_.PostTask([this, packets = std::move(packets)]() mutable {
-    for (auto &packet : packets) {
-      size_t packet_size = packet->payload_size() + packet->padding_size();
-      if (include_overhead_) {
-        packet_size += packet->headers_size();
-      }
-      packet_size_.Apply(1, packet_size);
-      pacing_controller_.EnqueuePacket(std::move(packet));
-    }
-    MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
-  });
+  webrtc::PacedPacketInfo cluster_info;
+  for (auto &packet : packets) {
+    SendPacket(std::move(packet), cluster_info);
+  }
+  // task_queue_.PostTask([this, packets = std::move(packets)]() mutable {
+  //   for (auto &packet : packets) {
+  //     size_t packet_size = packet->payload_size() + packet->padding_size();
+  //     if (include_overhead_) {
+  //       packet_size += packet->headers_size();
+  //     }
+  //     packet_size_.Apply(1, packet_size);
+  //     pacing_controller_.EnqueuePacket(std::move(packet));
+  //   }
+  //   MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+  // });
 }
 
 void PacketSender::RemovePacketsForSsrc(uint32_t ssrc) {

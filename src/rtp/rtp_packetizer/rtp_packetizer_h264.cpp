@@ -289,7 +289,8 @@ std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerH264::BuildPadding(
 
     // Add padding bytes
     uint32_t padding_size = current_payload_size;
-    rtp_packet_frame_.insert(rtp_packet_frame_.end(), padding_size - 1, 0);
+    rtp_packet_frame_.insert(rtp_packet_frame_.end(), padding_size, 0);
+    rtp_packet_frame_.push_back(padding_size);
 
     if (use_rtp_packet_to_send) {
       std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet =
