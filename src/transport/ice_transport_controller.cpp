@@ -239,9 +239,9 @@ void IceTransportController::UpdateNetworkAvaliablity(bool network_available) {
 }
 
 int IceTransportController::OnReceiveVideoRtpPacket(const char* data,
-                                                    size_t size, bool padding) {
+                                                    size_t size) {
   if (video_channel_receive_) {
-    return video_channel_receive_->OnReceiveRtpPacket(data, size, padding);
+    return video_channel_receive_->OnReceiveRtpPacket(data, size);
   }
 
   return -1;

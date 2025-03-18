@@ -228,6 +228,15 @@ class RtpPacket {
     extension.data.push_back(abs_send_time & 0xFF);
   }
 
+  void UpdateSequenceNumber(uint16_t sequence_number) {
+    // Ensure the buffer is large enough to contain the sequence number
+    if (buffer_.size() >= 4) {
+      buffer_[2] = (sequence_number >> 8) & 0xFF;
+      buffer_[3] = sequence_number & 0xFF;
+      sequence_number_ = sequence_number;
+    }
+  }
+
  public:
   // Get Header
   uint32_t Version() const { return version_; }

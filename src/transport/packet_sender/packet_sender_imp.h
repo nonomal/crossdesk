@@ -55,6 +55,12 @@ class PacketSenderImp : public PacketSender,
   void SendPacket(std::unique_ptr<webrtc::RtpPacketToSend> packet,
                   const webrtc::PacedPacketInfo& cluster_info) override {
     if (on_sent_packet_func_) {
+      if (ssrc_seq_.find(packet->Ssrc()) == ssrc_seq_.end()) {
+        ssrc_seq_[packet->Ssrc()] = 1;
+      }
+
+      packet->UpdateSequenceNumber(ssrc_seq_[packet->Ssrc()]++);
+
       on_sent_packet_func_(*packet);
     }
   }
@@ -209,6 +215,7 @@ class PacketSenderImp : public PacketSender,
 
   TaskQueue task_queue_;
   int64_t transport_seq_ = 0;
+  std::map<int32_t, int16_t> ssrc_seq_;
 };
 
 #endif

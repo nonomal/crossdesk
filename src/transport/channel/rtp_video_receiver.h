@@ -5,6 +5,7 @@
 #include <map>
 #include <queue>
 #include <set>
+#include <unordered_set>
 
 #include "api/clock/clock.h"
 #include "clock/system_clock.h"
@@ -36,7 +37,7 @@ class RtpVideoReceiver : public ThreadBase,
   virtual ~RtpVideoReceiver();
 
  public:
-  void InsertRtpPacket(RtpPacket& rtp_packet, bool padding);
+  void InsertRtpPacket(RtpPacket& rtp_packet);
 
   void SetSendDataFunc(std::function<int(const char*, size_t)> data_send_func);
 
@@ -111,6 +112,7 @@ class RtpVideoReceiver : public ThreadBase,
   // std::map<uint32_t, std::map<uint16_t, RtpPacket>> fec_repair_symbol_list_;
   std::set<uint64_t> incomplete_fec_frame_list_;
   std::map<uint64_t, std::map<uint16_t, RtpPacket>> incomplete_fec_packet_list_;
+  std::unordered_set<int> padding_sequence_numbers_;
 
  private:
   std::thread rtcp_thread_;

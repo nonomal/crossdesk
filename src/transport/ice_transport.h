@@ -105,7 +105,6 @@ class IceTransport {
 
  private:
   uint8_t CheckIsRtpPacket(const char *buffer, size_t size);
-  uint8_t CheckIsRtpPaddingPacket(const char *buffer, size_t size);
   uint8_t CheckIsRtcpPacket(const char *buffer, size_t size);
   uint8_t CheckIsVideoPacket(const char *buffer, size_t size);
   uint8_t CheckIsAudioPacket(const char *buffer, size_t size);

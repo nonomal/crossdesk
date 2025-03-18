@@ -88,7 +88,7 @@ RtpVideoReceiver::~RtpVideoReceiver() {
 #endif
 }
 
-void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet, bool padding) {
+void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
@@ -194,16 +194,14 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet, bool padding) {
   //   // SendRtcpRR(rtcp_rr);
   // }
 
-  if (padding) {
-    return;
-  }
-
-  if (rtp_packet.PayloadType() == rtp::PAYLOAD_TYPE::AV1) {
+  if (rtp_packet.PayloadType() == rtp::PAYLOAD_TYPE::AV1 ||
+      rtp_packet.PayloadType() == rtp::PAYLOAD_TYPE::AV1 - 1) {
     RtpPacketAv1 rtp_packet_av1;
     rtp_packet_av1.Build(rtp_packet.Buffer().data(), rtp_packet.Size());
     rtp_packet_av1.GetFrameHeaderInfo();
     ProcessAv1RtpPacket(rtp_packet_av1);
-  } else {
+  } else if (rtp_packet.PayloadType() == rtp::PAYLOAD_TYPE::H264 ||
+             rtp_packet.PayloadType() == rtp::PAYLOAD_TYPE::H264 - 1) {
     RtpPacketH264 rtp_packet_h264;
     if (rtp_packet_h264.Build(rtp_packet.Buffer().data(), rtp_packet.Size())) {
       rtp_packet_h264.GetFrameHeaderInfo();
@@ -228,6 +226,8 @@ void RtpVideoReceiver::ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264) {
         if (!complete) {
         }
       }
+    } else if (rtp::PAYLOAD_TYPE::H264 - 1 == rtp_packet_h264.PayloadType()) {
+      padding_sequence_numbers_.insert(rtp_packet_h264.SequenceNumber());
     }
   }
   //  else {
@@ -364,10 +364,12 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(
     while (end_seq--) {
       auto it = incomplete_h264_frame_list_.find(end_seq);
       if (it == incomplete_h264_frame_list_.end()) {
-        // The last fragment has already received. If all fragments are in
-        // order, then some fragments lost in tranmission and need to be
-        // repaired using FEC
-        return false;
+        if (padding_sequence_numbers_.find(end_seq) ==
+            padding_sequence_numbers_.end()) {
+          return false;
+        } else {
+          continue;
+        }
       } else if (!it->second.FuAStart()) {
         continue;
       } else if (it->second.FuAStart()) {
@@ -380,7 +382,13 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(
         uint16_t start = it->first;
         uint16_t end = rtp_packet_h264.SequenceNumber();
         for (uint16_t seq = start; seq <= end; seq++) {
-          complete_frame_size += incomplete_h264_frame_list_[seq].PayloadSize();
+          if (padding_sequence_numbers_.find(seq) ==
+              padding_sequence_numbers_.end()) {
+            complete_frame_size +=
+                incomplete_h264_frame_list_[seq].PayloadSize();
+          } else {
+            padding_sequence_numbers_.erase(seq);
+          }
         }
 
         if (!nv12_data_) {
@@ -393,8 +401,10 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(
         uint8_t* dest = nv12_data_;
         for (uint16_t seq = start; seq <= end; seq++) {
           size_t payload_size = incomplete_h264_frame_list_[seq].PayloadSize();
-          memcpy(dest, incomplete_h264_frame_list_[seq].Payload(),
-                 payload_size);
+          if (payload_size) {
+            memcpy(dest, incomplete_h264_frame_list_[seq].Payload(),
+                   payload_size);
+          }
           dest += payload_size;
           incomplete_h264_frame_list_.erase(seq);
           frame_fragment_count++;

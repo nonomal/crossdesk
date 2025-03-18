@@ -61,7 +61,7 @@ class IceTransportController
 
   void UpdateNetworkAvaliablity(bool network_available);
 
-  int OnReceiveVideoRtpPacket(const char *data, size_t size, bool padding);
+  int OnReceiveVideoRtpPacket(const char *data, size_t size);
   int OnReceiveAudioRtpPacket(const char *data, size_t size);
   int OnReceiveDataRtpPacket(const char *data, size_t size);
 

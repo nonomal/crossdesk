@@ -39,7 +39,7 @@ class VideoChannelReceive {
     return 0;
   }
 
-  int OnReceiveRtpPacket(const char *data, size_t size, bool padding);
+  int OnReceiveRtpPacket(const char *data, size_t size);
 
   void OnSenderReport(const SenderReport &sender_report) {
     if (rtp_video_receiver_) {
