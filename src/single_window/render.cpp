@@ -204,8 +204,7 @@ int Render::StartScreenCapturer() {
           frame.size = size;
           frame.width = width;
           frame.height = height;
-          frame.timestamp = CurrentNtpTimeMs(peer_);
-
+          frame.captured_timestamp = GetSystemTimeMicros(peer_);
           SendVideoFrame(peer_, &frame);
           last_frame_time_ = now_time;
         }
