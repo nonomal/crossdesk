@@ -88,6 +88,7 @@ class IceTransportController
   void PostUpdates(webrtc::NetworkControlUpdate update);
   void UpdateControlState();
   void UpdateCongestedState();
+  std::optional<bool> GetCongestedStateUpdate() const;
 
  private:
   bool Process() override;
@@ -119,6 +120,8 @@ class IceTransportController
   webrtc::TransportFeedbackAdapter transport_feedback_adapter_;
   std::unique_ptr<CongestionControl> controller_;
   BitrateProber prober_;
+  webrtc::DataSize congestion_window_size_;
+  bool is_congested_ = false;
 
  private:
   std::unique_ptr<VideoEncoder> video_encoder_ = nullptr;

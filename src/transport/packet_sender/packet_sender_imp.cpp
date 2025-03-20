@@ -17,7 +17,8 @@ PacketSenderImp::PacketSenderImp(std::shared_ptr<IceAgent> ice_agent,
       is_shutdown_(false),
       packet_size_(/*alpha=*/0.95),
       include_overhead_(false),
-      last_send_time_(webrtc::Timestamp::Millis(0)) {}
+      last_send_time_(webrtc::Timestamp::Millis(0)),
+      last_call_time_(webrtc::Timestamp::Millis(0)) {}
 
 PacketSenderImp::~PacketSenderImp() {}
 
@@ -280,6 +281,9 @@ int PacketSenderImp::EnqueueRtpPacket(
         rtp_packet_to_send->set_packet_type(webrtc::RtpPacketMediaType::kVideo);
         break;
     }
+
+    // webrtc::PacedPacketInfo cluster_info;
+    // SendPacket(std::move(rtp_packet_to_send), cluster_info);
 
     to_send_rtp_packets.push_back(std::move(rtp_packet_to_send));
   }

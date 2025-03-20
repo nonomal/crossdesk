@@ -169,8 +169,8 @@ void PacingController::SetPacingRates(DataRate pacing_rate,
   padding_rate_ = padding_rate;
   MaybeUpdateMediaRateDueToLongQueue(CurrentTime());
 
-  LOG_INFO("bwe:pacer_updated pacing_kbps={} padding_budget_kbps={}",
-           pacing_rate_.kbps(), padding_rate.kbps());
+  // LOG_INFO("bwe:pacer_updated pacing_kbps={} padding_budget_kbps={}",
+  //          pacing_rate_.kbps(), padding_rate.kbps());
 }
 
 void PacingController::EnqueuePacket(std::unique_ptr<RtpPacketToSend> packet) {
@@ -200,6 +200,7 @@ void PacingController::EnqueuePacket(std::unique_ptr<RtpPacketToSend> packet) {
     }
     UpdateBudgetWithElapsedTime(UpdateTimeAndGetElapsed(target_process_time));
   }
+
   packet_queue_.Push(now, std::move(packet));
   seen_first_packet_ = true;
 
@@ -361,7 +362,6 @@ void PacingController::ProcessPackets() {
       });
   const Timestamp now = CurrentTime();
   Timestamp target_send_time = now;
-
   if (ShouldSendKeepalive(now)) {
     DataSize keepalive_data_sent = DataSize::Zero();
     // We can not send padding unless a normal packet has first been sent. If
@@ -464,7 +464,6 @@ void PacingController::ProcessPackets() {
                        transport_overhead_per_packet_;
       }
 
-      // LOG_ERROR("Send packet_size {}", rtp_packet->Size());
       packet_sender_->SendPacket(std::move(rtp_packet), pacing_info);
       for (auto& packet : packet_sender_->FetchFec()) {
         EnqueuePacket(std::move(packet));

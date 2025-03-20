@@ -108,7 +108,6 @@ std::vector<ProbeClusterConfig> ProbeController::SetBitrates(
   if (start_bitrate > DataRate::Zero()) {
     start_bitrate_ = start_bitrate;
     estimated_bitrate_ = start_bitrate;
-    LOG_WARN("1 setting estimated_bitrate_ = {}", estimated_bitrate_.bps());
   } else if (start_bitrate_.IsZero()) {
     start_bitrate_ = min_bitrate;
   }
@@ -235,7 +234,7 @@ std::vector<ProbeClusterConfig> ProbeController::InitiateExponentialProbing(
     LOG_INFO("Repeated initial probing enabled, last allowed probe: {} now: {}",
              last_allowed_repeated_initial_probe_.ms(), at_time.ms());
   }
-  LOG_WARN("InitiateExponentialProbing");
+
   return InitiateProbing(at_time, probes, true);
 }
 
@@ -344,7 +343,6 @@ void ProbeController::Reset(Timestamp at_time) {
   min_bitrate_to_probe_further_ = DataRate::PlusInfinity();
   time_last_probing_initiated_ = Timestamp::Zero();
   estimated_bitrate_ = DataRate::Zero();
-  LOG_WARN("3 setting estimated_bitrate_ = {}", estimated_bitrate_.bps());
   network_estimate_ = std::nullopt;
   start_bitrate_ = DataRate::Zero();
   max_bitrate_ = kDefaultMaxProbingBitrate;
@@ -422,16 +420,11 @@ std::vector<ProbeClusterConfig> ProbeController::Process(Timestamp at_time) {
     return {};
   }
   if (TimeForNextRepeatedInitialProbe(at_time)) {
-    LOG_WARN(
-        "InitiateProbing TimeForNextRepeatedInitialProbe, estimated_bitrate_ = "
-        "{}",
-        estimated_bitrate_.bps());
     return InitiateProbing(
         at_time, {estimated_bitrate_ * config_.first_exponential_probe_scale},
         true);
   }
   if (TimeForAlrProbe(at_time) || TimeForNetworkStateProbe(at_time)) {
-    LOG_WARN("InitiateProbing TimeForNetworkStateProbe");
     return InitiateProbing(
         at_time, {estimated_bitrate_ * config_.alr_probe_scale}, true);
   }

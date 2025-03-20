@@ -60,7 +60,6 @@ class PacketSenderImp : public PacketSender,
       }
 
       packet->UpdateSequenceNumber(ssrc_seq_[packet->Ssrc()]++);
-
       on_sent_packet_func_(*packet);
     }
   }
@@ -218,6 +217,7 @@ class PacketSenderImp : public PacketSender,
   std::map<int32_t, int16_t> ssrc_seq_;
 
   webrtc::Timestamp last_send_time_;
+  webrtc::Timestamp last_call_time_;
 };
 
 #endif

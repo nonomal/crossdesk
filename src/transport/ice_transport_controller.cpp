@@ -17,6 +17,7 @@ IceTransportController::IceTransportController(
       audio_codec_inited_(false),
       load_nvcodec_dll_success_(false),
       hardware_acceleration_(false),
+      congestion_window_size_(DataSize::PlusInfinity()),
       clock_(clock),
       webrtc_clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {
   SetPeriod(std::chrono::milliseconds(25));
@@ -515,7 +516,20 @@ void IceTransportController::OnSentRtpPacket(
 }
 
 void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
-  // UpdateControlState();
+  if (update.congestion_window) {
+    congestion_window_size_ = *update.congestion_window;
+    UpdateCongestedState();
+  }
+
+  if (update.pacer_config) {
+    packet_sender_->SetPacingRates(update.pacer_config->data_rate(),
+                                   update.pacer_config->pad_rate());
+  }
+
+  if (!update.probe_cluster_configs.empty()) {
+    packet_sender_->CreateProbeClusters(
+        std::move(update.probe_cluster_configs));
+  }
 
   if (update.target_rate) {
     int target_bitrate = update.target_rate.has_value()
@@ -543,11 +557,7 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
       video_encoder_->SetTargetBitrate(target_bitrate_);
       // LOG_WARN("Set target bitrate [{}]bps", target_bitrate_);
     }
-  }
-
-  if (!update.probe_cluster_configs.empty()) {
-    packet_sender_->CreateProbeClusters(
-        std::move(update.probe_cluster_configs));
+    UpdateControlState();
   }
 }
 
@@ -557,8 +567,17 @@ void IceTransportController::UpdateControlState() {
 }
 
 void IceTransportController::UpdateCongestedState() {
-  if (controller_) {
+  if (auto update = GetCongestedStateUpdate()) {
+    is_congested_ = update.value();
+    packet_sender_->SetCongested(update.value());
   }
+}
+
+std::optional<bool> IceTransportController::GetCongestedStateUpdate() const {
+  bool congested = transport_feedback_adapter_.GetOutstandingData() >=
+                   congestion_window_size_;
+  if (congested != is_congested_) return congested;
+  return std::nullopt;
 }
 
 bool IceTransportController::Process() {

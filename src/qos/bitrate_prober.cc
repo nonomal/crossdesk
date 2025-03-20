@@ -60,7 +60,6 @@ void BitrateProber::MaybeSetActiveState(DataSize packet_size) {
   if (ReadyToSetActiveState(packet_size)) {
     next_probe_time_ = Timestamp::MinusInfinity();
     probing_state_ = ProbingState::kActive;
-    LOG_WARN("Probing set to active");
   }
 }
 
@@ -111,14 +110,8 @@ void BitrateProber::CreateProbeCluster(
   cluster.pace_info.send_bitrate = cluster_config.target_data_rate;
   cluster.pace_info.probe_cluster_id = cluster_config.id;
   clusters_.push(cluster);
-  LOG_WARN("a1 clusters size = {}", clusters_.size());
-  MaybeSetActiveState(/*packet_size=*/DataSize::Zero());
 
-  LOG_INFO("Probe cluster (bitrate_bps:min bytes:min packets): ({}:{}:{}, {})",
-           cluster.pace_info.send_bitrate.bps(),
-           cluster.pace_info.probe_cluster_min_bytes,
-           cluster.pace_info.probe_cluster_min_probes,
-           probing_state_ == ProbingState::kInactive ? "Inactive" : "Active");
+  MaybeSetActiveState(/*packet_size=*/DataSize::Zero());
 }
 
 Timestamp BitrateProber::NextProbeTime(Timestamp /* now */) const {
