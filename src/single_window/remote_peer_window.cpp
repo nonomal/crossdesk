@@ -120,15 +120,15 @@ int Render::ConnectTo(const std::string &host_name, const char *password,
   if (signal_connected_) {
     if (!props->connection_established_) {
       if (0 == strcmp(host_name.c_str(), client_id_) && !peer_reserved_) {
+        std::string client_id = "C-";
+        client_id += client_id_;
         peer_reserved_ = CreatePeer(&params_);
         if (peer_reserved_) {
-          LOG_INFO("Create peer[reserved] instance successful");
-          std::string client_id = "C-";
-          client_id += client_id_;
+          LOG_INFO("[{}] Create peer instance successful", client_id);
           Init(peer_reserved_, client_id.c_str());
-          LOG_INFO("Peer[reserved] init finish");
+          LOG_INFO("[{}] Peer init finish", client_id);
         } else {
-          LOG_INFO("Create peer[reserved] instance failed");
+          LOG_INFO("Create peer [{}] instance failed", client_id);
         }
       }
 

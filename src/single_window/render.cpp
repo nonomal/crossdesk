@@ -353,7 +353,7 @@ int Render::CreateConnectionPeer() {
     Init(peer_, client_id_);
     LOG_INFO("[{}] Peer init finish", client_id_);
   } else {
-    LOG_INFO("Create peer instance failed");
+    LOG_INFO("Create peer [{}] instance failed", client_id_);
   }
 
   return 0;
@@ -855,12 +855,16 @@ int Render::Run() {
                   props->remember_password_ ? props->remote_password_ : "");
             }
 
-            LOG_INFO("[{}] Leave connection [{}]", client_id_, it.first);
-            LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_,
-                            it.first.c_str());
             if (peer_reserved_) {
-              LOG_INFO("Destroy peer[reserved]");
+              std::string client_id = "C-";
+              client_id += client_id_;
+              LOG_INFO("[{}] Leave connection [{}]", client_id, it.first);
+              LeaveConnection(peer_reserved_, it.first.c_str());
+              LOG_INFO("Destroy peer [{}]", client_id);
               DestroyPeer(&peer_reserved_);
+            } else {
+              LOG_INFO("[{}] Leave connection [{}]", client_id_, it.first);
+              LeaveConnection(peer_, it.first.c_str());
             }
 
             props->streaming_ = false;
@@ -1078,7 +1082,7 @@ int Render::Run() {
     LOG_INFO("[{}] Leave connection [{}]", client_id_, client_id_);
     LeaveConnection(peer_, client_id_);
     is_client_mode_ = false;
-    LOG_INFO("Destroy peer");
+    LOG_INFO("Destroy peer [{}]", client_id_);
     DestroyPeer(&peer_);
   }
 
