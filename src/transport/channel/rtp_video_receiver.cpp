@@ -77,10 +77,6 @@ RtpVideoReceiver::~RtpVideoReceiver() {
 
   SSRCManager::Instance().DeleteSsrc(ssrc_);
 
-  if (rtp_statistics_) {
-    rtp_statistics_->Stop();
-  }
-
   delete[] nv12_data_;
 
 #ifdef SAVE_RTP_RECV_STREAM
@@ -93,11 +89,6 @@ RtpVideoReceiver::~RtpVideoReceiver() {
 }
 
 void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
-  if (!rtp_statistics_) {
-    rtp_statistics_ = std::make_unique<RtpStatistics>();
-    rtp_statistics_->Start();
-  }
-
   webrtc::RtpPacketReceived rtp_packet_received;
   rtp_packet_received.Build(rtp_packet.Buffer().data(), rtp_packet.Size());
   rtp_packet_received.set_arrival_time(clock_->CurrentTime());
@@ -152,10 +143,6 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
   last_recv_bytes_ = (uint32_t)rtp_packet.PayloadSize();
   total_rtp_payload_recv_ += (uint32_t)rtp_packet.PayloadSize();
   total_rtp_packets_recv_++;
-
-  if (rtp_statistics_) {
-    rtp_statistics_->UpdateReceiveBytes(last_recv_bytes_);
-  }
 
   if (io_statistics_) {
     io_statistics_->UpdateVideoInboundBytes(last_recv_bytes_);

@@ -34,22 +34,6 @@ void CopyYuvWithStride(uint8_t *src_y, uint8_t *src_u, uint8_t *src_v,
   }
 }
 
-void ConvertYuv420pToNv12(const unsigned char *yuv_data,
-                          unsigned char *nv12_data, int width, int height) {
-  int y_size = width * height;
-  int uv_size = y_size / 4;
-  const unsigned char *y_data = yuv_data;
-  const unsigned char *u_data = y_data + y_size;
-  const unsigned char *v_data = u_data + uv_size;
-
-  std::memcpy(nv12_data, y_data, y_size);
-
-  for (int i = 0; i < uv_size; i++) {
-    nv12_data[y_size + i * 2] = u_data[i];
-    nv12_data[y_size + i * 2 + 1] = v_data[i];
-  }
-}
-
 OpenH264Decoder::OpenH264Decoder(std::shared_ptr<SystemClock> clock)
     : clock_(clock) {}
 OpenH264Decoder::~OpenH264Decoder() {
@@ -59,7 +43,7 @@ OpenH264Decoder::~OpenH264Decoder() {
   }
 
   if (nv12_frame_) {
-    delete nv12_frame_;
+    delete[] nv12_frame_;
   }
 
   if (yuv420p_frame_) {
@@ -133,15 +117,19 @@ int OpenH264Decoder::Decode(
   fwrite((unsigned char *)data, 1, size, h264_stream_);
 #endif
 
-  if ((*(data + 4) & 0x1f) == 0x07) {
-    // LOG_WARN("Receive key frame");
+  if (size > 4 && (*(data + 4) & 0x1f) == 0x07) {
+    // Key frame received
   }
 
   SBufferInfo sDstBufInfo;
   memset(&sDstBufInfo, 0, sizeof(SBufferInfo));
 
-  openh264_decoder_->DecodeFrameNoDelay(data, (int)size, yuv420p_planes_,
-                                        &sDstBufInfo);
+  int ret = openh264_decoder_->DecodeFrameNoDelay(
+      data, (int)size, yuv420p_planes_, &sDstBufInfo);
+  if (ret != 0) {
+    LOG_ERROR("Failed to decode frame, error code: {}", ret);
+    return -1;
+  }
 
   frame_width_ = sDstBufInfo.UsrData.sSystemBuffer.iWidth;
   frame_height_ = sDstBufInfo.UsrData.sSystemBuffer.iHeight;
@@ -161,23 +149,13 @@ int OpenH264Decoder::Decode(
 
   if (!nv12_frame_) {
     nv12_frame_capacity_ = yuv420p_frame_size_;
-    nv12_frame_ =
-        new DecodedFrame(nv12_frame_capacity_, frame_width_, frame_height_);
+    nv12_frame_ = new unsigned char[nv12_frame_capacity_];
   }
 
   if (nv12_frame_capacity_ < yuv420p_frame_size_) {
     nv12_frame_capacity_ = yuv420p_frame_size_;
-    delete nv12_frame_;
-    nv12_frame_ =
-        new DecodedFrame(nv12_frame_capacity_, frame_width_, frame_height_);
-  }
-
-  if (nv12_frame_->Size() != nv12_frame_size_ ||
-      nv12_frame_->Width() != frame_width_ ||
-      nv12_frame_->Height() != frame_height_) {
-    nv12_frame_->SetSize(nv12_frame_size_);
-    nv12_frame_->SetWidth(frame_width_);
-    nv12_frame_->SetHeight(frame_height_);
+    delete[] nv12_frame_;
+    nv12_frame_ = new unsigned char[nv12_frame_capacity_];
   }
 
   if (sDstBufInfo.iBufferStatus == 1) {
@@ -188,33 +166,29 @@ int OpenH264Decoder::Decode(
           sDstBufInfo.UsrData.sSystemBuffer.iHeight,
           sDstBufInfo.UsrData.sSystemBuffer.iStride[0],
           sDstBufInfo.UsrData.sSystemBuffer.iStride[1],
-          sDstBufInfo.UsrData.sSystemBuffer.iStride[1], yuv420p_frame_);
+          sDstBufInfo.UsrData.sSystemBuffer.iStride[2], yuv420p_frame_);
 
-      if (0) {
-        ConvertYuv420pToNv12(yuv420p_frame_,
-                             (unsigned char *)nv12_frame_->Buffer(),
-                             frame_width_, frame_height_);
-      } else {
-        libyuv::I420ToNV12(
-            (const uint8_t *)yuv420p_frame_, frame_width_,
-            (const uint8_t *)yuv420p_frame_ + frame_width_ * frame_height_,
-            frame_width_ / 2,
-            (const uint8_t *)yuv420p_frame_ +
-                frame_width_ * frame_height_ * 5 / 4,
-            frame_width_ / 2, (uint8_t *)nv12_frame_->Buffer(), frame_width_,
-            (uint8_t *)nv12_frame_->Buffer() + frame_width_ * frame_height_,
-            frame_width_, frame_width_, frame_height_);
-      }
+      libyuv::I420ToNV12(
+          (const uint8_t *)yuv420p_frame_, frame_width_,
+          (const uint8_t *)yuv420p_frame_ + frame_width_ * frame_height_,
+          frame_width_ / 2,
+          (const uint8_t *)yuv420p_frame_ +
+              frame_width_ * frame_height_ * 5 / 4,
+          frame_width_ / 2, (uint8_t *)nv12_frame_, frame_width_,
+          (uint8_t *)nv12_frame_ + frame_width_ * frame_height_, frame_width_,
+          frame_width_, frame_height_);
 
-      nv12_frame_->SetReceivedTimestamp(received_frame.ReceivedTimestamp());
-      nv12_frame_->SetCapturedTimestamp(received_frame.CapturedTimestamp());
-      nv12_frame_->SetDecodedTimestamp(clock_->CurrentTime());
-      on_receive_decoded_frame(*nv12_frame_);
+      DecodedFrame decoded_frame(nv12_frame_, nv12_frame_capacity_,
+                                 frame_width_, frame_height_);
+      decoded_frame.SetReceivedTimestamp(received_frame.ReceivedTimestamp());
+      decoded_frame.SetCapturedTimestamp(received_frame.CapturedTimestamp());
+      decoded_frame.SetDecodedTimestamp(clock_->CurrentTime());
 
 #ifdef SAVE_DECODED_NV12_STREAM
-      fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
+      fwrite((unsigned char *)decoded_frame.Buffer(), 1, decoded_frame.Size(),
              nv12_stream_);
 #endif
+      on_receive_decoded_frame(decoded_frame);
     }
   }
 

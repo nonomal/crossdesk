@@ -10,6 +10,7 @@
 
 #include "clock/system_clock.h"
 #include "encoded_frame.h"
+#include "raw_frame.h"
 #include "x.h"
 
 #define I_FRAME_INTERVAL 3000
@@ -17,10 +18,9 @@ class VideoEncoder {
  public:
   virtual int Init() = 0;
 
-  virtual int Encode(
-      const XVideoFrame* video_frame,
-      std::function<int(std::shared_ptr<EncodedFrame> encoded_frame)>
-          on_encoded_image) = 0;
+  virtual int Encode(const RawFrame& raw_frame,
+                     std::function<int(const EncodedFrame& encoded_frame)>
+                         on_encoded_image) = 0;
 
   virtual int ForceIdr() = 0;
 

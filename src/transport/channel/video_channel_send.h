@@ -53,7 +53,7 @@ class VideoChannelSend {
     return 0;
   }
 
-  int SendVideo(std::shared_ptr<EncodedFrame> encoded_frame);
+  int SendVideo(const EncodedFrame& encoded_frame);
 
   void OnReceiverReport(const ReceiverReport& receiver_report) {
     if (rtp_video_sender_) {

@@ -105,14 +105,14 @@ void VideoChannelSend::Destroy() {
   }
 }
 
-int VideoChannelSend::SendVideo(std::shared_ptr<EncodedFrame> encoded_frame) {
+int VideoChannelSend::SendVideo(const EncodedFrame& encoded_frame) {
   if (rtp_video_sender_ && rtp_packetizer_ && packet_sender_) {
     int32_t rtp_timestamp =
         delta_ntp_internal_ms_ +
-        static_cast<uint32_t>(encoded_frame->CapturedTimestamp() / 1000);
+        static_cast<uint32_t>(encoded_frame.CapturedTimestamp() / 1000);
     std::vector<std::unique_ptr<RtpPacket>> rtp_packets =
-        rtp_packetizer_->Build((uint8_t*)encoded_frame->Buffer(),
-                               (uint32_t)encoded_frame->Size(), rtp_timestamp,
+        rtp_packetizer_->Build((uint8_t*)encoded_frame.Buffer(),
+                               (uint32_t)encoded_frame.Size(), rtp_timestamp,
                                true);
     packet_sender_->EnqueueRtpPacket(std::move(rtp_packets), rtp_timestamp);
   }

@@ -179,6 +179,7 @@ class RtpPacket {
  public:
   RtpPacket();
   RtpPacket(size_t size);
+  RtpPacket(const uint8_t *buffer, uint32_t size);
   RtpPacket(const RtpPacket &rtp_packet);
   RtpPacket(RtpPacket &&rtp_packet);
   RtpPacket &operator=(const RtpPacket &rtp_packet);

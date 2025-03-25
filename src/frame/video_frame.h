@@ -10,6 +10,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "copy_on_write_buffer.h"
+
 enum VideoFrameType {
   kEmptyFrame = 0,
   kVideoFrameKey = 3,
@@ -20,8 +22,8 @@ class VideoFrame {
  public:
   VideoFrame();
   VideoFrame(size_t size);
-  VideoFrame(size_t size, uint32_t width, uint32_t height);
   VideoFrame(const uint8_t *buffer, size_t size);
+  VideoFrame(size_t size, uint32_t width, uint32_t height);
   VideoFrame(const uint8_t *buffer, size_t size, uint32_t width,
              uint32_t height);
   VideoFrame(const VideoFrame &video_frame);
@@ -32,7 +34,7 @@ class VideoFrame {
   ~VideoFrame();
 
  public:
-  const uint8_t *Buffer() const { return buffer_; }
+  const uint8_t *Buffer() const { return buffer_.data(); }
   size_t Size() const { return size_; }
   uint32_t Width() const { return width_; }
   uint32_t Height() const { return height_; }
@@ -42,7 +44,7 @@ class VideoFrame {
   void SetHeight(uint32_t height) { height_ = height; }
 
  private:
-  uint8_t *buffer_ = nullptr;
+  CopyOnWriteBuffer buffer_;
   size_t size_ = 0;
   uint32_t width_ = 0;
   uint32_t height_ = 0;

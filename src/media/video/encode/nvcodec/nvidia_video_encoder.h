@@ -14,9 +14,9 @@ class NvidiaVideoEncoder : public VideoEncoder {
 
   int Init();
 
-  int Encode(const XVideoFrame* video_frame,
-             std::function<int(std::shared_ptr<EncodedFrame> encoded_frame)>
-                 on_encoded_image);
+  int Encode(
+      const RawFrame& raw_frame,
+      std::function<int(const EncodedFrame& encoded_frame)> on_encoded_image);
 
   int ForceIdr();
 

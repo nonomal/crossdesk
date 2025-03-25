@@ -16,6 +16,10 @@ class CopyOnWriteBuffer {
   CopyOnWriteBuffer(size_t size) {
     buffer_ = std::make_shared<std::vector<uint8_t>>(size);
   }
+  CopyOnWriteBuffer(const uint8_t* data, size_t size) {
+    buffer_ = std::make_shared<std::vector<uint8_t>>(data, data + size);
+  }
+
   CopyOnWriteBuffer(const CopyOnWriteBuffer& other) = default;
   CopyOnWriteBuffer(CopyOnWriteBuffer&& other) noexcept = default;
   CopyOnWriteBuffer& operator=(const CopyOnWriteBuffer& other) = default;

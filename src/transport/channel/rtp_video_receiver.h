@@ -21,7 +21,6 @@
 #include "rtp_packet_av1.h"
 #include "rtp_packet_h264.h"
 #include "rtp_rtcp_defines.h"
-#include "rtp_statistics.h"
 #include "sender_report.h"
 #include "thread_base.h"
 
@@ -103,7 +102,6 @@ class RtpVideoReceiver : public ThreadBase,
   RingBuffer<ReceivedFrame> compelete_video_frame_queue_;
 
  private:
-  std::unique_ptr<RtpStatistics> rtp_statistics_ = nullptr;
   std::shared_ptr<IOStatistics> io_statistics_ = nullptr;
   uint32_t last_recv_bytes_ = 0;
   uint32_t total_rtp_packets_recv_ = 0;

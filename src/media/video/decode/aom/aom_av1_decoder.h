@@ -30,7 +30,7 @@ class AomAv1Decoder : public VideoDecoder {
 
  private:
   std::shared_ptr<SystemClock> clock_ = nullptr;
-  DecodedFrame *nv12_frame_ = 0;
+  unsigned char *nv12_frame_ = 0;
   int nv12_frame_capacity_ = 0;
   int nv12_frame_size_ = 0;
 

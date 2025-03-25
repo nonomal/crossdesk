@@ -55,10 +55,13 @@ void IceTransportController::Create(
   CreateVideoCodec(clock_, video_codec_payload_type, hardware_acceleration);
   CreateAudioCodec();
 
-  task_queue_ = std::make_shared<TaskQueue>();
+  task_queue_cc_ = std::make_shared<TaskQueue>("congest control");
+  task_queue_encode_ = std::make_shared<TaskQueue>("encode");
+  task_queue_decode_ = std::make_shared<TaskQueue>("decode");
+
   controller_ = std::make_unique<CongestionControl>();
-  packet_sender_ =
-      std::make_shared<PacketSenderImp>(ice_agent, webrtc_clock_, task_queue_);
+  packet_sender_ = std::make_shared<PacketSenderImp>(ice_agent, webrtc_clock_,
+                                                     task_queue_cc_);
   packet_sender_->SetPacingRates(DataRate::BitsPerSec(300000),
                                  DataRate::Zero());
   packet_sender_->SetSendBurstInterval(TimeDelta::Millis(40));
@@ -201,8 +204,6 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
     b_force_i_frame_ = false;
   }
 
-  bool need_to_release = false;
-
   XVideoFrame new_frame;
   new_frame.data = nullptr;
   new_frame.width = video_frame->width;
@@ -215,30 +216,34 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
       resolution_adapter_->ResolutionDowngrade(
           video_frame, target_width_.value(), target_height_.value(),
           &new_frame);
-      need_to_release = true;
+    } else {
+      new_frame.data = new char[video_frame->size];
+      memcpy((void*)new_frame.data, (void*)video_frame->data,
+             video_frame->size);
     }
   }
 
-  int ret = video_encoder_->Encode(
-      need_to_release ? &new_frame : video_frame,
-      [this](std::shared_ptr<EncodedFrame> encoded_frame) -> int {
-        if (video_channel_send_) {
-          video_channel_send_->SendVideo(encoded_frame);
-        }
+  RawFrame raw_frame((const uint8_t*)new_frame.data, new_frame.size,
+                     new_frame.width, new_frame.height);
+  raw_frame.SetCapturedTimestamp(video_frame->captured_timestamp);
 
-        return 0;
-      });
+  delete[] new_frame.data;
 
-  if (need_to_release) {
-    delete[] new_frame.data;
+  if (task_queue_encode_ && video_encoder_) {
+    task_queue_encode_->PostTask([this, raw_frame]() mutable {
+      int ret = video_encoder_->Encode(
+          std::move(raw_frame),
+          [this](const EncodedFrame& encoded_frame) -> int {
+            if (video_channel_send_) {
+              video_channel_send_->SendVideo(encoded_frame);
+            }
+
+            return 0;
+          });
+    });
   }
 
-  if (0 != ret) {
-    LOG_ERROR("Encode failed");
-    return -1;
-  } else {
-    return 0;
-  }
+  return 0;
 }
 
 int IceTransportController::SendAudio(const char* data, size_t size) {
@@ -506,8 +511,8 @@ void IceTransportController::OnReceiverReport(
   msg.start_time = last_report_block_time_;
   msg.end_time = now;
 
-  if (task_queue_) {
-    task_queue_->PostTask([this, msg]() mutable {
+  if (task_queue_cc_) {
+    task_queue_cc_->PostTask([this, msg]() mutable {
       if (controller_) {
         PostUpdates(controller_->OnTransportLossReport(msg));
       }
@@ -522,8 +527,8 @@ void IceTransportController::OnCongestionControlFeedback(
   std::optional<webrtc::TransportPacketsFeedback> feedback_msg =
       transport_feedback_adapter_.ProcessCongestionControlFeedback(
           feedback, Timestamp::Micros(clock_->CurrentTimeUs()));
-  if (feedback_msg.has_value() && task_queue_) {
-    task_queue_->PostTask([this, feedback_msg]() mutable {
+  if (feedback_msg.has_value() && task_queue_cc_) {
+    task_queue_cc_->PostTask([this, feedback_msg]() mutable {
       if (controller_) {
         PostUpdates(
             controller_->OnTransportPacketsFeedback(feedback_msg.value()));
@@ -633,8 +638,8 @@ bool IceTransportController::Process() {
     return false;
   }
 
-  if (task_queue_ && controller_) {
-    task_queue_->PostTask([this]() mutable {
+  if (task_queue_cc_ && controller_) {
+    task_queue_cc_->PostTask([this]() mutable {
       webrtc::ProcessInterval msg;
       msg.at_time = Timestamp::Millis(webrtc_clock_->TimeInMilliseconds());
       PostUpdates(controller_->OnProcessInterval(msg));

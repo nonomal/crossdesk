@@ -26,7 +26,7 @@ AomAv1Decoder::~AomAv1Decoder() {
 #endif
 
   if (nv12_frame_) {
-    delete nv12_frame_;
+    delete[] nv12_frame_;
     nv12_frame_ = nullptr;
   }
 }
@@ -120,41 +120,33 @@ int AomAv1Decoder::Decode(
       return -1;
     }
 
-    frame_width_ = img_->d_w;
-    frame_height_ = img_->d_h;
+    size_t nv12_size = img_->d_w * img_->d_h + img_->d_w * img_->d_h / 2;
+    std::vector<uint8_t> nv12_data(nv12_size);
 
-    nv12_frame_size_ = frame_width_ * frame_height_ * 3 / 2;
+    uint8_t *y_data = nv12_data.data();
+    memcpy(y_data, img_->planes[0], img_->d_w * img_->d_h);
 
-    if (!nv12_frame_) {
-      nv12_frame_capacity_ = nv12_frame_size_;
-      nv12_frame_ =
-          new DecodedFrame(nv12_frame_capacity_, frame_width_, frame_height_);
+    uint8_t *uv_data = nv12_data.data() + img_->d_w * img_->d_h;
+    uint8_t *u_plane = img_->planes[1];
+    uint8_t *v_plane = img_->planes[2];
+
+    for (int i = 0; i < img_->d_w * img_->d_h / 2; i++) {
+      uv_data[2 * i] = u_plane[i];
+      uv_data[2 * i + 1] = v_plane[i];
     }
 
-    if (nv12_frame_capacity_ < nv12_frame_size_) {
-      nv12_frame_capacity_ = nv12_frame_size_;
-      delete nv12_frame_;
-      nv12_frame_ =
-          new DecodedFrame(nv12_frame_capacity_, frame_width_, frame_height_);
-    }
+    DecodedFrame decode_frame(nv12_data.data(), nv12_size, img_->d_w,
+                              img_->d_h);
 
-    if (nv12_frame_->Size() != nv12_frame_size_ ||
-        nv12_frame_->Width() != frame_width_ ||
-        nv12_frame_->Height() != frame_height_) {
-      nv12_frame_->SetSize(nv12_frame_size_);
-      nv12_frame_->SetWidth(frame_width_);
-      nv12_frame_->SetHeight(frame_height_);
-    }
-
-    nv12_frame_->SetReceivedTimestamp(received_frame.ReceivedTimestamp());
-    nv12_frame_->SetCapturedTimestamp(received_frame.CapturedTimestamp());
-    nv12_frame_->SetDecodedTimestamp(clock_->CurrentTime());
-    on_receive_decoded_frame(*nv12_frame_);
+    decode_frame.SetReceivedTimestamp(received_frame.ReceivedTimestamp());
+    decode_frame.SetCapturedTimestamp(received_frame.CapturedTimestamp());
+    decode_frame.SetDecodedTimestamp(clock_->CurrentTime());
 
 #ifdef SAVE_DECODED_NV12_STREAM
-    fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
+    fwrite((unsigned char *)decode_frame.Buffer(), 1, decode_frame.Size(),
            file_nv12_);
 #endif
+    on_receive_decoded_frame(decode_frame);
 
     return 0;
   }

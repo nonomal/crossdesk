@@ -7,25 +7,12 @@ RtpDataReceiver::RtpDataReceiver() {}
 RtpDataReceiver::RtpDataReceiver(std::shared_ptr<IOStatistics> io_statistics)
     : io_statistics_(io_statistics) {}
 
-RtpDataReceiver::~RtpDataReceiver() {
-  if (rtp_statistics_) {
-    rtp_statistics_->Stop();
-  }
-}
+RtpDataReceiver::~RtpDataReceiver() {}
 
 void RtpDataReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
-  if (!rtp_statistics_) {
-    rtp_statistics_ = std::make_unique<RtpStatistics>();
-    rtp_statistics_->Start();
-  }
-
   last_recv_bytes_ = (uint32_t)rtp_packet.Size();
   total_rtp_payload_recv_ += (uint32_t)rtp_packet.PayloadSize();
   total_rtp_packets_recv_++;
-
-  if (rtp_statistics_) {
-    rtp_statistics_->UpdateReceiveBytes(last_recv_bytes_);
-  }
 
   if (io_statistics_) {
     io_statistics_->UpdateDataInboundBytes(last_recv_bytes_);

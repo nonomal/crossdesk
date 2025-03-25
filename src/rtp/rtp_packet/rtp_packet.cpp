@@ -6,6 +6,9 @@ RtpPacket::RtpPacket() {}
 
 RtpPacket::RtpPacket(size_t size) : buffer_(size) {}
 
+RtpPacket::RtpPacket(const uint8_t *buffer, uint32_t size)
+    : buffer_(buffer, size) {}
+
 RtpPacket::RtpPacket(const RtpPacket &rtp_packet) = default;
 
 RtpPacket::RtpPacket(RtpPacket &&rtp_packet) = default;
@@ -14,7 +17,7 @@ RtpPacket &RtpPacket::operator=(const RtpPacket &rtp_packet) = default;
 
 RtpPacket &RtpPacket::operator=(RtpPacket &&rtp_packet) = default;
 
-RtpPacket::~RtpPacket() {}
+RtpPacket::~RtpPacket() = default;
 
 bool RtpPacket::Build(const uint8_t *buffer, uint32_t size) {
   if (!Parse(buffer, size)) {

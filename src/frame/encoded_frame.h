@@ -14,9 +14,9 @@ class EncodedFrame : public VideoFrame {
   EncodedFrame(const uint8_t *buffer, size_t size, uint32_t width,
                uint32_t height)
       : VideoFrame(buffer, size, width, height) {}
+  EncodedFrame(const uint8_t *buffer, size_t size) : VideoFrame(buffer, size) {}
   EncodedFrame(size_t size, uint32_t width, uint32_t height)
       : VideoFrame(size, width, height) {}
-  EncodedFrame(const uint8_t *buffer, size_t size) : VideoFrame(buffer, size) {}
   EncodedFrame() = default;
   ~EncodedFrame() = default;
 

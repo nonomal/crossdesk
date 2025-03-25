@@ -68,7 +68,7 @@ Dav1dAv1Decoder::~Dav1dAv1Decoder() {
 #endif
 
   if (nv12_frame_) {
-    delete nv12_frame_;
+    delete[] nv12_frame_;
     nv12_frame_ = nullptr;
   }
 }
@@ -162,23 +162,13 @@ int Dav1dAv1Decoder::Decode(
 
   if (!nv12_frame_) {
     nv12_frame_capacity_ = nv12_frame_size_;
-    nv12_frame_ =
-        new DecodedFrame(nv12_frame_capacity_, frame_width_, frame_height_);
+    nv12_frame_ = new unsigned char[nv12_frame_capacity_];
   }
 
   if (nv12_frame_capacity_ < nv12_frame_size_) {
     nv12_frame_capacity_ = nv12_frame_size_;
-    delete nv12_frame_;
-    nv12_frame_ =
-        new DecodedFrame(nv12_frame_capacity_, frame_width_, frame_height_);
-  }
-
-  if (nv12_frame_->Size() != nv12_frame_size_ ||
-      nv12_frame_->Width() != frame_width_ ||
-      nv12_frame_->Height() != frame_height_) {
-    nv12_frame_->SetSize(nv12_frame_size_);
-    nv12_frame_->SetWidth(frame_width_);
-    nv12_frame_->SetHeight(frame_height_);
+    delete[] nv12_frame_;
+    nv12_frame_ = new unsigned char[nv12_frame_capacity_];
   }
 
   if (0) {
@@ -186,27 +176,29 @@ int Dav1dAv1Decoder::Decode(
                   (unsigned char *)dav1d_picture.data[1],
                   (unsigned char *)dav1d_picture.data[2],
                   (int)dav1d_picture.stride[0], (int)dav1d_picture.stride[1],
-                  (unsigned char *)nv12_frame_->Buffer(), frame_width_,
-                  frame_height_);
+                  nv12_frame_, frame_width_, frame_height_);
   } else {
     libyuv::I420ToNV12(
         (const uint8_t *)dav1d_picture.data[0], (int)dav1d_picture.stride[0],
         (const uint8_t *)dav1d_picture.data[1], (int)dav1d_picture.stride[1],
         (const uint8_t *)dav1d_picture.data[2], (int)dav1d_picture.stride[1],
-        (uint8_t *)nv12_frame_->Buffer(), frame_width_,
-        (uint8_t *)nv12_frame_->Buffer() + frame_width_ * frame_height_,
-        frame_width_, frame_width_, frame_height_);
+        (uint8_t *)nv12_frame_, frame_width_,
+        (uint8_t *)nv12_frame_ + frame_width_ * frame_height_, frame_width_,
+        frame_width_, frame_height_);
   }
 
-  nv12_frame_->SetReceivedTimestamp(received_frame.ReceivedTimestamp());
-  nv12_frame_->SetCapturedTimestamp(received_frame.CapturedTimestamp());
-  nv12_frame_->SetDecodedTimestamp(clock_->CurrentTime());
-  on_receive_decoded_frame(*nv12_frame_);
+  DecodedFrame decoded_frame(nv12_frame_, nv12_frame_capacity_, frame_width_,
+                             frame_height_);
+
+  decoded_frame.SetReceivedTimestamp(received_frame.ReceivedTimestamp());
+  decoded_frame.SetCapturedTimestamp(received_frame.CapturedTimestamp());
+  decoded_frame.SetDecodedTimestamp(clock_->CurrentTime());
 
 #ifdef SAVE_DECODED_NV12_STREAM
-  fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
+  fwrite((unsigned char *)decoded_frame.Buffer(), 1, decoded_frame.Size(),
          file_nv12_);
 #endif
+  on_receive_decoded_frame(decoded_frame);
 
   return 0;
 }

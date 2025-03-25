@@ -20,8 +20,13 @@
 
 class TaskQueue {
  public:
-  TaskQueue(size_t numThreads = 1)
-      : stop_(false), workers_(), taskQueue_(), mutex_(), cond_var_() {
+  TaskQueue(std::string task_name, size_t numThreads = 1)
+      : task_name_(task_name),
+        stop_(false),
+        workers_(),
+        taskQueue_(),
+        mutex_(),
+        cond_var_() {
     for (size_t i = 0; i < numThreads; i++) {
       workers_.emplace_back([this]() { this->WorkerThread(); });
     }
@@ -40,12 +45,10 @@ class TaskQueue {
     }
   }
 
-  // 立即执行任务
   void PostTask(AnyInvocable<void()> task) {
     PostDelayedTask(std::move(task), 0);
   }
 
-  // 延迟执行任务
   void PostDelayedTask(AnyInvocable<void()> task, int delay_ms) {
     auto execute_time =
         std::chrono::steady_clock::now() + std::chrono::milliseconds(delay_ms);
@@ -92,10 +95,11 @@ class TaskQueue {
             const_cast<AnyInvocable<void()> &>(taskQueue_.top().task));
         taskQueue_.pop();
       }
-      task();  // 执行任务
+      task();
     }
   }
 
+  std::string task_name_;
   std::vector<std::thread> workers_;
   std::priority_queue<TaskItem, std::vector<TaskItem>, std::greater<>>
       taskQueue_;

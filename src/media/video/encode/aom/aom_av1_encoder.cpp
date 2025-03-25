@@ -268,30 +268,29 @@ int AomAv1Encoder::Init() {
 }
 
 int AomAv1Encoder::Encode(
-    const XVideoFrame *video_frame,
-    std::function<int(std::shared_ptr<EncodedFrame> encoded_frame)>
-        on_encoded_image) {
+    const RawFrame &raw_frame,
+    std::function<int(const EncodedFrame &encoded_frame)> on_encoded_image) {
 #ifdef SAVE_RECEIVED_NV12_STREAM
-  fwrite(video_frame->data, 1, video_frame->size, file_nv12_);
+  fwrite(raw_frame.Buffer(), 1, raw_frame.Size(), file_nv12_);
 #endif
 
   aom_codec_err_t ret = AOM_CODEC_OK;
 
   if (!encoded_frame_) {
-    encoded_frame_capacity_ = video_frame->size;
+    encoded_frame_capacity_ = raw_frame.Size();
     encoded_frame_ = new uint8_t[encoded_frame_capacity_];
   }
 
-  if (encoded_frame_capacity_ < video_frame->size) {
-    encoded_frame_capacity_ = video_frame->size;
+  if (encoded_frame_capacity_ < raw_frame.Size()) {
+    encoded_frame_capacity_ = raw_frame.Size();
     delete[] encoded_frame_;
     encoded_frame_ = new uint8_t[encoded_frame_capacity_];
   }
 
-  if (video_frame->width != frame_width_ ||
-      video_frame->height != frame_height_) {
+  if (raw_frame.Width() != frame_width_ ||
+      raw_frame.Height() != frame_height_) {
     if (AOM_CODEC_OK !=
-        ResetEncodeResolution(video_frame->width, video_frame->height)) {
+        ResetEncodeResolution(raw_frame.Width(), raw_frame.Height())) {
       LOG_ERROR("Reset encode resolution failed");
       return -1;
     }
@@ -301,13 +300,14 @@ int AomAv1Encoder::Encode(
       (uint32_t)(kRtpTicksPerSecond / static_cast<float>(max_frame_rate_));
   timestamp_ += duration;
 
-  frame_for_encode_->planes[AOM_PLANE_Y] = (unsigned char *)(video_frame->data);
+  frame_for_encode_->planes[AOM_PLANE_Y] =
+      (unsigned char *)(raw_frame.Buffer());
   frame_for_encode_->planes[AOM_PLANE_U] =
-      (unsigned char *)(video_frame->data +
-                        video_frame->width * video_frame->height);
+      (unsigned char *)(raw_frame.Buffer() +
+                        raw_frame.Width() * raw_frame.Height());
   frame_for_encode_->planes[AOM_PLANE_V] = nullptr;
-  frame_for_encode_->stride[AOM_PLANE_Y] = video_frame->width;
-  frame_for_encode_->stride[AOM_PLANE_U] = video_frame->width;
+  frame_for_encode_->stride[AOM_PLANE_Y] = raw_frame.Width();
+  frame_for_encode_->stride[AOM_PLANE_U] = raw_frame.Width();
   frame_for_encode_->stride[AOM_PLANE_V] = 0;
 
   VideoFrameType frame_type;
@@ -343,15 +343,13 @@ int AomAv1Encoder::Encode(
       // LOG_INFO("Encoded frame qp = {}", qp);
 
       if (on_encoded_image) {
-        std::shared_ptr<EncodedFrame> encoded_frame =
-            std::make_shared<EncodedFrame>(encoded_frame_, encoded_frame_size_,
-                                           video_frame->width,
-                                           video_frame->height);
-        encoded_frame->SetFrameType(frame_type);
-        encoded_frame->SetEncodedWidth(video_frame->width);
-        encoded_frame->SetEncodedHeight(video_frame->height);
-        encoded_frame->SetCapturedTimestamp(video_frame->captured_timestamp);
-        encoded_frame->SetEncodedTimestamp(clock_->CurrentTime());
+        EncodedFrame encoded_frame(encoded_frame_, encoded_frame_size_,
+                                   raw_frame.Width(), raw_frame.Height());
+        encoded_frame.SetFrameType(frame_type);
+        encoded_frame.SetEncodedWidth(raw_frame.Width());
+        encoded_frame.SetEncodedHeight(raw_frame.Height());
+        encoded_frame.SetCapturedTimestamp(raw_frame.CapturedTimestamp());
+        encoded_frame.SetEncodedTimestamp(clock_->CurrentTime());
         on_encoded_image(encoded_frame);
 #ifdef SAVE_ENCODED_AV1_STREAM
         fwrite(encoded_frame_, 1, encoded_frame_size_, file_av1_);

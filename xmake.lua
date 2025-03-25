@@ -74,6 +74,7 @@ target("thread")
 
 target("frame")
     set_kind("object")
+    add_deps("common")
     add_files("src/frame/*.cpp")
     add_includedirs("src/frame", {public = true})
 
@@ -113,11 +114,9 @@ target("ws")
 target("rtp")
     set_kind("object")
     add_deps("log", "common", "frame", "ringbuffer", "thread", "rtcp", "fec", "statistics")
-    add_files("src/rtp/rtp_statistics/*.cpp", 
-    "src/rtp/rtp_packet/*.cpp",
+    add_files("src/rtp/rtp_packet/*.cpp",
     "src/rtp/rtp_packetizer/*.cpp")
-    add_includedirs("src/rtp/rtp_statistics", 
-    "src/rtp/rtp_packet",
+    add_includedirs("src/rtp/rtp_packet",
     "src/rtp/rtp_packetizer", {public = true})
 
 target("rtcp")

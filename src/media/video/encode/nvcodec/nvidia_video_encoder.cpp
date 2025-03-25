@@ -130,22 +130,21 @@ int NvidiaVideoEncoder::Init() {
 }
 
 int NvidiaVideoEncoder::Encode(
-    const XVideoFrame *video_frame,
-    std::function<int(std::shared_ptr<EncodedFrame> encoded_frame)>
-        on_encoded_image) {
+    const RawFrame &raw_frame,
+    std::function<int(const EncodedFrame &encoded_frame)> on_encoded_image) {
   if (!encoder_) {
     LOG_ERROR("Invalid encoder");
     return -1;
   }
 
 #ifdef SAVE_RECEIVED_NV12_STREAM
-  fwrite(video_frame->data, 1, video_frame->size, file_nv12_);
+  fwrite(raw_frame.Buffer(), 1, raw_frame.Size(), file_nv12_);
 #endif
 
-  if (video_frame->width != frame_width_ ||
-      video_frame->height != frame_height_) {
+  if (raw_frame.Width() != frame_width_ ||
+      raw_frame.Height() != frame_height_) {
     if (support_dynamic_resolution_) {
-      if (0 != ResetEncodeResolution(video_frame->width, video_frame->height)) {
+      if (0 != ResetEncodeResolution(raw_frame.Width(), raw_frame.Height())) {
         return -1;
       }
     }
@@ -168,7 +167,7 @@ int NvidiaVideoEncoder::Encode(
   //           encoder_->GetEncodeHeight());
   NvEncoderCuda::CopyToDeviceFrame(
       cuda_context_,
-      (void *)video_frame->data,  // NOLINT
+      (void *)raw_frame.Buffer(),  // NOLINT
       0, (CUdeviceptr)encoder_inputframe->inputPtr, encoder_inputframe->pitch,
       encoder_->GetEncodeWidth(), encoder_->GetEncodeHeight(),
       CU_MEMORYTYPE_HOST, encoder_inputframe->bufferFormat,
@@ -182,15 +181,15 @@ int NvidiaVideoEncoder::Encode(
 
   for (const auto &packet : encoded_packets_) {
     if (on_encoded_image) {
-      std::shared_ptr<EncodedFrame> encoded_frame =
-          std::make_shared<EncodedFrame>(packet.data(), packet.size(),
-                                         encoder_->GetEncodeWidth(),
-                                         encoder_->GetEncodeHeight());
-      encoded_frame->SetFrameType(frame_type);
-      encoded_frame->SetEncodedWidth(encoder_->GetEncodeWidth());
-      encoded_frame->SetEncodedHeight(encoder_->GetEncodeHeight());
-      encoded_frame->SetCapturedTimestamp(video_frame->captured_timestamp);
-      encoded_frame->SetEncodedTimestamp(clock_->CurrentTime());
+      EncodedFrame encoded_frame(packet.data(), packet.size(),
+                                 encoder_->GetEncodeWidth(),
+                                 encoder_->GetEncodeHeight());
+
+      encoded_frame.SetFrameType(frame_type);
+      encoded_frame.SetEncodedWidth(encoder_->GetEncodeWidth());
+      encoded_frame.SetEncodedHeight(encoder_->GetEncodeHeight());
+      encoded_frame.SetCapturedTimestamp(raw_frame.CapturedTimestamp());
+      encoded_frame.SetEncodedTimestamp(clock_->CurrentTime());
       on_encoded_image(encoded_frame);
 #ifdef SAVE_ENCODED_H264_STREAM
       fwrite((unsigned char *)packet.data(), 1, packet.size(), file_h264_);

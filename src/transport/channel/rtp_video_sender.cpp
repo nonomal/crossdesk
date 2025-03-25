@@ -28,10 +28,6 @@ RtpVideoSender::RtpVideoSender(std::shared_ptr<SystemClock> clock,
 }
 
 RtpVideoSender::~RtpVideoSender() {
-  if (rtp_statistics_) {
-    rtp_statistics_->Stop();
-  }
-
   SSRCManager::Instance().DeleteSsrc(ssrc_);
 
 #ifdef SAVE_RTP_SENT_STREAM
@@ -46,11 +42,6 @@ RtpVideoSender::~RtpVideoSender() {
 void RtpVideoSender::Enqueue(
     std::vector<std::unique_ptr<RtpPacket>>& rtp_packets,
     int64_t captured_timestamp_us) {
-  if (!rtp_statistics_) {
-    rtp_statistics_ = std::make_unique<RtpStatistics>();
-    rtp_statistics_->Start();
-  }
-
   std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> to_send_rtp_packets;
   for (auto& rtp_packet : rtp_packets) {
     std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet_to_send(
@@ -178,10 +169,6 @@ bool RtpVideoSender::Process() {
         SendRtpPacket(std::move(*rtp_packet_to_send));
       }
     }
-
-  if (rtp_statistics_) {
-    rtp_statistics_->UpdateSentBytes(last_send_bytes_);
-  }
 
   return true;
 }

@@ -14,9 +14,9 @@ class DecodedFrame : public VideoFrame {
   DecodedFrame(const uint8_t *buffer, size_t size, uint32_t width,
                uint32_t height)
       : VideoFrame(buffer, size, width, height) {}
+  DecodedFrame(const uint8_t *buffer, size_t size) : VideoFrame(buffer, size) {}
   DecodedFrame(size_t size, uint32_t width, uint32_t height)
       : VideoFrame(size, width, height) {}
-  DecodedFrame(const uint8_t *buffer, size_t size) : VideoFrame(buffer, size) {}
   DecodedFrame() = default;
   ~DecodedFrame() = default;
 

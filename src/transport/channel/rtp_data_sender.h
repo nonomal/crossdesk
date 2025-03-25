@@ -13,7 +13,6 @@
 #include "receiver_report.h"
 #include "ringbuffer.h"
 #include "rtp_packet.h"
-#include "rtp_statistics.h"
 #include "sender_report.h"
 #include "thread_base.h"
 
@@ -45,7 +44,6 @@ class RtpDataSender : public ThreadBase {
 
  private:
   uint32_t ssrc_ = 0;
-  std::unique_ptr<RtpStatistics> rtp_statistics_ = nullptr;
   std::shared_ptr<IOStatistics> io_statistics_ = nullptr;
   uint32_t last_send_bytes_ = 0;
   uint32_t total_rtp_payload_sent_ = 0;

@@ -15,21 +15,10 @@ RtpAudioSender::RtpAudioSender(std::shared_ptr<IOStatistics> io_statistics)
   SetThreadName("RtpAudioSender");
 }
 
-RtpAudioSender::~RtpAudioSender() {
-  if (rtp_statistics_) {
-    rtp_statistics_->Stop();
-  }
-
-  SSRCManager::Instance().DeleteSsrc(ssrc_);
-}
+RtpAudioSender::~RtpAudioSender() { SSRCManager::Instance().DeleteSsrc(ssrc_); }
 
 void RtpAudioSender::Enqueue(
     std::vector<std::unique_ptr<RtpPacket>>& rtp_packets) {
-  if (!rtp_statistics_) {
-    rtp_statistics_ = std::make_unique<RtpStatistics>();
-    rtp_statistics_->Start();
-  }
-
   for (auto& rtp_packet : rtp_packets) {
     rtp_packet_queue_.push(std::move(rtp_packet));
   }
@@ -148,10 +137,6 @@ bool RtpAudioSender::Process() {
         SendRtpPacket(std::move(*rtp_packet));
       }
     }
-
-  if (rtp_statistics_) {
-    rtp_statistics_->UpdateSentBytes(last_send_bytes_);
-  }
 
   return true;
 }
