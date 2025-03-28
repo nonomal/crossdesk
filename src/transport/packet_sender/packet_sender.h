@@ -19,13 +19,15 @@ class PacketSender {
   virtual ~PacketSender() {}
 
   virtual int Send() = 0;
-  virtual int EnqueueRtpPacket(
+  virtual int EnqueueRtpPackets(
       std::vector<std::unique_ptr<RtpPacket>>& rtp_packets,
       int64_t captured_timestamp_us) = 0;
 
-  virtual int EnqueueRtpPacket(
+  virtual int EnqueueRtpPackets(
       std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>& rtp_packets) = 0;
-  ;
+
+  virtual int EnqueueRtpPacket(
+      std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet) = 0;
 };
 
 #endif

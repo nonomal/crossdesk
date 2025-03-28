@@ -20,7 +20,7 @@
 
 class IceTransport {
  public:
-  typedef enum { VIDEO = 96, AUDIO = 97, DATA = 127 } DATA_TYPE;
+  typedef enum { VIDEO = 96, AUDIO = 97, DATA = 120 } DATA_TYPE;
   typedef enum { H264 = 96, AV1 = 99 } VIDEO_TYPE;
   enum VideoFrameType {
     kEmptyFrame = 0,

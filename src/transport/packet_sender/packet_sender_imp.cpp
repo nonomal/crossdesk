@@ -95,6 +95,20 @@ void PacketSenderImp::EnqueuePackets(
   });
 }
 
+void PacketSenderImp::EnqueuePacket(
+    std::unique_ptr<webrtc::RtpPacketToSend> packet) {
+  task_queue_->PostTask([this, packet = std::move(packet)]() mutable {
+    size_t packet_size = packet->payload_size() + packet->padding_size();
+    if (include_overhead_) {
+      packet_size += packet->headers_size();
+    }
+    packet_size_.Apply(1, packet_size);
+    pacing_controller_.EnqueuePacket(std::move(packet));
+
+    MaybeProcessPackets(webrtc::Timestamp::MinusInfinity());
+  });
+}
+
 void PacketSenderImp::RemovePacketsForSsrc(uint32_t ssrc) {
   task_queue_->PostTask([this, ssrc] {
     pacing_controller_.RemovePacketsForSsrc(ssrc);
@@ -164,7 +178,6 @@ void PacketSenderImp::MaybeScheduleProcessPackets() {
 void PacketSenderImp::MaybeProcessPackets(
     webrtc::Timestamp scheduled_process_time) {
   if (is_shutdown_ || !is_started_) {
-    LOG_ERROR("shutdown {}, started {}", is_shutdown_, is_started_);
     return;
   }
 
@@ -251,7 +264,7 @@ PacketSenderImp::Stats PacketSenderImp::GetStats() const {
 
 /*----------------------------------------------------------------------------*/
 
-int PacketSenderImp::EnqueueRtpPacket(
+int PacketSenderImp::EnqueueRtpPackets(
     std::vector<std::unique_ptr<RtpPacket>> &rtp_packets,
     int64_t captured_timestamp_us) {
   std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> to_send_rtp_packets;
@@ -293,8 +306,14 @@ int PacketSenderImp::EnqueueRtpPacket(
   return 0;
 }
 
-int PacketSenderImp::EnqueueRtpPacket(
+int PacketSenderImp::EnqueueRtpPackets(
     std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> &rtp_packets) {
   EnqueuePackets(std::move(rtp_packets));
+  return 0;
+}
+
+int PacketSenderImp::EnqueueRtpPacket(
+    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet) {
+  EnqueuePacket(std::move(rtp_packet));
   return 0;
 }

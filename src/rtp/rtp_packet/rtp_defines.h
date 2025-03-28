@@ -22,7 +22,8 @@ typedef enum {
   H264_FEC_REPAIR = 98,
   AV1 = 99,
   OPUS = 111,
-  DATA = 127
+  RTX = 127,
+  DATA = 120
 } PAYLOAD_TYPE;
 
 typedef struct {

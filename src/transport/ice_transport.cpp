@@ -206,7 +206,8 @@ void IceTransport::OnReceiveBuffer(NiceAgent *agent, guint stream_id,
       RtcpPacketInfo rtcp_packet_info;
       ParseRtcpPacket((const uint8_t *)buffer, size, &rtcp_packet_info);
     } else {
-      LOG_ERROR("Unknown packet");
+      uint8_t payload_type = buffer[1] & 0x7F;
+      LOG_ERROR("Unknown packet [{} {}]", payload_type, size);
     }
   }
 }
@@ -519,7 +520,7 @@ int IceTransport::AppendLocalCapabilitiesToOffer(
   std::string to_replace = "ICE/SDP";
   std::string video_capabilities = "UDP/TLS/RTP/SAVPF ";
   std::string audio_capabilities = "UDP/TLS/RTP/SAVPF 111";
-  std::string data_capabilities = "UDP/TLS/RTP/SAVPF 127";
+  std::string data_capabilities = "UDP/TLS/RTP/SAVPF 120";
 
   switch (video_codec_payload_type_) {
     case rtp::PAYLOAD_TYPE::H264: {
@@ -919,11 +920,15 @@ uint8_t IceTransport::CheckIsRtpPacket(const char *buffer, size_t size) {
   }
 
   uint8_t payload_type = buffer[1] & 0x7F;
-  if (payload_type == 96 || payload_type == 99 || payload_type == 111 ||
-      payload_type == 127) {
+  if (payload_type == rtp::PAYLOAD_TYPE::H264 ||
+      payload_type == rtp::PAYLOAD_TYPE::AV1 ||
+      payload_type == rtp::PAYLOAD_TYPE::OPUS ||
+      payload_type == rtp::PAYLOAD_TYPE::RTX ||
+      payload_type == rtp::PAYLOAD_TYPE::DATA) {
     return payload_type;
-  } else if (payload_type == 95 || payload_type == 98 || payload_type == 110 ||
-             payload_type == 126) {
+  } else if (payload_type == rtp::PAYLOAD_TYPE::H264 - 1 ||
+             payload_type == rtp::PAYLOAD_TYPE::AV1 - 1 ||
+             payload_type == rtp::PAYLOAD_TYPE::OPUS - 1) {
     return payload_type;
   } else {
     return 0;
@@ -960,7 +965,8 @@ uint8_t IceTransport::CheckIsVideoPacket(const char *buffer, size_t size) {
       (rtp::PAYLOAD_TYPE::H264_FEC_SOURCE - 1) == pt ||
       rtp::PAYLOAD_TYPE::H264_FEC_REPAIR == pt ||
       (rtp::PAYLOAD_TYPE::H264_FEC_REPAIR - 1) == pt ||
-      rtp::PAYLOAD_TYPE::AV1 == pt || (rtp::PAYLOAD_TYPE::AV1 - 1) == pt) {
+      rtp::PAYLOAD_TYPE::AV1 == pt || (rtp::PAYLOAD_TYPE::AV1 - 1) == pt ||
+      rtp::PAYLOAD_TYPE::RTX == pt) {
     return pt;
   } else {
     return 0;

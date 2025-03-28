@@ -1,5 +1,6 @@
 #include "video_channel_send.h"
 
+#include "common.h"
 #include "log.h"
 #include "rtc_base/network/sent_packet.h"
 
@@ -13,6 +14,8 @@ VideoChannelSend::VideoChannelSend(
         on_sent_packet_func)
     : ice_agent_(ice_agent),
       packet_sender_(packet_sender),
+      ssrc_(GenerateUniqueSsrc()),
+      rtx_ssrc_(GenerateUniqueSsrc()),
       ice_io_statistics_(ice_io_statistics),
       on_sent_packet_func_(on_sent_packet_func),
       delta_ntp_internal_ms_(clock->CurrentNtpInMilliseconds() -
@@ -38,40 +41,7 @@ VideoChannelSend::~VideoChannelSend() {
 }
 
 void VideoChannelSend::Initialize(rtp::PAYLOAD_TYPE payload_type) {
-  rtp_video_sender_ =
-      std::make_unique<RtpVideoSender>(clock_, ice_io_statistics_);
-  rtp_packetizer_ =
-      RtpPacketizer::Create(payload_type, rtp_video_sender_->GetSsrc());
-  rtp_video_sender_->SetSendDataFunc(
-      [this](const char* data, size_t size) -> int {
-        if (!ice_agent_) {
-          LOG_ERROR("ice_agent_ is nullptr");
-          return -1;
-        }
-
-        auto ice_state = ice_agent_->GetIceState();
-
-        if (ICE_STATE_DESTROYED == ice_state) {
-          return -2;
-        }
-
-        ice_io_statistics_->UpdateVideoOutboundBytes((uint32_t)size);
-
-        return ice_agent_->Send(data, size);
-      });
-
-  rtp_video_sender_->SetOnSentPacketFunc(
-      [this](const webrtc::RtpPacketToSend& packet) -> void {
-        on_sent_packet_func_(packet);
-      });
-
-  rtp_video_sender_->Start();
-}
-
-void VideoChannelSend::SetEnqueuePacketsFunc(
-    std::function<void(std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>&)>
-        enqueue_packets_func) {
-  rtp_video_sender_->SetEnqueuePacketsFunc(enqueue_packets_func);
+  rtp_packetizer_ = RtpPacketizer::Create(payload_type, ssrc_);
 }
 
 void VideoChannelSend::OnSentRtpPacket(
@@ -116,14 +86,10 @@ std::vector<std::unique_ptr<RtpPacket>> VideoChannelSend::GeneratePadding(
   return std::vector<std::unique_ptr<RtpPacket>>{};
 }
 
-void VideoChannelSend::Destroy() {
-  if (rtp_video_sender_) {
-    rtp_video_sender_->Stop();
-  }
-}
+void VideoChannelSend::Destroy() {}
 
 int VideoChannelSend::SendVideo(const EncodedFrame& encoded_frame) {
-  if (rtp_video_sender_ && rtp_packetizer_ && packet_sender_) {
+  if (rtp_packetizer_ && packet_sender_) {
     int32_t rtp_timestamp =
         delta_ntp_internal_ms_ +
         static_cast<uint32_t>(encoded_frame.CapturedTimestamp() / 1000);
@@ -137,7 +103,7 @@ int VideoChannelSend::SendVideo(const EncodedFrame& encoded_frame) {
            file_rtp_sent_);
 #endif
 
-    packet_sender_->EnqueueRtpPacket(std::move(rtp_packets), rtp_timestamp);
+    packet_sender_->EnqueueRtpPackets(std::move(rtp_packets), rtp_timestamp);
   }
 
   return 0;
@@ -176,13 +142,13 @@ int32_t VideoChannelSend::ReSendPacket(uint16_t packet_id) {
     return -1;
   }
 
+  packet->SetSsrc(rtx_ssrc_);
+  packet->SetPayloadType(rtp::PAYLOAD_TYPE::RTX);
   packet->set_packet_type(webrtc::RtpPacketMediaType::kRetransmission);
   packet->set_fec_protect_packet(false);
-  std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> packets;
-  packets.emplace_back(std::move(packet));
 
   if (packet_sender_) {
-    packet_sender_->EnqueueRtpPacket(std::move(packets));
+    packet_sender_->EnqueueRtpPacket(std::move(packet));
   }
 
   return packet_size;

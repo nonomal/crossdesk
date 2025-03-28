@@ -38,11 +38,14 @@ class PacketSenderImp : public PacketSender,
  public:
   int Send() override { return 0; }
 
-  int EnqueueRtpPacket(std::vector<std::unique_ptr<RtpPacket>>& rtp_packets,
-                       int64_t captured_timestamp_us) override;
+  int EnqueueRtpPackets(std::vector<std::unique_ptr<RtpPacket>>& rtp_packets,
+                        int64_t captured_timestamp_us) override;
 
-  int EnqueueRtpPacket(std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>&
-                           rtp_packets) override;
+  int EnqueueRtpPackets(std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>&
+                            rtp_packets) override;
+
+  int EnqueueRtpPacket(
+      std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet) override;
 
  public:
   void SetOnSentPacketFunc(
@@ -109,6 +112,7 @@ class PacketSenderImp : public PacketSender,
   // PacingController::PacketSenderImp::SendPacket() when it's time to send.
   void EnqueuePackets(
       std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> packets);
+  void EnqueuePacket(std::unique_ptr<webrtc::RtpPacketToSend> packet);
   // Remove any pending packets matching this SSRC from the packet queue.
   void RemovePacketsForSsrc(uint32_t ssrc);
 

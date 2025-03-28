@@ -123,13 +123,6 @@ void IceTransportController::Create(
 
   if (video_channel_send_) {
     video_channel_send_->Initialize(video_codec_payload_type);
-    video_channel_send_->SetEnqueuePacketsFunc(
-        [this](std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>& packets)
-            -> void {
-          if (packet_sender_) {
-            packet_sender_->EnqueuePackets(std::move(packets));
-          }
-        });
   }
 
   if (audio_channel_send_) {
