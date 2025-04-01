@@ -224,10 +224,7 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
         size_t osn_offset = rtp_packet.HeaderSize();
         uint16_t osn = rtp_packet.Buffer().data()[osn_offset] << 8 |
                        rtp_packet.Buffer().data()[osn_offset + 1];
-        uint32_t abs_send_time = 0;
-        LOG_WARN("!!!!!!!!!!! osn = {}, abs {}", osn,
-                 rtp_packet.GetAbsoluteSendTimestamp(&abs_send_time));
-        nack_->OnReceivedPacket(rtp_packet.SequenceNumber(), true);
+        nack_->OnReceivedPacket(osn, true);
       } else {
         nack_->OnReceivedPacket(rtp_packet.SequenceNumber(), false);
       }

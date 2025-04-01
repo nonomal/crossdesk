@@ -49,9 +49,6 @@ void VideoChannelSend::OnSentRtpPacket(
   if (packet->retransmitted_sequence_number()) {
     rtp_packet_history_.MarkPacketAsSent(
         *packet->retransmitted_sequence_number());
-    LOG_WARN("resend seq {}, original seq {} mark as sent",
-             packet->SequenceNumber(),
-             packet->retransmitted_sequence_number().value());
   } else if (packet->PayloadType() != rtp::PAYLOAD_TYPE::H264 - 1) {
     rtp_packet_history_.PutRtpPacket(std::move(packet), clock_->CurrentTime());
   }
@@ -132,9 +129,6 @@ int32_t VideoChannelSend::ReSendPacket(uint16_t packet_id) {
 
             retransmit_packet->set_retransmitted_sequence_number(
                 stored_packet.SequenceNumber());
-            LOG_WARN(
-                "???????????? resend seq {}",
-                retransmit_packet->retransmitted_sequence_number().value());
             retransmit_packet->set_original_ssrc(stored_packet.Ssrc());
             retransmit_packet->BuildRtxPacket();
 

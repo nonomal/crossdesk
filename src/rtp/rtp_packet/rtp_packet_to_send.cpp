@@ -111,8 +111,6 @@ bool RtpPacketToSend::BuildRtxPacket() {
   if (has_extension) {
     std::vector<Extension> extensions = Extensions();
     AddAbsSendTimeExtension(rtp_packet_frame_);
-    uint32_t abs_send_time = 0;
-    LOG_WARN("abs {}", GetAbsoluteSendTimestamp(&abs_send_time));
   }
 
   rtp_packet_frame_.push_back((retransmitted_sequence_number_.value() >> 8) &

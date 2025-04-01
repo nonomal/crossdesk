@@ -283,7 +283,8 @@ std::optional<PacketFeedback> TransportFeedbackAdapter::RetrievePacketFeedback(
   auto it = history_.find(transport_seq_num);
   if (it == history_.end()) {
     LOG_WARN(
-        "Failed to lookup send time for packet with {}. Send time history too "
+        "Failed to lookup send time for packet with transport_seq_num {}. Send "
+        "time history too "
         "small?",
         transport_seq_num);
     return std::nullopt;
