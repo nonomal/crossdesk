@@ -77,9 +77,7 @@ bool RtpPacketToSend::BuildRtxPacket() {
   uint32_t ssrc = Ssrc();
   std::vector<uint32_t> csrcs = Csrcs();
 
-  uint32_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
-                           std::chrono::system_clock::now().time_since_epoch())
-                           .count();
+  uint32_t timestamp = Timestamp();
 
   if (!csrc_count) {
   }

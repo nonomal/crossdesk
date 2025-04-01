@@ -23,7 +23,10 @@ class RtpPacketH264 : public RtpPacket {
   bool FuAStart() { return fu_header_.start; }
   bool FuAEnd() { return fu_header_.end; }
 
+  uint16_t GetOsn() { return osn_; }
+
  private:
+  uint16_t osn_;
   rtp::FU_INDICATOR fu_indicator_;
   rtp::FU_HEADER fu_header_;
   bool fu_info_got_ = false;

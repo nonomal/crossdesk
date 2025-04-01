@@ -102,7 +102,6 @@ int VideoChannelSend::SendVideo(const EncodedFrame& encoded_frame) {
     fwrite((unsigned char*)encoded_frame.Buffer(), 1, encoded_frame.Size(),
            file_rtp_sent_);
 #endif
-
     packet_sender_->EnqueueRtpPackets(std::move(rtp_packets), rtp_timestamp);
   }
 

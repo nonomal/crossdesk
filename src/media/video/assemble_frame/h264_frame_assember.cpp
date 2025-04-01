@@ -109,6 +109,7 @@ std::vector<std::unique_ptr<RtpPacketH264>> H264FrameAssembler::FindFrames(
 
           for (int64_t seq = seq_num_start; seq <= seq_num; ++seq) {
             auto& packet = GetPacketFromBuffer(seq);
+            LOG_INFO("2 seq:{}", seq);
             result.push_back(std::move(packet));
           }
           break;

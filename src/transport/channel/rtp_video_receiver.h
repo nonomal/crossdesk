@@ -58,7 +58,9 @@ class RtpVideoReceiver : public ThreadBase,
   bool CheckIsAv1FrameCompleted(RtpPacketAv1& rtp_packet_av1);
 
  private:
-  bool ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264);
+  void ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264);
+  bool CheckIsH264FrameCompleted(RtpPacketH264& rtp_packet_h264, bool is_start,
+                                 bool is_end, bool is_rtx);
   bool CheckIsH264FrameCompletedFuaEndReceived(RtpPacketH264& rtp_packet_h264);
   bool CheckIsH264FrameCompletedMissSeqReceived(RtpPacketH264& rtp_packet_h264);
   bool PopCompleteFrame(uint16_t start_seq, uint16_t end_seq,
@@ -125,6 +127,7 @@ class RtpVideoReceiver : public ThreadBase,
   std::unordered_map<uint64_t, std::unordered_set<uint16_t>>
       missing_sequence_numbers_;
   std::unordered_map<uint64_t, uint16_t> fua_end_sequence_numbers_;
+  std::unordered_map<uint64_t, uint16_t> fua_start_sequence_numbers_;
   std::unordered_map<uint64_t, int64_t> missing_sequence_numbers_wait_time_;
   H264FrameAssembler h264_frame_assembler_;
 
