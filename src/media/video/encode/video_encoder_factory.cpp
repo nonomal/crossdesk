@@ -6,7 +6,6 @@
 #else
 #include "aom/aom_av1_encoder.h"
 #include "nvcodec/nvidia_video_encoder.h"
-#include "nvcodec_api.h"
 #include "openh264/openh264_encoder.h"
 #endif
 
@@ -49,7 +48,7 @@ bool VideoEncoderFactory::CheckIsHardwareAccerlerationSupported() {
   CUresult cuResult;
   NV_ENCODE_API_FUNCTION_LIST functionList = {NV_ENCODE_API_FUNCTION_LIST_VER};
 
-  cuResult = cuInit_ld(0);
+  cuResult = cuInit(0);
   if (cuResult != CUDA_SUCCESS) {
     LOG_WARN(
         "System not support hardware accelerated encode, use default software "
@@ -57,7 +56,7 @@ bool VideoEncoderFactory::CheckIsHardwareAccerlerationSupported() {
     return false;
   }
 
-  NVENCSTATUS nvEncStatus = NvEncodeAPICreateInstance_ld(&functionList);
+  NVENCSTATUS nvEncStatus = NvEncodeAPICreateInstance(&functionList);
   if (nvEncStatus != NV_ENC_SUCCESS) {
     LOG_WARN(
         "System not support hardware accelerated encode, use default software "

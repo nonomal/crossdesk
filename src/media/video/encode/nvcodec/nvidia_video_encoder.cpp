@@ -3,7 +3,6 @@
 #include <chrono>
 
 #include "log.h"
-#include "nvcodec_api.h"
 #include "nvcodec_common.h"
 
 // #define SAVE_RECEIVED_NV12_STREAM
@@ -35,6 +34,11 @@ NvidiaVideoEncoder::~NvidiaVideoEncoder() {
 
   if (encoder_) {
     encoder_->DestroyEncoder();
+  }
+
+  if (cuda_context_) {
+    cuCtxDestroy(cuda_context_);
+    cuda_context_ = nullptr;
   }
 }
 

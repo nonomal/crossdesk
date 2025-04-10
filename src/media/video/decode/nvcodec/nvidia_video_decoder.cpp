@@ -1,7 +1,6 @@
 #include "nvidia_video_decoder.h"
 
 #include "log.h"
-#include "nvcodec_api.h"
 
 // #define SAVE_DECODED_NV12_STREAM
 // #define SAVE_RECEIVED_H264_STREAM
@@ -24,29 +23,33 @@ NvidiaVideoDecoder::~NvidiaVideoDecoder() {
     file_h264_ = nullptr;
   }
 #endif
+
+  if (cuda_context_) {
+    cuCtxDestroy(cuda_context_);
+    cuda_context_ = nullptr;
+  }
 }
 
 int NvidiaVideoDecoder::Init() {
-  ck(cuInit_ld(0));
+  ck(cuInit(0));
   int nGpu = 0;
   int iGpu = 0;
 
-  ck(cuDeviceGetCount_ld(&nGpu));
+  ck(cuDeviceGetCount(&nGpu));
   if (nGpu < 1) {
     return -1;
   }
 
-  CUdevice cuDevice;
-  cuDeviceGet_ld(&cuDevice, iGpu);
+  cuDeviceGet(&cuda_device_, iGpu);
 
-  CUcontext cuContext = NULL;
-  cuCtxCreate_ld(&cuContext, 0, cuDevice);
-  if (!cuContext) {
+  cuCtxCreate(&cuda_context_, 0, cuda_device_);
+  if (!cuda_context_) {
     return -1;
   }
 
-  decoder = new NvDecoder(cuContext, false, cudaVideoCodec_H264, true, false,
-                          nullptr, nullptr, false, 4096, 2160, 1000, false);
+  decoder =
+      new NvDecoder(cuda_context_, false, cudaVideoCodec_H264, true, false,
+                    nullptr, nullptr, false, 4096, 2160, 1000, false);
 
 #ifdef SAVE_DECODED_NV12_STREAM
   file_nv12_ = fopen("decoded_nv12_stream.yuv", "w+b");

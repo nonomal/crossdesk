@@ -7,7 +7,6 @@
 #if __APPLE__
 #else
 #include "nvcodec/nvidia_video_decoder.h"
-#include "nvcodec_api.h"
 #endif
 
 #include "log.h"
@@ -49,7 +48,7 @@ bool VideoDecoderFactory::CheckIsHardwareAccerlerationSupported() {
 #else
   CUresult cuResult;
   CUvideoctxlock cudaCtxLock;
-  cuResult = cuvidCtxLockCreate_ld(&cudaCtxLock, 0);
+  cuResult = cuvidCtxLockCreate(&cudaCtxLock, 0);
   if (cuResult != CUDA_SUCCESS) {
     LOG_WARN(
         "System not support hardware accelerated decode, use default software "
