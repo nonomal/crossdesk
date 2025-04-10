@@ -56,12 +56,12 @@ int Render::ShowRecentConnections() {
                         ImGuiWindowFlags_NoScrollWithMouse);
   ImGui::PopStyleVar();
   ImGui::PopStyleColor();
-  size_t recent_connections_count = recent_connection_textures_.size();
+  size_t recent_connections_count = recent_connections_.size();
   int count = 0;
   float button_width = 22;
   float button_height = 22;
-  for (auto it = recent_connection_textures_.begin();
-       it != recent_connection_textures_.end(); ++it) {
+  for (auto it = recent_connections_.begin(); it != recent_connections_.end();
+       ++it) {
     sub_containers_pos[it->first] = ImGui::GetCursorPos();
     std::string recent_connection_sub_window_name =
         "RecentConnectionsSubContainer" + it->first;
@@ -77,23 +77,23 @@ int Render::ShowRecentConnections() {
                           ImGuiWindowFlags_NoBringToFrontOnFocus |
                           ImGuiWindowFlags_NoScrollbar);
     std::string connection_info = it->first;
-    std::string remote_id;
-    std::string password;
-    std::string host_name;
 
     // remote id length is 9
     // password length is 6
     // connection_info -> remote_id + 'Y' + password + host_name
     //                 -> remote_id + 'N' + host_name
     if ('Y' == connection_info[9] && connection_info.size() >= 16) {
-      remote_id = connection_info.substr(0, 9);
-      password = connection_info.substr(10, 6);
-      host_name = connection_info.substr(16);
+      it->second.remote_id = connection_info.substr(0, 9);
+      it->second.password = connection_info.substr(10, 6);
+      it->second.remote_host_name = connection_info.substr(16);
+      it->second.remember_password = true;
     } else if ('N' == connection_info[9] && connection_info.size() >= 10) {
-      remote_id = connection_info.substr(0, 9);
-      host_name = connection_info.substr(10);
+      it->second.remote_id = connection_info.substr(0, 9);
+      it->second.remote_host_name = connection_info.substr(10);
+      it->second.password = "";
+      it->second.remember_password = false;
     } else {
-      host_name = "unknown";
+      it->second.remote_host_name = "unknown";
     }
 
     ImVec2 image_screen_pos = ImVec2(ImGui::GetCursorScreenPos().x + 5.0f,
@@ -101,7 +101,7 @@ int Render::ShowRecentConnections() {
     ImVec2 image_pos =
         ImVec2(ImGui::GetCursorPosX() + 5.0f, ImGui::GetCursorPosY() + 5.0f);
     ImGui::SetCursorPos(image_pos);
-    ImGui::Image((ImTextureID)(intptr_t)it->second,
+    ImGui::Image((ImTextureID)(intptr_t)it->second.texture,
                  ImVec2((float)recent_connection_image_width_,
                         (float)recent_connection_image_height_));
 
@@ -113,7 +113,7 @@ int Render::ShowRecentConnections() {
 
       ImVec2 dummy_button_pos =
           ImVec2(image_pos.x, image_pos.y + recent_connection_image_height_);
-      std::string dummy_button_name = "##DummyButton" + remote_id;
+      std::string dummy_button_name = "##DummyButton" + it->second.remote_id;
       ImGui::SetCursorPos(dummy_button_pos);
       ImGui::SetWindowFontScale(0.6f);
       ImGui::Button(dummy_button_name.c_str(),
@@ -123,14 +123,14 @@ int Render::ShowRecentConnections() {
       ImGui::SetCursorPos(
           ImVec2(dummy_button_pos.x + 2.0f, dummy_button_pos.y + 1.0f));
       ImGui::SetWindowFontScale(0.65f);
-      ImGui::Text("%s", remote_id.c_str());
+      ImGui::Text("%s", it->second.remote_id.c_str());
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PopStyleColor(3);
 
       if (ImGui::IsItemHovered()) {
         ImGui::BeginTooltip();
         ImGui::SetWindowFontScale(0.5f);
-        ImGui::Text("%s", host_name.c_str());
+        ImGui::Text("%s", it->second.remote_host_name.c_str());
         ImGui::SetWindowFontScale(1.0f);
         ImGui::EndTooltip();
       }
@@ -176,15 +176,8 @@ int Render::ShowRecentConnections() {
           connect + "##ConnectionTo" + it->first;
       if (ImGui::Button(connect_to_this_connection_button_name.c_str(),
                         ImVec2(button_width, button_height))) {
-        remote_id_ = remote_id;
-
-        bool remember_password_flag = false;
-        if (!password.empty() && password.size() == 6) {
-          remember_password_flag = true;
-          memcpy(remote_password_, password.c_str(), 6);
-        }
-
-        ConnectTo(remote_id, remote_password_, remember_password_flag);
+        ConnectTo(it->second.remote_id, it->second.password.c_str(),
+                  it->second.remember_password);
       }
     }
     ImGui::SetWindowFontScale(1.0f);

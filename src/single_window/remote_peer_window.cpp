@@ -68,21 +68,44 @@ int Render::RemoteWindow() {
 
       ImGui::PopStyleVar();
       ImGui::SameLine();
+
+      std::string remote_id = remote_id_display_;
+      remote_id.erase(remove_if(remote_id.begin(), remote_id.end(),
+                                static_cast<int (*)(int)>(&isspace)),
+                      remote_id.end());
       if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG, ImVec2(55, 38)) ||
           enter_pressed) {
         connect_button_pressed_ = true;
-        remote_id_ = remote_id_display_;
-        remote_id_.erase(remove_if(remote_id_.begin(), remote_id_.end(),
-                                   static_cast<int (*)(int)>(&isspace)),
-                         remote_id_.end());
-        ConnectTo(remote_id_, remote_password_, false);
+        bool found = false;
+        for (auto &[id, props] : recent_connections_) {
+          if (id.find(remote_id) != std::string::npos) {
+            found = true;
+            if (client_properties_.find(remote_id) !=
+                client_properties_.end()) {
+              if (!client_properties_[remote_id]->connection_established_) {
+                ConnectTo(props.remote_id, props.password.c_str(), false);
+              } else {
+                // todo: show warning message
+                LOG_INFO("Already connected to [{}]", remote_id);
+              }
+            } else {
+              ConnectTo(props.remote_id, props.password.c_str(), false);
+            }
+          }
+        }
+
+        if (!found) {
+          ConnectTo(remote_id, "", false);
+        }
       }
 
-      if (client_properties_.find(remote_id_) != client_properties_.end()) {
-        auto props = client_properties_[remote_id_];
-        if (props->rejoin_) {
-          ConnectTo(remote_id_, remote_password_,
-                    client_properties_[remote_id_]->remember_password_);
+      if (need_to_rejoin_) {
+        need_to_rejoin_ = false;
+        for (const auto &[_, props] : client_properties_) {
+          if (props->rejoin_) {
+            ConnectTo(props->remote_id_, props->remote_password_,
+                      props->remember_password_);
+          }
         }
       }
     }
@@ -133,13 +156,14 @@ int Render::ConnectTo(const std::string &remote_id, const char *password,
   int ret = -1;
   auto props = client_properties_[remote_id];
   if (!props->connection_established_) {
+    props->remember_password_ = remember_password;
+    memcpy(props->remote_password_, password, 6);
     ret = JoinConnection(props->peer_, remote_id.c_str(), password);
     if (0 == ret) {
       props->rejoin_ = false;
-      props->remember_password_ = remember_password;
-      memcpy(props->remote_password_, password, 6);
     } else {
       props->rejoin_ = true;
+      need_to_rejoin_ = true;
     }
   }
 

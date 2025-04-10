@@ -23,6 +23,65 @@
 
 static std::string test;
 
+bool LoadTextureFromMemory(const void* data, size_t data_size,
+                           SDL_Renderer* renderer, SDL_Texture** out_texture,
+                           int* out_width, int* out_height) {
+  int image_width = 0;
+  int image_height = 0;
+  int channels = 4;
+  unsigned char* image_data =
+      stbi_load_from_memory((const unsigned char*)data, (int)data_size,
+                            &image_width, &image_height, NULL, 4);
+  if (image_data == nullptr) {
+    LOG_ERROR("Failed to load image: [{}]", stbi_failure_reason());
+    return false;
+  }
+
+  // ABGR
+  SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
+      (void*)image_data, image_width, image_height, channels * 8,
+      channels * image_width, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+  if (surface == nullptr) {
+    LOG_ERROR("Failed to create SDL surface: [{}]", SDL_GetError());
+    return false;
+  }
+
+  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+  if (texture == nullptr) {
+    LOG_ERROR("Failed to create SDL texture: [{}]", SDL_GetError());
+  }
+
+  *out_texture = texture;
+  *out_width = image_width;
+  *out_height = image_height;
+
+  SDL_FreeSurface(surface);
+  stbi_image_free(image_data);
+
+  return true;
+}
+
+bool LoadTextureFromFile(const char* file_name, SDL_Renderer* renderer,
+                         SDL_Texture** out_texture, int* out_width,
+                         int* out_height) {
+  std::filesystem::path file_path(file_name);
+  if (!std::filesystem::exists(file_path)) return false;
+  std::ifstream file(file_path, std::ios::binary);
+  if (!file) return false;
+  file.seekg(0, std::ios::end);
+  size_t file_size = file.tellg();
+  file.seekg(0, std::ios::beg);
+  if (file_size == -1) return false;
+  char* file_data = new char[file_size];
+  if (!file_data) return false;
+  file.read(file_data, file_size);
+  bool ret = LoadTextureFromMemory(file_data, file_size, renderer, out_texture,
+                                   out_width, out_height);
+  delete[] file_data;
+
+  return ret;
+}
+
 void ScaleYUV420pToABGR(char* dst_buffer_, int video_width_, int video_height_,
                         int scaled_video_width_, int scaled_video_height_,
                         char* rgba_buffer_) {
@@ -87,7 +146,7 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
 
     std::string image_name;
     if (password.empty()) {
-      image_name = remote_id + 'N' + host_name;
+      return 0;
     } else {
       // delete the file which has no password in its name
       std::string filename_without_password = remote_id + "N" + host_name;
@@ -104,63 +163,49 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
   return 0;
 }
 
-bool LoadTextureFromMemory(const void* data, size_t data_size,
-                           SDL_Renderer* renderer, SDL_Texture** out_texture,
-                           int* out_width, int* out_height) {
-  int image_width = 0;
-  int image_height = 0;
-  int channels = 4;
-  unsigned char* image_data =
-      stbi_load_from_memory((const unsigned char*)data, (int)data_size,
-                            &image_width, &image_height, NULL, 4);
-  if (image_data == nullptr) {
-    LOG_ERROR("Failed to load image: [{}]", stbi_failure_reason());
-    return false;
+int Thumbnail::LoadThumbnail(
+    SDL_Renderer* renderer,
+    std::map<std::string, RecentConnection>& recent_connections, int* width,
+    int* height) {
+  for (auto& it : recent_connections) {
+    if (it.second.texture != nullptr) {
+      SDL_DestroyTexture(it.second.texture);
+      it.second.texture = nullptr;
+    }
   }
+  recent_connections.clear();
 
-  // ABGR
-  SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
-      (void*)image_data, image_width, image_height, channels * 8,
-      channels * image_width, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
-  if (surface == nullptr) {
-    LOG_ERROR("Failed to create SDL surface: [{}]", SDL_GetError());
-    return false;
+  std::vector<std::filesystem::path> image_paths =
+      FindThumbnailPath(image_path_);
+
+  if (image_paths.size() == 0) {
+    return -1;
+  } else {
+    for (int i = 0; i < image_paths.size(); i++) {
+      size_t pos1 = image_paths[i].string().find('/') + 1;
+      std::string cipher_image_name = image_paths[i].string().substr(pos1);
+      std::string original_image_name =
+          AES_decrypt(cipher_image_name, aes128_key_, aes128_iv_);
+      std::string image_path = image_path_ + cipher_image_name;
+      recent_connections[original_image_name].texture = nullptr;
+      LoadTextureFromFile(image_path.c_str(), renderer,
+                          &(recent_connections[original_image_name].texture),
+                          width, height);
+    }
+    return 0;
   }
-
-  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-  if (texture == nullptr) {
-    LOG_ERROR("Failed to create SDL texture: [{}]", SDL_GetError());
-  }
-
-  *out_texture = texture;
-  *out_width = image_width;
-  *out_height = image_height;
-
-  SDL_FreeSurface(surface);
-  stbi_image_free(image_data);
-
-  return true;
+  return 0;
 }
 
-bool LoadTextureFromFile(const char* file_name, SDL_Renderer* renderer,
-                         SDL_Texture** out_texture, int* out_width,
-                         int* out_height) {
-  std::filesystem::path file_path(file_name);
-  if (!std::filesystem::exists(file_path)) return false;
-  std::ifstream file(file_path, std::ios::binary);
-  if (!file) return false;
-  file.seekg(0, std::ios::end);
-  size_t file_size = file.tellg();
-  file.seekg(0, std::ios::beg);
-  if (file_size == -1) return false;
-  char* file_data = new char[file_size];
-  if (!file_data) return false;
-  file.read(file_data, file_size);
-  bool ret = LoadTextureFromMemory(file_data, file_size, renderer, out_texture,
-                                   out_width, out_height);
-  delete[] file_data;
-
-  return ret;
+int Thumbnail::DeleteThumbnail(const std::string& file_name) {
+  std::string ciphertext = AES_encrypt(file_name, aes128_key_, aes128_iv_);
+  std::string file_path = image_path_ + ciphertext;
+  if (std::filesystem::exists(file_path)) {
+    std::filesystem::remove(file_path);
+    return 0;
+  } else {
+    return -1;
+  }
 }
 
 std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
@@ -192,49 +237,6 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
   }
 
   return thumbnails_path;
-}
-
-int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
-                             std::map<std::string, SDL_Texture*>& textures,
-                             int* width, int* height) {
-  for (auto& it : textures) {
-    if (it.second != nullptr) {
-      SDL_DestroyTexture(it.second);
-      it.second = nullptr;
-    }
-  }
-  textures.clear();
-
-  std::vector<std::filesystem::path> image_paths =
-      FindThumbnailPath(image_path_);
-
-  if (image_paths.size() == 0) {
-    return -1;
-  } else {
-    for (int i = 0; i < image_paths.size(); i++) {
-      size_t pos1 = image_paths[i].string().find('/') + 1;
-      std::string cipher_image_name = image_paths[i].string().substr(pos1);
-      std::string original_image_name =
-          AES_decrypt(cipher_image_name, aes128_key_, aes128_iv_);
-      std::string image_path = image_path_ + cipher_image_name;
-      textures[original_image_name] = nullptr;
-      LoadTextureFromFile(image_path.c_str(), renderer,
-                          &(textures[original_image_name]), width, height);
-    }
-    return 0;
-  }
-  return 0;
-}
-
-int Thumbnail::DeleteThumbnail(const std::string& file_name) {
-  std::string ciphertext = AES_encrypt(file_name, aes128_key_, aes128_iv_);
-  std::string file_path = image_path_ + ciphertext;
-  if (std::filesystem::exists(file_path)) {
-    std::filesystem::remove(file_path);
-    return 0;
-  } else {
-    return -1;
-  }
 }
 
 int Thumbnail::DeleteAllFilesInDirectory() {

@@ -359,9 +359,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
       render->StopSpeakerCapturer();
       render->audio_capture_ = false;
     }
-    if (!render->rejoin_) {
-      memset(render->remote_password_, 0, sizeof(render->remote_password_));
-    }
+
     if (props->dst_buffer_) {
       memset(props->dst_buffer_, 0, props->dst_buffer_capacity_);
       SDL_UpdateTexture(props->stream_texture_, NULL, props->dst_buffer_,

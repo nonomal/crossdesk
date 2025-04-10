@@ -14,6 +14,15 @@
 
 class Thumbnail {
  public:
+  struct RecentConnection {
+    SDL_Texture* texture = nullptr;
+    std::string remote_id;
+    std::string remote_host_name;
+    std::string password;
+    bool remember_password = false;
+  };
+
+ public:
   Thumbnail();
   explicit Thumbnail(unsigned char* aes128_key, unsigned char* aes128_iv);
   ~Thumbnail();
@@ -25,8 +34,8 @@ class Thumbnail {
                       const std::string& password);
 
   int LoadThumbnail(SDL_Renderer* renderer,
-                    std::map<std::string, SDL_Texture*>& textures, int* width,
-                    int* height);
+                    std::map<std::string, RecentConnection>& recent_connections,
+                    int* width, int* height);
 
   int DeleteThumbnail(const std::string& file_name);
 
