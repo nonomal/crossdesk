@@ -132,9 +132,9 @@ void IceTransportController::Create(
   std::weak_ptr<IceTransportController> weak_self = shared_from_this();
   video_channel_receive_ = std::make_unique<VideoChannelReceive>(
       clock_, ice_agent, ice_io_statistics,
-      [this, weak_self](const ReceivedFrame& received_frame) {
+      [this, weak_self](std::unique_ptr<ReceivedFrame> received_frame) {
         if (auto self = weak_self.lock()) {
-          OnReceiveCompleteFrame(received_frame);
+          OnReceiveCompleteFrame(std::move(received_frame));
         }
       });
 
@@ -314,29 +314,33 @@ int IceTransportController::OnReceiveDataRtpPacket(const char* data,
 }
 
 void IceTransportController::OnReceiveCompleteFrame(
-    const ReceivedFrame& received_frame) {
-  task_queue_decode_->PostTask([this, received_frame]() mutable {
-    if (video_decoder_) {
-      int num_frame_returned = video_decoder_->Decode(
-          received_frame, [this](DecodedFrame decoded_frame) {
-            if (on_receive_video_) {
-              XVideoFrame x_video_frame;
-              x_video_frame.data = (const char*)decoded_frame.Buffer();
-              x_video_frame.width = decoded_frame.Width();
-              x_video_frame.height = decoded_frame.Height();
-              x_video_frame.size = decoded_frame.Size();
-              x_video_frame.captured_timestamp =
-                  decoded_frame.CapturedTimestamp();
-              x_video_frame.received_timestamp =
-                  decoded_frame.ReceivedTimestamp();
-              x_video_frame.decoded_timestamp =
-                  decoded_frame.DecodedTimestamp();
-              on_receive_video_(&x_video_frame, remote_user_id_.data(),
-                                remote_user_id_.size(), user_data_);
-            }
-          });
-    }
-  });
+    std::unique_ptr<ReceivedFrame> received_frame) {
+  task_queue_decode_->PostTask(
+      [this, received_frame = std::move(received_frame)]() mutable {
+        if (video_decoder_) {
+          int num_frame_returned = video_decoder_->Decode(
+              std::move(received_frame), [this](DecodedFrame decoded_frame) {
+                if (on_receive_video_) {
+                  XVideoFrame x_video_frame;
+                  x_video_frame.data = (const char*)decoded_frame.Buffer();
+                  x_video_frame.width = decoded_frame.Width();
+                  x_video_frame.height = decoded_frame.Height();
+                  x_video_frame.size = decoded_frame.Size();
+                  x_video_frame.captured_timestamp =
+                      decoded_frame.CapturedTimestamp();
+                  x_video_frame.received_timestamp =
+                      decoded_frame.ReceivedTimestamp();
+                  x_video_frame.decoded_timestamp =
+                      decoded_frame.DecodedTimestamp();
+
+                  if (on_receive_video_) {
+                    on_receive_video_(&x_video_frame, remote_user_id_.data(),
+                                      remote_user_id_.size(), user_data_);
+                  }
+                }
+              });
+        }
+      });
 }
 
 void IceTransportController::OnReceiveCompleteAudio(const char* data,

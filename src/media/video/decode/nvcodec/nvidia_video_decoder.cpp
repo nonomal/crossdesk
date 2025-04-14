@@ -69,14 +69,14 @@ int NvidiaVideoDecoder::Init() {
 }
 
 int NvidiaVideoDecoder::Decode(
-    const ReceivedFrame &received_frame,
+    std::unique_ptr<ReceivedFrame> received_frame,
     std::function<void(const DecodedFrame &)> on_receive_decoded_frame) {
   if (!decoder) {
     return -1;
   }
 
-  const uint8_t *data = received_frame.Buffer();
-  size_t size = received_frame.Size();
+  const uint8_t *data = received_frame->Buffer();
+  size_t size = received_frame->Size();
 
 #ifdef SAVE_RECEIVED_H264_STREAM
   fwrite((unsigned char *)data, 1, size, file_h264_);
@@ -99,9 +99,9 @@ int NvidiaVideoDecoder::Decode(
               decoder->GetWidth() * decoder->GetHeight() * 3 / 2,
               decoder->GetWidth(), decoder->GetHeight());
           decoded_frame.SetReceivedTimestamp(
-              received_frame.ReceivedTimestamp());
+              received_frame->ReceivedTimestamp());
           decoded_frame.SetCapturedTimestamp(
-              received_frame.CapturedTimestamp());
+              received_frame->CapturedTimestamp());
           decoded_frame.SetDecodedTimestamp(clock_->CurrentTime());
           on_receive_decoded_frame(decoded_frame);
 #ifdef SAVE_DECODED_NV12_STREAM

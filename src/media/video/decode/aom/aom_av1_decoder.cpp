@@ -66,10 +66,10 @@ int AomAv1Decoder::Init() {
 }
 
 int AomAv1Decoder::Decode(
-    const ReceivedFrame &received_frame,
+    std::unique_ptr<ReceivedFrame> received_frame,
     std::function<void(const DecodedFrame &)> on_receive_decoded_frame) {
-  const uint8_t *data = received_frame.Buffer();
-  size_t size = received_frame.Size();
+  const uint8_t *data = received_frame->Buffer();
+  size_t size = received_frame->Size();
 
 #ifdef SAVE_RECEIVED_AV1_STREAM
   fwrite((unsigned char *)data, 1, size, file_av1_);
@@ -138,8 +138,8 @@ int AomAv1Decoder::Decode(
     DecodedFrame decode_frame(nv12_data.data(), nv12_size, img_->d_w,
                               img_->d_h);
 
-    decode_frame.SetReceivedTimestamp(received_frame.ReceivedTimestamp());
-    decode_frame.SetCapturedTimestamp(received_frame.CapturedTimestamp());
+    decode_frame.SetReceivedTimestamp(received_frame->ReceivedTimestamp());
+    decode_frame.SetCapturedTimestamp(received_frame->CapturedTimestamp());
     decode_frame.SetDecodedTimestamp(clock_->CurrentTime());
 
 #ifdef SAVE_DECODED_NV12_STREAM

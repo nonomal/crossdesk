@@ -65,7 +65,7 @@ class IceTransportController
   int OnReceiveAudioRtpPacket(const char *data, size_t size);
   int OnReceiveDataRtpPacket(const char *data, size_t size);
 
-  void OnReceiveCompleteFrame(const ReceivedFrame &received_frame);
+  void OnReceiveCompleteFrame(std::unique_ptr<ReceivedFrame> received_frame);
   void OnReceiveCompleteAudio(const char *data, size_t size);
   void OnReceiveCompleteData(const char *data, size_t size);
 

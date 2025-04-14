@@ -24,7 +24,7 @@ class OpenH264Decoder : public VideoDecoder {
  public:
   int Init();
 
-  int Decode(const ReceivedFrame& received_frame,
+  int Decode(std::unique_ptr<ReceivedFrame> received_frame,
              std::function<void(const DecodedFrame&)> on_receive_decoded_frame);
 
   std::string GetDecoderName() { return "OpenH264"; }
@@ -47,7 +47,7 @@ class OpenH264Decoder : public VideoDecoder {
   int yuv420p_frame_capacity_ = 0;
   int yuv420p_frame_size_ = 0;
 
-   int nv12_frame_capacity_ = 0;
+  int nv12_frame_capacity_ = 0;
   int nv12_frame_size_ = 0;
 };
 

@@ -23,7 +23,7 @@ class AomAv1Decoder : public VideoDecoder {
   int Init();
 
   int Decode(
-      const ReceivedFrame &received_frame,
+      std::unique_ptr<ReceivedFrame> received_frame,
       std::function<void(const DecodedFrame &)> on_receive_decoded_frame);
 
   std::string GetDecoderName() { return "AomAv1"; }

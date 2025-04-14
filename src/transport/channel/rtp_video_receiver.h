@@ -44,7 +44,8 @@ class RtpVideoReceiver : public ThreadBase,
   void SetSendDataFunc(std::function<int(const char*, size_t)> data_send_func);
 
   void SetOnReceiveCompleteFrame(
-      std::function<void(const ReceivedFrame&)> on_receive_complete_frame) {
+      std::function<void(std::unique_ptr<ReceivedFrame>)>
+          on_receive_complete_frame) {
     on_receive_complete_frame_ = on_receive_complete_frame;
   }
   uint32_t GetSsrc() { return ssrc_; }
@@ -99,8 +100,8 @@ class RtpVideoReceiver : public ThreadBase,
   std::map<uint16_t, RtpPacketAv1> incomplete_av1_frame_list_;
   std::map<uint16_t, RtpPacket> incomplete_frame_list_;
   uint8_t* nv12_data_ = nullptr;
-  std::function<void(const ReceivedFrame&)> on_receive_complete_frame_ =
-      nullptr;
+  std::function<void(std::unique_ptr<ReceivedFrame>)>
+      on_receive_complete_frame_ = nullptr;
   uint32_t last_complete_frame_ts_ = 0;
   RingBuffer<ReceivedFrame> compelete_video_frame_queue_;
 

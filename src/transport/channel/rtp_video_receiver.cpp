@@ -733,7 +733,11 @@ bool RtpVideoReceiver::Process() {
   while (it != pending_frames_.end()) {
     if (it->second.is_complete) {
       if (on_receive_complete_frame_) {
-        on_receive_complete_frame_(*(it->second.frame));
+        auto data = it->second.frame->Buffer();
+        if (data == nullptr) {
+          LOG_WARN("data is nullptr!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
+        on_receive_complete_frame_(std::move(it->second.frame));
       }
       it = pending_frames_.erase(it);
     } else {

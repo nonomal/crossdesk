@@ -107,10 +107,10 @@ int Dav1dAv1Decoder::Init() {
 }
 
 int Dav1dAv1Decoder::Decode(
-    const ReceivedFrame &received_frame,
+    std::unique_ptr<ReceivedFrame> received_frame,
     std::function<void(const DecodedFrame &)> on_receive_decoded_frame) {
-  const uint8_t *data = received_frame.Buffer();
-  size_t size = received_frame.Size();
+  const uint8_t *data = received_frame->Buffer();
+  size_t size = received_frame->Size();
 
 #ifdef SAVE_RECEIVED_AV1_STREAM
   fwrite((unsigned char *)data, 1, size, file_av1_);
@@ -190,8 +190,8 @@ int Dav1dAv1Decoder::Decode(
   DecodedFrame decoded_frame(nv12_frame_, nv12_frame_capacity_, frame_width_,
                              frame_height_);
 
-  decoded_frame.SetReceivedTimestamp(received_frame.ReceivedTimestamp());
-  decoded_frame.SetCapturedTimestamp(received_frame.CapturedTimestamp());
+  decoded_frame.SetReceivedTimestamp(received_frame->ReceivedTimestamp());
+  decoded_frame.SetCapturedTimestamp(received_frame->CapturedTimestamp());
   decoded_frame.SetDecodedTimestamp(clock_->CurrentTime());
 
 #ifdef SAVE_DECODED_NV12_STREAM

@@ -104,14 +104,18 @@ int OpenH264Decoder::Init() {
 }
 
 int OpenH264Decoder::Decode(
-    const ReceivedFrame &received_frame,
+    std::unique_ptr<ReceivedFrame> received_frame,
     std::function<void(const DecodedFrame &)> on_receive_decoded_frame) {
   if (!openh264_decoder_) {
     return -1;
   }
 
-  const uint8_t *data = received_frame.Buffer();
-  size_t size = received_frame.Size();
+  const uint8_t *data = received_frame->Buffer();
+  size_t size = received_frame->Size();
+
+  if (data == nullptr) {
+    LOG_WARN("data is nullptr!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  }
 
 #ifdef SAVE_RECEIVED_H264_STREAM
   fwrite((unsigned char *)data, 1, size, h264_stream_);
@@ -180,8 +184,8 @@ int OpenH264Decoder::Decode(
 
       DecodedFrame decoded_frame(nv12_frame_, nv12_frame_capacity_,
                                  frame_width_, frame_height_);
-      decoded_frame.SetReceivedTimestamp(received_frame.ReceivedTimestamp());
-      decoded_frame.SetCapturedTimestamp(received_frame.CapturedTimestamp());
+      decoded_frame.SetReceivedTimestamp(received_frame->ReceivedTimestamp());
+      decoded_frame.SetCapturedTimestamp(received_frame->CapturedTimestamp());
       decoded_frame.SetDecodedTimestamp(clock_->CurrentTime());
 
 #ifdef SAVE_DECODED_NV12_STREAM

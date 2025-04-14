@@ -22,7 +22,7 @@ class VideoDecoder {
   virtual int Init() = 0;
 
   virtual int Decode(
-      const ReceivedFrame& received_frame,
+      std::unique_ptr<ReceivedFrame> received_frame,
       std::function<void(const DecodedFrame&)> on_receive_decoded_frame) = 0;
 
   virtual std::string GetDecoderName() = 0;
