@@ -44,21 +44,17 @@ int MouseController::SendMouseCommand(RemoteAction remote_action) {
         break;
       case MouseFlag::wheel_vertical:
         ip.mi.dwFlags = MOUSEEVENTF_WHEEL;
-        ip.mi.mouseData = remote_action.m.s;
+        ip.mi.mouseData = remote_action.m.s * 120;
         break;
       case MouseFlag::wheel_horizontal:
         ip.mi.dwFlags = MOUSEEVENTF_HWHEEL;
-        ip.mi.mouseData = remote_action.m.s;
+        ip.mi.mouseData = remote_action.m.s * 120;
         break;
       default:
         ip.mi.dwFlags = MOUSEEVENTF_MOVE;
         break;
     }
 
-    ip.mi.mouseData = (remote_action.m.flag == MouseFlag::wheel_vertical ||
-                       remote_action.m.flag == MouseFlag::wheel_horizontal)
-                          ? remote_action.m.s
-                          : 0;
     ip.mi.time = 0;
 
     SetCursorPos(ip.mi.dx, ip.mi.dy);

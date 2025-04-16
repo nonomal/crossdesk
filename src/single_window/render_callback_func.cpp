@@ -41,6 +41,7 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
   controlled_remote_id_ = "";
   int video_width, video_height = 0;
   int render_width, render_height = 0;
+  float ratio_x, ratio_y = 0;
   RemoteAction remote_action;
 
   for (auto &it : client_properties_) {
@@ -61,10 +62,8 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
       last_mouse_event.button.x = event.button.x;
       last_mouse_event.button.y = event.button.y;
 
-      float ratio_x =
-          (float)props->original_display_width_ / (float)render_width;
-      float ratio_y =
-          (float)props->original_display_height_ / (float)render_height;
+      ratio_x = (float)props->original_display_width_ / (float)render_width;
+      ratio_y = (float)props->original_display_height_ / (float)render_height;
 
       remote_action.m.x =
           (size_t)((event.button.x - props->stream_render_rect_.x) * ratio_x);
@@ -121,6 +120,17 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
         remote_action.m.flag = MouseFlag::wheel_horizontal;
         remote_action.m.s = scroll_x;
       }
+
+      render_width = props->stream_render_rect_.w;
+      render_height = props->stream_render_rect_.h;
+      ratio_x = (float)props->original_display_width_ / (float)render_width;
+      ratio_y = (float)props->original_display_height_ / (float)render_height;
+      remote_action.m.x =
+          (size_t)((last_mouse_event.button.x - props->stream_render_rect_.x) *
+                   ratio_x);
+      remote_action.m.y =
+          (size_t)((last_mouse_event.button.y - props->stream_render_rect_.y) *
+                   ratio_y);
 
       SendDataFrame(props->peer_, (const char *)&remote_action,
                     sizeof(remote_action));
