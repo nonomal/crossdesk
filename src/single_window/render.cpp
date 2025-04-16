@@ -999,12 +999,10 @@ void Render::ProcessSdlEvent() {
           DestroyStreamWindowContext();
 
           for (auto& [host_name, props] : client_properties_) {
-            if (props->dst_buffer_) {
-              thumbnail_->SaveToThumbnail(
-                  (char*)props->dst_buffer_, props->video_width_,
-                  props->video_height_, host_name, props->remote_host_name_,
-                  props->remember_password_ ? props->remote_password_ : "");
-            }
+            thumbnail_->SaveToThumbnail(
+                (char*)props->dst_buffer_, props->video_width_,
+                props->video_height_, host_name, props->remote_host_name_,
+                props->remember_password_ ? props->remote_password_ : "");
 
             if (props->peer_) {
               std::string client_id = (host_name == client_id_)

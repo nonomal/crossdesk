@@ -143,23 +143,31 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
   if (yuv420p) {
     ScaleYUV420pToABGR((char*)yuv420p, width, height, thumbnail_width_,
                        thumbnail_height_, rgba_buffer_);
-
-    std::string image_name;
-    if (password.empty()) {
-      return 0;
-    } else {
-      // delete the file which has no password in its name
-      std::string filename_without_password = remote_id + "N" + host_name;
-      DeleteThumbnail(filename_without_password);
-
-      image_name = remote_id + 'Y' + password + host_name;
+  } else {
+    // If yuv420p is null, fill the buffer with black pixels
+    memset(rgba_buffer_, 0x00, thumbnail_width_ * thumbnail_height_ * 4);
+    for (int i = 0; i < thumbnail_width_ * thumbnail_height_; ++i) {
+      // Set alpha channel to opaque
+      rgba_buffer_[i * 4 + 3] = 0xFF;
     }
-
-    std::string ciphertext = AES_encrypt(image_name, aes128_key_, aes128_iv_);
-    std::string file_path = image_path_ + ciphertext;
-    stbi_write_png(file_path.data(), thumbnail_width_, thumbnail_height_, 4,
-                   rgba_buffer_, thumbnail_width_ * 4);
   }
+
+  std::string image_name;
+  if (password.empty()) {
+    return 0;
+  } else {
+    // delete the file which has no password in its name
+    std::string filename_without_password = remote_id + "N" + host_name;
+    DeleteThumbnail(filename_without_password);
+
+    image_name = remote_id + 'Y' + password + host_name;
+  }
+
+  std::string ciphertext = AES_encrypt(image_name, aes128_key_, aes128_iv_);
+  std::string file_path = image_path_ + ciphertext;
+  stbi_write_png(file_path.data(), thumbnail_width_, thumbnail_height_, 4,
+                 rgba_buffer_, thumbnail_width_ * 4);
+
   return 0;
 }
 
