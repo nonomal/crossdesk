@@ -62,8 +62,8 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
       last_mouse_event.button.x = event.button.x;
       last_mouse_event.button.y = event.button.y;
 
-      ratio_x = (float)props->original_display_width_ / (float)render_width;
-      ratio_y = (float)props->original_display_height_ / (float)render_height;
+      ratio_x = (float)props->video_width_ / (float)render_width;
+      ratio_y = (float)props->video_height_ / (float)render_height;
 
       remote_action.m.x =
           (size_t)((event.button.x - props->stream_render_rect_.x) * ratio_x);
@@ -123,8 +123,8 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
 
       render_width = props->stream_render_rect_.w;
       render_height = props->stream_render_rect_.h;
-      ratio_x = (float)props->original_display_width_ / (float)render_width;
-      ratio_y = (float)props->original_display_height_ / (float)render_height;
+      ratio_x = (float)props->video_width_ / (float)render_width;
+      ratio_y = (float)props->video_height_ / (float)render_height;
       remote_action.m.x =
           (size_t)((last_mouse_event.button.x - props->stream_render_rect_.x) *
                    ratio_x);
@@ -219,9 +219,17 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
     }
 
     memcpy(props->dst_buffer_, video_frame->data, video_frame->size);
+    bool need_to_update_render_rect = false;
+    if (props->video_width_ == 0 && props->video_height_ == 0) {
+      need_to_update_render_rect = true;
+    }
     props->video_width_ = video_frame->width;
     props->video_height_ = video_frame->height;
     props->video_size_ = video_frame->size;
+
+    if (need_to_update_render_rect) {
+      render->UpdateRenderRect();
+    }
 
     SDL_Event event;
     event.type = STREAM_FRASH;
@@ -262,11 +270,8 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
     if (ControlType::host_infomation == remote_action.type) {
       props->remote_host_name_ = std::string(remote_action.i.host_name,
                                              remote_action.i.host_name_size);
-      props->original_display_width_ = remote_action.i.original_display_width;
-      props->original_display_height_ = remote_action.i.original_display_height;
       LOG_INFO("Remote hostname: [{}], resolution: [{}x{}]",
-               props->remote_host_name_, remote_action.i.original_display_width,
-               remote_action.i.original_display_height);
+               props->remote_host_name_);
     }
   } else {
     if (ControlType::mouse == remote_action.type && render->mouse_controller_) {

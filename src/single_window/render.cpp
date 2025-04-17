@@ -830,10 +830,6 @@ void Render::MainLoop() {
       remote_action.type = ControlType::host_infomation;
       memcpy(&remote_action.i.host_name, host_name.data(), host_name.size());
       remote_action.i.host_name_size = host_name.size();
-      remote_action.i.original_display_width =
-          screen_width_ * main_window_dpi_scaling_w_;
-      remote_action.i.original_display_height =
-          screen_height_ * main_window_dpi_scaling_h_;
       int ret = SendDataFrame(peer_, (const char*)&remote_action,
                               sizeof(remote_action));
       if (0 == ret) {
@@ -969,6 +965,56 @@ void Render::CleanupPeers() {
   }
 }
 
+void Render::UpdateRenderRect() {
+  for (auto& [_, props] : client_properties_) {
+    if (!props->reset_control_bar_pos_) {
+      props->mouse_diff_control_bar_pos_x_ = 0;
+      props->mouse_diff_control_bar_pos_y_ = 0;
+    }
+
+    if (!just_created_) {
+      props->reset_control_bar_pos_ = true;
+    }
+
+    int stream_window_width, stream_window_height;
+    SDL_GetWindowSize(stream_window_, &stream_window_width,
+                      &stream_window_height);
+    stream_window_width_ = (float)stream_window_width;
+    stream_window_height_ = (float)stream_window_height;
+
+    float video_ratio =
+        (float)props->video_width_ / (float)props->video_height_;
+    float video_ratio_reverse =
+        (float)props->video_height_ / (float)props->video_width_;
+
+    float render_area_width = stream_window_width_;
+    float render_area_height =
+        stream_window_height_ -
+        (fullscreen_button_pressed_ ? 0 : title_bar_height_);
+
+    props->stream_render_rect_last_ = props->stream_render_rect_;
+    if (render_area_width < render_area_height * video_ratio) {
+      props->stream_render_rect_ = {
+          0,
+          (int)(abs(render_area_height -
+                    render_area_width * video_ratio_reverse) /
+                    2 +
+                (fullscreen_button_pressed_ ? 0 : title_bar_height_)),
+          (int)render_area_width,
+          (int)(render_area_width * video_ratio_reverse)};
+    } else if (render_area_width > render_area_height * video_ratio) {
+      props->stream_render_rect_ = {
+          (int)abs(render_area_width - render_area_height * video_ratio) / 2,
+          fullscreen_button_pressed_ ? 0 : (int)title_bar_height_,
+          (int)(render_area_height * video_ratio), (int)render_area_height};
+    } else {
+      props->stream_render_rect_ = {
+          0, fullscreen_button_pressed_ ? 0 : (int)title_bar_height_,
+          (int)render_area_width, (int)render_area_height};
+    }
+  }
+}
+
 void Render::ProcessSdlEvent() {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
@@ -1048,57 +1094,7 @@ void Render::ProcessSdlEvent() {
         } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED &&
                    stream_window_created_ &&
                    event.window.windowID == SDL_GetWindowID(stream_window_)) {
-          for (auto& [_, props] : client_properties_) {
-            if (!props->reset_control_bar_pos_) {
-              props->mouse_diff_control_bar_pos_x_ = 0;
-              props->mouse_diff_control_bar_pos_y_ = 0;
-            }
-
-            if (!just_created_) {
-              props->reset_control_bar_pos_ = true;
-            }
-
-            int stream_window_width, stream_window_height;
-            SDL_GetWindowSize(stream_window_, &stream_window_width,
-                              &stream_window_height);
-            stream_window_width_ = (float)stream_window_width;
-            stream_window_height_ = (float)stream_window_height;
-
-            float video_ratio = (float)props->original_display_width_ /
-                                (float)props->original_display_height_;
-            float video_ratio_reverse = (float)props->original_display_height_ /
-                                        (float)props->original_display_width_;
-
-            float render_area_width = stream_window_width_;
-            float render_area_height =
-                stream_window_height_ -
-                (fullscreen_button_pressed_ ? 0 : title_bar_height_);
-
-            props->stream_render_rect_last_ = props->stream_render_rect_;
-            if (render_area_width < render_area_height * video_ratio) {
-              props->stream_render_rect_ = {
-                  0,
-                  (int)(abs(render_area_height -
-                            render_area_width * video_ratio_reverse) /
-                            2 +
-                        (fullscreen_button_pressed_ ? 0 : title_bar_height_)),
-                  (int)render_area_width,
-                  (int)(render_area_width * video_ratio_reverse)};
-            } else if (render_area_width > render_area_height * video_ratio) {
-              props->stream_render_rect_ = {
-                  (int)abs(render_area_width -
-                           render_area_height * video_ratio) /
-                      2,
-                  fullscreen_button_pressed_ ? 0 : (int)title_bar_height_,
-                  (int)(render_area_height * video_ratio),
-                  (int)render_area_height};
-            } else {
-              props->stream_render_rect_ = {
-                  0, fullscreen_button_pressed_ ? 0 : (int)title_bar_height_,
-                  (int)render_area_width, (int)render_area_height};
-            }
-          }
-
+          UpdateRenderRect();
         } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED ||
                    event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
           bool focus_gained =

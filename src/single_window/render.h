@@ -74,16 +74,14 @@ class Render {
     int mouse_pos_y_last_ = 0;
     int texture_width_ = 1280;
     int texture_height_ = 720;
-    int video_width_ = 1280;
-    int video_height_ = 720;
-    size_t video_size_ = 1280 * 720 * 3;
+    int video_width_ = 0;
+    int video_height_ = 0;
+    size_t video_size_ = 0;
     std::string fullscreen_button_label_ = "Fullscreen";
     std::string net_traffic_stats_button_label_ = "Show Net Traffic Stats";
     std::string mouse_control_button_label_ = "Mouse Control";
     std::string audio_capture_button_label_ = "Audio Capture";
     std::string remote_host_name_ = "";
-    int original_display_width_ = 0;
-    int original_display_height_ = 0;
     SDL_Texture *stream_texture_ = nullptr;
     SDL_Rect stream_render_rect_;
     SDL_Rect stream_render_rect_last_;
@@ -113,6 +111,7 @@ class Render {
   void Cleanup();
   void CleanupFactories();
   void CleanupPeers();
+  void UpdateRenderRect();
   void ProcessSdlEvent();
 
  private:
