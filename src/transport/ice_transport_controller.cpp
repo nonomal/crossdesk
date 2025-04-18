@@ -212,17 +212,16 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
       new_frame.height = video_frame_copy->height;
       new_frame.size = video_frame_copy->size;
       new_frame.captured_timestamp = video_frame_copy->captured_timestamp;
-      if (target_width_.has_value() && target_height_.has_value()) {
-        if (target_width_.value() < video_frame_copy->width &&
-            target_height_.value() < video_frame_copy->height) {
-          resolution_adapter_->ResolutionDowngrade(
-              video_frame_copy.get(), target_width_.value(),
-              target_height_.value(), &new_frame);
-        } else {
-          new_frame.data = new char[video_frame_copy->size];
-          memcpy((void*)new_frame.data, (void*)video_frame_copy->data,
-                 video_frame_copy->size);
-        }
+      if (target_width_.has_value() && target_height_.has_value() &&
+          target_width_.value() < video_frame_copy->width &&
+          target_height_.value() < video_frame_copy->height) {
+        resolution_adapter_->ResolutionDowngrade(
+            video_frame_copy.get(), target_width_.value(),
+            target_height_.value(), &new_frame);
+      } else {
+        new_frame.data = new char[video_frame_copy->size];
+        memcpy((void*)new_frame.data, video_frame_copy->data,
+               video_frame_copy->size);
       }
 
       RawFrame raw_frame((const uint8_t*)new_frame.data, new_frame.size,
@@ -600,23 +599,21 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
     if (target_bitrate != target_bitrate_ && video_encoder_) {
       target_bitrate_ = target_bitrate;
       int width, height, target_width, target_height;
-      int valid = video_encoder_->GetResolution(&width, &height);
-      if (valid != 0) {
-        width = source_width_;
-        height = source_height_;
-      }
-      if (0 == resolution_adapter_->GetResolution(target_bitrate_, width,
-                                                  height, &target_width,
-                                                  &target_height)) {
-        if (target_width != target_width_ || target_height != target_height_) {
-          target_width_ = target_width;
-          target_height_ = target_height;
+      if (!video_encoder_->GetResolution(&width, &height)) {
+        if (0 == resolution_adapter_->GetResolution(target_bitrate_, width,
+                                                    height, &target_width,
+                                                    &target_height)) {
+          if (target_width != target_width_ ||
+              target_height != target_height_) {
+            target_width_ = target_width;
+            target_height_ = target_height;
 
-          b_force_i_frame_ = true;
+            b_force_i_frame_ = true;
+          }
+        } else if (target_width_.has_value() && target_height_.has_value()) {
+          target_width_.reset();
+          target_height_.reset();
         }
-      } else if (target_width_.has_value() && target_height_.has_value()) {
-        target_width_.reset();
-        target_height_.reset();
       }
       video_encoder_->SetTargetBitrate(target_bitrate_);
       // LOG_WARN("Set target bitrate [{}]bps", target_bitrate_);
