@@ -779,6 +779,8 @@ void Render::InitializeSDL() {
   screen_width_ = DM.w;
   screen_height_ = DM.h;
 
+  LOG_INFO("Screen resolution: [{}x{}]", screen_width_, screen_height_);
+
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 }
 

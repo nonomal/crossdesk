@@ -270,8 +270,7 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
     if (ControlType::host_infomation == remote_action.type) {
       props->remote_host_name_ = std::string(remote_action.i.host_name,
                                              remote_action.i.host_name_size);
-      LOG_INFO("Remote hostname: [{}], resolution: [{}x{}]",
-               props->remote_host_name_);
+      LOG_INFO("Remote hostname: [{}]", props->remote_host_name_);
     }
   } else {
     if (ControlType::mouse == remote_action.type && render->mouse_controller_) {
