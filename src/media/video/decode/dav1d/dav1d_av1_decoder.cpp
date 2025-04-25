@@ -51,6 +51,10 @@ Dav1dAv1Decoder::Dav1dAv1Decoder(std::shared_ptr<SystemClock> clock)
     : clock_(clock) {}
 
 Dav1dAv1Decoder::~Dav1dAv1Decoder() {
+  if (decoded_frame_) {
+    delete decoded_frame_;
+  }
+
 #ifdef SAVE_DECODED_NV12_STREAM
   if (file_nv12_) {
     fflush(file_nv12_);
@@ -87,6 +91,11 @@ int Dav1dAv1Decoder::Init() {
   int ret = dav1d_open(&context_, &s);
   if (ret) {
     LOG_ERROR("Dav1d AV1 decoder open failed");
+  }
+
+  if (!decoded_frame_) {
+    decoded_frame_ = new DecodedFrame(frame_width_ * frame_height_ * 3 / 2,
+                                      frame_width_, frame_height_);
   }
 
 #ifdef SAVE_DECODED_NV12_STREAM
@@ -187,18 +196,20 @@ int Dav1dAv1Decoder::Decode(
         frame_width_, frame_height_);
   }
 
-  DecodedFrame decoded_frame(nv12_frame_, nv12_frame_capacity_, frame_width_,
-                             frame_height_);
-
-  decoded_frame.SetReceivedTimestamp(received_frame->ReceivedTimestamp());
-  decoded_frame.SetCapturedTimestamp(received_frame->CapturedTimestamp());
-  decoded_frame.SetDecodedTimestamp(clock_->CurrentTime());
+  decoded_frame_->UpdateBuffer(nv12_frame_, nv12_frame_capacity_);
+  decoded_frame_->SetWidth(received_frame->Width());
+  decoded_frame_->SetHeight(received_frame->Height());
+  decoded_frame_->SetDecodedWidth(frame_width_);
+  decoded_frame_->SetDecodedHeight(frame_height_);
+  decoded_frame_->SetReceivedTimestamp(received_frame->ReceivedTimestamp());
+  decoded_frame_->SetCapturedTimestamp(received_frame->CapturedTimestamp());
+  decoded_frame_->SetDecodedTimestamp(clock_->CurrentTime());
 
 #ifdef SAVE_DECODED_NV12_STREAM
-  fwrite((unsigned char *)decoded_frame.Buffer(), 1, decoded_frame.Size(),
+  fwrite((unsigned char *)decoded_frame_->Buffer(), 1, decoded_frame_->Size(),
          file_nv12_);
 #endif
-  on_receive_decoded_frame(decoded_frame);
+  on_receive_decoded_frame(*decoded_frame_);
 
   return 0;
 }

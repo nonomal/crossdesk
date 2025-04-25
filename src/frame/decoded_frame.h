@@ -44,9 +44,9 @@ class DecodedFrame : public VideoFrame {
     decoded_width_ = decoded_width;
   }
 
-  uint32_t decodedHeight() const { return decoded_height_; }
+  uint32_t DecodedHeight() const { return decoded_height_; }
 
-  void SetdecodedHeight(uint32_t decoded_height) {
+  void SetDecodedHeight(uint32_t decoded_height) {
     decoded_height_ = decoded_height;
   }
 

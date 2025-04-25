@@ -8,6 +8,10 @@
 NvidiaVideoDecoder::NvidiaVideoDecoder(std::shared_ptr<SystemClock> clock)
     : clock_(clock) {}
 NvidiaVideoDecoder::~NvidiaVideoDecoder() {
+  if (decoded_frame_) {
+    delete decoded_frame_;
+  }
+
 #ifdef SAVE_DECODED_NV12_STREAM
   if (file_nv12_) {
     fflush(file_nv12_);
@@ -50,6 +54,11 @@ int NvidiaVideoDecoder::Init() {
   decoder =
       new NvDecoder(cuda_context_, false, cudaVideoCodec_H264, true, false,
                     nullptr, nullptr, false, 4096, 2160, 1000, false);
+
+  if (!decoded_frame_) {
+    decoded_frame_ = new DecodedFrame(frame_width_ * frame_height_ * 3 / 2,
+                                      frame_width_, frame_height_);
+  }
 
 #ifdef SAVE_DECODED_NV12_STREAM
   file_nv12_ = fopen("decoded_nv12_stream.yuv", "w+b");
@@ -94,20 +103,24 @@ int NvidiaVideoDecoder::Decode(
       decoded_frame_buffer = decoder->GetFrame();
       if (decoded_frame_buffer) {
         if (on_receive_decoded_frame) {
-          DecodedFrame decoded_frame(
+          decoded_frame_->UpdateBuffer(
               decoded_frame_buffer,
-              decoder->GetWidth() * decoder->GetHeight() * 3 / 2,
-              decoder->GetWidth(), decoder->GetHeight());
-          decoded_frame.SetReceivedTimestamp(
+              decoder->GetWidth() * decoder->GetHeight() * 3 / 2);
+          decoded_frame_->SetWidth(received_frame->Width());
+          decoded_frame_->SetHeight(received_frame->Height());
+          decoded_frame_->SetDecodedWidth(decoder->GetWidth());
+          decoded_frame_->SetDecodedHeight(decoder->GetHeight());
+          decoded_frame_->SetReceivedTimestamp(
               received_frame->ReceivedTimestamp());
-          decoded_frame.SetCapturedTimestamp(
+          decoded_frame_->SetCapturedTimestamp(
               received_frame->CapturedTimestamp());
-          decoded_frame.SetDecodedTimestamp(clock_->CurrentTime());
-          on_receive_decoded_frame(decoded_frame);
+          decoded_frame_->SetDecodedTimestamp(clock_->CurrentTime());
+
 #ifdef SAVE_DECODED_NV12_STREAM
-          fwrite((unsigned char *)decoded_frame.Buffer(), 1,
-                 decoded_frame.Size(), file_nv12_);
+          fwrite((unsigned char *)decoded_frame_->Buffer(), 1,
+                 decoded_frame_->Size(), file_nv12_);
 #endif
+          on_receive_decoded_frame(*decoded_frame_);
         }
       }
     }

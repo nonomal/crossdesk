@@ -43,6 +43,8 @@ class VideoFrame {
   void SetWidth(uint32_t width) { width_ = width; }
   void SetHeight(uint32_t height) { height_ = height; }
 
+  void UpdateBuffer(const uint8_t *new_buffer, size_t new_size);
+
  private:
   CopyOnWriteBuffer buffer_;
   size_t size_ = 0;

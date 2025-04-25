@@ -42,3 +42,13 @@ VideoFrame &VideoFrame::operator=(const VideoFrame &video_frame) = default;
 VideoFrame &VideoFrame::operator=(VideoFrame &&video_frame) = default;
 
 VideoFrame::~VideoFrame() = default;
+
+void VideoFrame::UpdateBuffer(const uint8_t *new_buffer, size_t new_size) {
+  if (new_size > size_) {
+    buffer_ = CopyOnWriteBuffer(new_buffer, new_size);
+    size_ = new_size;
+  } else {
+    std::memcpy((void *)buffer_.data(), new_buffer, new_size);
+    size_ = new_size;
+  }
+}

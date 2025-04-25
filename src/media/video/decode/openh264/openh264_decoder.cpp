@@ -46,6 +46,10 @@ OpenH264Decoder::~OpenH264Decoder() {
     delete[] nv12_frame_;
   }
 
+  if (decoded_frame_) {
+    delete decoded_frame_;
+  }
+
   if (yuv420p_frame_) {
     delete[] yuv420p_frame_;
   }
@@ -99,6 +103,11 @@ int OpenH264Decoder::Init() {
 
   int trace_level = WELS_LOG_QUIET;
   openh264_decoder_->SetOption(DECODER_OPTION_TRACE_LEVEL, &trace_level);
+
+  if (!decoded_frame_) {
+    decoded_frame_ = new DecodedFrame(frame_width_ * frame_height_ * 3 / 2,
+                                      frame_width_, frame_height_);
+  }
 
   return 0;
 }
@@ -182,17 +191,20 @@ int OpenH264Decoder::Decode(
           (uint8_t *)nv12_frame_ + frame_width_ * frame_height_, frame_width_,
           frame_width_, frame_height_);
 
-      DecodedFrame decoded_frame(nv12_frame_, nv12_frame_capacity_,
-                                 frame_width_, frame_height_);
-      decoded_frame.SetReceivedTimestamp(received_frame->ReceivedTimestamp());
-      decoded_frame.SetCapturedTimestamp(received_frame->CapturedTimestamp());
-      decoded_frame.SetDecodedTimestamp(clock_->CurrentTime());
+      decoded_frame_->UpdateBuffer(nv12_frame_, nv12_frame_capacity_);
+      decoded_frame_->SetWidth(received_frame->Width());
+      decoded_frame_->SetHeight(received_frame->Height());
+      decoded_frame_->SetDecodedWidth(frame_width_);
+      decoded_frame_->SetDecodedHeight(frame_height_);
+      decoded_frame_->SetReceivedTimestamp(received_frame->ReceivedTimestamp());
+      decoded_frame_->SetCapturedTimestamp(received_frame->CapturedTimestamp());
+      decoded_frame_->SetDecodedTimestamp(clock_->CurrentTime());
 
 #ifdef SAVE_DECODED_NV12_STREAM
-      fwrite((unsigned char *)decoded_frame.Buffer(), 1, decoded_frame.Size(),
-             nv12_stream_);
+      fwrite((unsigned char *)decoded_frame_->Buffer(), 1,
+             decoded_frame_->Size(), nv12_stream_);
 #endif
-      on_receive_decoded_frame(decoded_frame);
+      on_receive_decoded_frame(*decoded_frame_);
     }
   }
 

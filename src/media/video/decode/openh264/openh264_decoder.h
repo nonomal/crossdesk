@@ -32,12 +32,11 @@ class OpenH264Decoder : public VideoDecoder {
  private:
   std::shared_ptr<SystemClock> clock_ = nullptr;
   ISVCDecoder* openh264_decoder_ = nullptr;
+  DecodedFrame* decoded_frame_ = nullptr;
   bool get_first_keyframe_ = false;
   bool skip_frame_ = false;
   FILE* nv12_stream_ = nullptr;
   FILE* h264_stream_ = nullptr;
-  uint8_t* decoded_frame_ = nullptr;
-  int decoded_frame_size_ = 0;
   uint32_t frame_width_ = 1280;
   uint32_t frame_height_ = 720;
 

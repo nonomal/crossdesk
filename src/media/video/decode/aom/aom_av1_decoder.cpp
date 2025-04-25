@@ -9,6 +9,10 @@ AomAv1Decoder::AomAv1Decoder(std::shared_ptr<SystemClock> clock)
     : clock_(clock) {}
 
 AomAv1Decoder::~AomAv1Decoder() {
+  if (decoded_frame_) {
+    delete decoded_frame_;
+  }
+
 #ifdef SAVE_DECODED_NV12_STREAM
   if (file_nv12_) {
     fflush(file_nv12_);
@@ -47,6 +51,11 @@ int AomAv1Decoder::Init() {
 
   aom_codec_control(&aom_av1_decoder_ctx_, AV1D_GET_IMG_FORMAT,
                     AOM_IMG_FMT_NV12);
+
+  if (!decoded_frame_) {
+    decoded_frame_ = new DecodedFrame(frame_width_ * frame_height_ * 3 / 2,
+                                      frame_width_, frame_height_);
+  }
 
 #ifdef SAVE_DECODED_NV12_STREAM
   file_nv12_ = fopen("decoded_nv12_stream.yuv", "w+b");
@@ -135,18 +144,20 @@ int AomAv1Decoder::Decode(
       uv_data[2 * i + 1] = v_plane[i];
     }
 
-    DecodedFrame decode_frame(nv12_data.data(), nv12_size, img_->d_w,
-                              img_->d_h);
-
-    decode_frame.SetReceivedTimestamp(received_frame->ReceivedTimestamp());
-    decode_frame.SetCapturedTimestamp(received_frame->CapturedTimestamp());
-    decode_frame.SetDecodedTimestamp(clock_->CurrentTime());
+    decoded_frame_->UpdateBuffer(nv12_data.data(), nv12_size);
+    decoded_frame_->SetWidth(received_frame->Width());
+    decoded_frame_->SetHeight(received_frame->Height());
+    decoded_frame_->SetDecodedWidth(img_->d_w);
+    decoded_frame_->SetDecodedHeight(img_->d_h);
+    decoded_frame_->SetReceivedTimestamp(received_frame->ReceivedTimestamp());
+    decoded_frame_->SetCapturedTimestamp(received_frame->CapturedTimestamp());
+    decoded_frame_->SetDecodedTimestamp(clock_->CurrentTime());
 
 #ifdef SAVE_DECODED_NV12_STREAM
-    fwrite((unsigned char *)decode_frame.Buffer(), 1, decode_frame.Size(),
+    fwrite((unsigned char *)decoded_frame_->Buffer(), 1, decoded_frame_->Size(),
            file_nv12_);
 #endif
-    on_receive_decoded_frame(decode_frame);
+    on_receive_decoded_frame(*decoded_frame_);
 
     return 0;
   }

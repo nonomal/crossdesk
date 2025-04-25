@@ -24,6 +24,7 @@ class NvidiaVideoDecoder : public VideoDecoder {
   NvDecoder* decoder = nullptr;
   CUcontext cuda_context_ = NULL;
   CUdevice cuda_device_ = 0;
+  DecodedFrame* decoded_frame_ = nullptr;
   bool get_first_keyframe_ = false;
   bool skip_frame_ = false;
 
