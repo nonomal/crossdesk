@@ -114,7 +114,7 @@ int OpenH264Decoder::Init() {
 
 int OpenH264Decoder::Decode(
     std::unique_ptr<ReceivedFrame> received_frame,
-    std::function<void(const DecodedFrame &)> on_receive_decoded_frame) {
+    std::function<void(const DecodedFrame *)> on_receive_decoded_frame) {
   if (!openh264_decoder_) {
     return -1;
   }
@@ -204,7 +204,7 @@ int OpenH264Decoder::Decode(
       fwrite((unsigned char *)decoded_frame_->Buffer(), 1,
              decoded_frame_->Size(), nv12_stream_);
 #endif
-      on_receive_decoded_frame(*decoded_frame_);
+      on_receive_decoded_frame(decoded_frame_);
     }
   }
 
