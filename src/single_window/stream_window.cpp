@@ -15,43 +15,51 @@ int Render::StreamWindow() {
                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration |
                    ImGuiWindowFlags_NoBringToFrontOnFocus |
                    ImGuiWindowFlags_NoDocking);
-
   ImGui::PopStyleColor(2);
   ImGui::PopStyleVar();
 
-  ImGuiTabBarFlags tab_bar_flags =
-      ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs;
   ImGuiWindowFlags stream_window_flag =
       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
       ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoMove;
 
-  ImGui::SetNextWindowPos(ImVec2(20, 0), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(0, 20), ImGuiCond_Always);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 8.0f));
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.0f));
-  ImGui::Begin("TabBar", nullptr,
-               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration |
-                   ImGuiWindowFlags_NoBringToFrontOnFocus |
-                   ImGuiWindowFlags_NoDocking);
-  ImGui::PopStyleColor();
-  ImGui::PopStyleVar(2);
-  if (ImGui::BeginTabBar("StreamTabBar", tab_bar_flags)) {
-    if (ImGui::IsWindowHovered()) {
-      is_tab_bar_hovered_ = true;
-    } else {
-      is_tab_bar_hovered_ = false;
-    }
+  if (!fullscreen_button_pressed_) {
+    ImGui::SetNextWindowPos(ImVec2(20, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(0, 20), ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 8.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.0f));
+    ImGui::Begin("TabBar", nullptr,
+                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration |
+                     ImGuiWindowFlags_NoBringToFrontOnFocus |
+                     ImGuiWindowFlags_NoDocking);
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar(2);
 
-    for (auto it = client_properties_.begin();
-         it != client_properties_.end();) {
-      auto& props = it->second;
-      if (props->tab_opened_) {
+    if (ImGui::BeginTabBar("StreamTabBar",
+                           ImGuiTabBarFlags_Reorderable |
+                               ImGuiTabBarFlags_AutoSelectNewTabs)) {
+      is_tab_bar_hovered_ = ImGui::IsWindowHovered();
+
+      for (auto it = client_properties_.begin();
+           it != client_properties_.end();) {
+        auto& props = it->second;
+        if (!props->tab_opened_) {
+          CleanupPeer(props);
+          it = client_properties_.erase(it);
+          if (client_properties_.empty()) {
+            SDL_Event event;
+            event.type = SDL_QUIT;
+            SDL_PushEvent(&event);
+          }
+          continue;
+        }
+
         ImGui::SetWindowFontScale(0.6f);
-        if (ImGui::BeginTabItem(props->remote_id_.c_str(), &props->tab_opened_,
-                                ImGuiTabItemFlags_None)) {
+        if (ImGui::BeginTabItem(props->remote_id_.c_str(),
+                                &props->tab_opened_)) {
           props->tab_selected_ = true;
           ImGui::SetWindowFontScale(1.0f);
+
           ImGui::SetNextWindowSize(
               ImVec2(stream_window_width_, stream_window_height_),
               ImGuiCond_Always);
@@ -65,15 +73,15 @@ int Render::StreamWindow() {
           ImGui::PopStyleColor();
           ImGui::PopStyleVar(2);
 
-          ImVec2 stream_window_pos = ImGui::GetWindowPos();
-          ImGuiViewport* viewport = ImGui::GetWindowViewport();
-          ImVec2 stream_window_size = ImGui::GetWindowSize();
-          props->render_window_x_ = stream_window_pos.x;
-          props->render_window_y_ = stream_window_pos.y;
-          props->render_window_width_ = stream_window_size.x;
-          props->render_window_height_ = stream_window_size.y;
+          ImVec2 pos = ImGui::GetWindowPos();
+          ImVec2 size = ImGui::GetWindowSize();
+          props->render_window_x_ = pos.x;
+          props->render_window_y_ = pos.y;
+          props->render_window_width_ = size.x;
+          props->render_window_height_ = size.y;
 
           ControlWindow(props);
+
           if (!props->peer_) {
             it = client_properties_.erase(it);
             if (client_properties_.empty()) {
@@ -92,7 +100,17 @@ int Render::StreamWindow() {
           ImGui::SetWindowFontScale(1.0f);
           ++it;
         }
-      } else {
+      }
+
+      ImGui::EndTabBar();
+    }
+
+    ImGui::End();  // End TabBar
+  } else {
+    for (auto it = client_properties_.begin();
+         it != client_properties_.end();) {
+      auto& props = it->second;
+      if (!props->tab_opened_) {
         CleanupPeer(props);
         it = client_properties_.erase(it);
         if (client_properties_.empty()) {
@@ -100,15 +118,51 @@ int Render::StreamWindow() {
           event.type = SDL_QUIT;
           SDL_PushEvent(&event);
         }
+        continue;
+      }
+
+      if (props->tab_selected_) {
+        ImGui::SetNextWindowSize(
+            ImVec2(stream_window_width_, stream_window_height_),
+            ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.0f));
+        ImGui::Begin(props->remote_id_.c_str(), nullptr, stream_window_flag);
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar(2);
+
+        ImVec2 pos = ImGui::GetWindowPos();
+        ImVec2 size = ImGui::GetWindowSize();
+        props->render_window_x_ = pos.x;
+        props->render_window_y_ = pos.y;
+        props->render_window_width_ = size.x;
+        props->render_window_height_ = size.y;
+
+        ControlWindow(props);
+        ImGui::End();
+
+        if (!props->peer_) {
+          fullscreen_button_pressed_ = false;
+          SDL_SetWindowFullscreen(stream_window_, SDL_FALSE);
+          it = client_properties_.erase(it);
+          if (client_properties_.empty()) {
+            SDL_Event event;
+            event.type = SDL_QUIT;
+            SDL_PushEvent(&event);
+          }
+        } else {
+          ++it;
+        }
+      } else {
+        ++it;
       }
     }
-    ImGui::EndTabBar();
   }
-  ImGui::End();
 
   UpdateRenderRect();
-
-  ImGui::End();
+  ImGui::End();  // End VideoBg
 
   return 0;
 }

@@ -179,7 +179,8 @@ int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties> &props) {
     }
   }
 
-  ImGui::Begin("ControlWindow", nullptr,
+  std::string control_window_title = props->remote_id_ + "ControlWindow";
+  ImGui::Begin(control_window_title.c_str(), nullptr,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoDocking);
   ImGui::PopStyleVar();
@@ -201,8 +202,10 @@ int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties> &props) {
       ImGuiCond_Always);
   ImGui::SetWindowFontScale(0.5f);
 
+  std::string control_child_window_title =
+      props->remote_id_ + "ControlChildWindow";
   ImGui::BeginChild(
-      "ControlBar",
+      control_child_window_title.c_str(),
       ImVec2(props->control_window_width_ * 2, props->control_window_height_),
       ImGuiChildFlags_Border, ImGuiWindowFlags_NoDecoration);
   ImGui::SetWindowFontScale(1.0f);
