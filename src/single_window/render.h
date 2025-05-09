@@ -58,10 +58,10 @@ class Render {
     float sub_stream_window_width_ = 1280;
     float sub_stream_window_height_ = 720;
     float control_window_min_width_ = 20;
-    float control_window_max_width_ = 200;
+    float control_window_max_width_ = 230;
     float control_window_min_height_ = 40;
     float control_window_max_height_ = 150;
-    float control_window_width_ = 200;
+    float control_window_width_ = 230;
     float control_window_height_ = 40;
     float control_bar_pos_x_ = 0;
     float control_bar_pos_y_ = 30;
@@ -396,6 +396,7 @@ class Render {
   bool enable_hardware_video_codec_last_ = false;
   bool enable_turn_last_ = false;
   bool settings_window_pos_reset_ = true;
+  int selected_display_ = 1;
   /* ------ main window property end ------ */
 
   /* ------ sub stream window property start ------ */

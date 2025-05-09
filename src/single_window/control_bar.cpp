@@ -32,7 +32,6 @@ int LossRateDisplay(float loss_rate) {
 int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
-  ImVec2 mouse_button_pos = ImVec2(0, 0);
   if (props->control_bar_expand_) {
     ImGui::SetCursorPosX(props->is_control_bar_in_left_
                              ? (props->control_window_width_ + 5.0f)
@@ -49,7 +48,41 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
                          IM_COL32(178, 178, 178, 255), 1.0f);
     }
 
-    mouse_button_pos = ImGui::GetCursorScreenPos();
+    std::string display = ICON_FA_DISPLAY;
+    if (ImGui::Button(display.c_str(), ImVec2(25, 25))) {
+      ImGui::OpenPopup("display");
+    }
+
+    ImVec2 btn_min = ImGui::GetItemRectMin();
+    ImVec2 btn_size_actual = ImGui::GetItemRectSize();
+
+    if (ImGui::BeginPopup("display")) {
+      std::vector<ScreenCapturer::DisplayInfo> display_list;
+      if (screen_capturer_) {
+        display_list = screen_capturer_->GetDisplayList();
+      }
+      ImGui::SetWindowFontScale(0.5f);
+      for (int i = 0; i < display_list.size(); i++) {
+        if (ImGui::Selectable(display_list[i].name.c_str())) {
+          selected_display_ = i + 1;
+        }
+      }
+      ImGui::SetWindowFontScale(1.0f);
+      ImGui::EndPopup();
+    }
+
+    ImGui::SetWindowFontScale(0.6f);
+    ImVec2 text_size =
+        ImGui::CalcTextSize(std::to_string(selected_display_).c_str());
+    ImVec2 text_pos =
+        ImVec2(btn_min.x + (btn_size_actual.x - text_size.x) * 0.5f,
+               btn_min.y + (btn_size_actual.y - text_size.y) * 0.5f - 2.0f);
+    ImGui::GetWindowDrawList()->AddText(
+        text_pos, IM_COL32(0, 0, 0, 255),
+        std::to_string(selected_display_).c_str());
+    ImGui::SetWindowFontScale(1.0f);
+
+    ImGui::SameLine();
     float disable_mouse_x = ImGui::GetCursorScreenPos().x + 4.0f;
     float disable_mouse_y = ImGui::GetCursorScreenPos().y + 4.0f;
     std::string mouse = props->mouse_control_button_pressed_
@@ -79,28 +112,6 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
                                  : IM_COL32(179, 213, 253, 255),
           2.0f);
     }
-
-    // const char* items[] = {"1", "2", "3"};
-    // static int item_selected_idx = 0;
-    // ImGui::Text("Display:");
-    // ImGui::SameLine();
-    // ImGui::SetNextItemWidth(25.0f);
-    // ImGuiComboFlags flags =
-    //     ImGuiComboFlags_HeightSmall | ImGuiComboFlags_NoArrowButton;
-    // const char* combo_preview_value = items[item_selected_idx];
-    // ImGui::SetWindowFontScale(1.2f);
-    // if (ImGui::BeginCombo("##display", combo_preview_value, flags)) {
-    //   ImGui::SetWindowFontScale(0.5f);
-    //   for (int n = 0; n < IM_ARRAYSIZE(items); n++) {
-    //     const bool is_selected = (item_selected_idx == n);
-    //     if (ImGui::Selectable(items[n], is_selected)) item_selected_idx = n;
-
-    //     if (is_selected) ImGui::SetItemDefaultFocus();
-    //   }
-    //   ImGui::SetWindowFontScale(1.0f);
-    //   ImGui::EndCombo();
-    // }
-    // ImGui::SetWindowFontScale(1.0f);
 
     ImGui::SameLine();
     // audio capture button
