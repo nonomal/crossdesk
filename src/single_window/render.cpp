@@ -359,6 +359,11 @@ int Render::CreateConnectionPeer() {
     LOG_INFO("Create peer [{}] instance failed", client_id_);
   }
 
+  AddVideoStream(peer_, "primrey");
+  AddVideoStream(peer_, "second");
+  AddAudioStream(peer_, "audio");
+  AddDataStream(peer_, "data");
+
   return 0;
 }
 
