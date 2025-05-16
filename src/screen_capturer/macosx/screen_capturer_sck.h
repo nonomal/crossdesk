@@ -31,9 +31,9 @@ class ScreenCapturerSck : public ScreenCapturer {
 
   int Resume(int monitor_index) override;
 
-  int SwitchTo(int monitor_index) override { return 0; }
+  int SwitchTo(int monitor_index) override;
 
-  std::vector<DisplayInfo> GetDisplayInfoList() override { return {}; }
+  std::vector<DisplayInfo> GetDisplayInfoList() override;
 
   void OnFrame();
 
