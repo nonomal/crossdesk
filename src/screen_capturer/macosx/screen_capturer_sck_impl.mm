@@ -72,13 +72,15 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   unsigned char *nv12_frame_ = nullptr;
   int width_ = 0;
   int height_ = 0;
+  int fps_ = 30;
 
  public:
   // Called by SckHelper when shareable content is returned by ScreenCaptureKit. `content` will be
   // nil if an error occurred. May run on an arbitrary thread.
   void OnShareableContentCreated(SCShareableContent *content);
   // Called by SckHelper to notify of a newly captured frame. May run on an arbitrary thread.
-  void OnNewIOSurface(IOSurfaceRef io_surface, CFDictionaryRef attachment);
+  // void OnNewIOSurface(IOSurfaceRef io_surface, CFDictionaryRef attachment);
+  void OnNewCVPixelBuffer(CVPixelBufferRef pixelBuffer, CFDictionaryRef attachment);
 
  private:
   // Called when starting the capturer or the configuration has changed (either from a
@@ -239,6 +241,7 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
   config.width = filter.contentRect.size.width * filter.pointPixelScale;
   config.height = filter.contentRect.size.height * filter.pointPixelScale;
   config.captureResolution = SCCaptureResolutionNominal;
+  config.minimumFrameInterval = CMTimeMake(1, fps_);
 
   std::lock_guard<std::mutex> lock(lock_);
 
@@ -252,10 +255,12 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
     // TODO: crbug.com/327458809 - Choose an appropriate sampleHandlerQueue for
     // best performance.
     NSError *add_stream_output_error;
+    dispatch_queue_t queue = dispatch_queue_create("ScreenCaptureKit.Queue", DISPATCH_QUEUE_SERIAL);
     bool add_stream_output_result = [stream_ addStreamOutput:helper_
                                                         type:SCStreamOutputTypeScreen
-                                          sampleHandlerQueue:nil
+                                          sampleHandlerQueue:queue
                                                        error:&add_stream_output_error];
+
     if (!add_stream_output_result) {
       stream_ = nil;
       LOG_ERROR("addStreamOutput failed");
@@ -279,12 +284,16 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
   }
 }
 
-void ScreenCapturerSckImpl::OnNewIOSurface(IOSurfaceRef io_surface, CFDictionaryRef attachment) {
-  size_t width = IOSurfaceGetWidth(io_surface);
-  size_t height = IOSurfaceGetHeight(io_surface);
+void ScreenCapturerSckImpl::OnNewCVPixelBuffer(CVPixelBufferRef pixelBuffer,
+                                               CFDictionaryRef attachment) {
+  size_t width = CVPixelBufferGetWidth(pixelBuffer);
+  size_t height = CVPixelBufferGetHeight(pixelBuffer);
 
-  uint32_t aseed;
-  IOSurfaceLock(io_surface, kIOSurfaceLockReadOnly, &aseed);
+  CVReturn status = CVPixelBufferLockBaseAddress(pixelBuffer, kCVPixelBufferLock_ReadOnly);
+  if (status != kCVReturnSuccess) {
+    LOG_ERROR("Failed to lock CVPixelBuffer base address: %d", status);
+    return;
+  }
 
   size_t required_size = width * height * 3 / 2;
   if (!nv12_frame_ || (width_ * height_ * 3 / 2 < required_size)) {
@@ -294,12 +303,26 @@ void ScreenCapturerSckImpl::OnNewIOSurface(IOSurfaceRef io_surface, CFDictionary
     height_ = height;
   }
 
-  memcpy(nv12_frame_, IOSurfaceGetBaseAddress(io_surface), width * height * 3 / 2);
+  void *base_y = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0);
+  size_t stride_y = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0);
+
+  void *base_uv = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 1);
+  size_t stride_uv = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 1);
+
+  unsigned char *dst_y = nv12_frame_;
+  for (size_t row = 0; row < height; ++row) {
+    memcpy(dst_y + row * width, static_cast<unsigned char *>(base_y) + row * stride_y, width);
+  }
+
+  unsigned char *dst_uv = nv12_frame_ + width * height;
+  for (size_t row = 0; row < height / 2; ++row) {
+    memcpy(dst_uv + row * width, static_cast<unsigned char *>(base_uv) + row * stride_uv, width);
+  }
 
   _on_data(nv12_frame_, width * height * 3 / 2, width, height,
            display_id_map_reverse_[current_display_]);
 
-  IOSurfaceUnlock(io_surface, kIOSurfaceLockReadOnly, &aseed);
+  CVPixelBufferUnlockBaseAddress(pixelBuffer, kCVPixelBufferLock_ReadOnly);
 }
 
 void ScreenCapturerSckImpl::StartOrReconfigureCapturer() {
@@ -349,15 +372,12 @@ std::unique_ptr<ScreenCapturer> ScreenCapturerSck::CreateScreenCapturerSck() {
     return;
   }
 
-  IOSurfaceRef ioSurface = CVPixelBufferGetIOSurface(pixelBuffer);
-  if (!ioSurface) {
-    return;
-  }
+  CFRetain(pixelBuffer);
 
-  CFArrayRef attachmentsArray =
-      CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, /*createIfNecessary=*/false);
-  if (!attachmentsArray || CFArrayGetCount(attachmentsArray) <= 0) {
+  CFArrayRef attachmentsArray = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, false);
+  if (!attachmentsArray || CFArrayGetCount(attachmentsArray) == 0) {
     LOG_ERROR("Discarding frame with no attachments");
+    CFRelease(pixelBuffer);
     return;
   }
 
@@ -366,8 +386,10 @@ std::unique_ptr<ScreenCapturer> ScreenCapturerSck::CreateScreenCapturerSck() {
 
   std::lock_guard<std::mutex> lock(_capturer_lock);
   if (_capturer) {
-    _capturer->OnNewIOSurface(ioSurface, attachment);
+    _capturer->OnNewCVPixelBuffer(pixelBuffer, attachment);
   }
+
+  CFRelease(pixelBuffer);
 }
 
 - (void)releaseCapturer {
