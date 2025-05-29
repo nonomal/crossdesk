@@ -28,26 +28,31 @@ int MouseController::SendMouseCommand(RemoteAction remote_action,
   if (remote_action.type == ControlType::mouse) {
     CGEventRef mouse_event = nullptr;
     CGEventType mouse_type;
+    CGMouseButton mouse_button;
     CGPoint mouse_point = CGPointMake(mouse_pos_x, mouse_pos_y);
 
     switch (remote_action.m.flag) {
       case MouseFlag::left_down:
         mouse_type = kCGEventLeftMouseDown;
+        left_dragging_ = true;
         mouse_event = CGEventCreateMouseEvent(NULL, mouse_type, mouse_point,
                                               kCGMouseButtonLeft);
         break;
       case MouseFlag::left_up:
         mouse_type = kCGEventLeftMouseUp;
+        left_dragging_ = false;
         mouse_event = CGEventCreateMouseEvent(NULL, mouse_type, mouse_point,
                                               kCGMouseButtonLeft);
         break;
       case MouseFlag::right_down:
         mouse_type = kCGEventRightMouseDown;
+        right_dragging_ = true;
         mouse_event = CGEventCreateMouseEvent(NULL, mouse_type, mouse_point,
                                               kCGMouseButtonRight);
         break;
       case MouseFlag::right_up:
         mouse_type = kCGEventRightMouseUp;
+        right_dragging_ = false;
         mouse_event = CGEventCreateMouseEvent(NULL, mouse_type, mouse_point,
                                               kCGMouseButtonRight);
         break;
@@ -70,9 +75,19 @@ int MouseController::SendMouseCommand(RemoteAction remote_action,
             NULL, kCGScrollEventUnitLine, 2, 0, remote_action.m.s);
         break;
       default:
-        mouse_type = kCGEventMouseMoved;
+        if (left_dragging_) {
+          mouse_type = kCGEventLeftMouseDragged;
+          mouse_button = kCGMouseButtonLeft;
+        } else if (right_dragging_) {
+          mouse_type = kCGEventRightMouseDragged;
+          mouse_button = kCGMouseButtonRight;
+        } else {
+          mouse_type = kCGEventMouseMoved;
+          mouse_button = kCGMouseButtonLeft;
+        }
+
         mouse_event = CGEventCreateMouseEvent(NULL, mouse_type, mouse_point,
-                                              kCGMouseButtonLeft);
+                                              mouse_button);
         break;
     }
 

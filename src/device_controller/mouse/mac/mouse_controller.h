@@ -23,6 +23,8 @@ class MouseController : public DeviceController {
 
  private:
   std::vector<DisplayInfo> display_info_list_;
+  bool left_dragging_ = false;
+  bool right_dragging_ = false;
 };
 
 #endif
