@@ -62,7 +62,6 @@ int MouseController::SendMouseCommand(RemoteAction remote_action,
     ip.mi.time = 0;
 
     SetCursorPos(ip.mi.dx, ip.mi.dy);
-    LOG_ERROR("mouse {}x{}", ip.mi.dx, ip.mi.dy);
 
     if (ip.mi.dwFlags != MOUSEEVENTF_MOVE) {
       SendInput(1, &ip, sizeof(INPUT));

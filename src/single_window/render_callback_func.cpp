@@ -269,7 +269,8 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
     auto props = render->client_properties_.find(remote_id)->second;
     RemoteAction host_info;
     if (DeserializeRemoteAction(data, size, host_info)) {
-      if (ControlType::host_infomation == host_info.type) {
+      if (ControlType::host_infomation == host_info.type &&
+          props->remote_host_name_.empty()) {
         props->remote_host_name_ =
             std::string(host_info.i.host_name, host_info.i.host_name_size);
         LOG_INFO("Remote hostname: [{}]", props->remote_host_name_);
