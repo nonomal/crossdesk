@@ -280,7 +280,6 @@ int ScreenCapturerSckImpl::Destroy() {
 }
 
 int ScreenCapturerSckImpl::Stop() {
-  [stream_ stopCaptureWithCompletionHandler:nil];
   std::lock_guard<std::mutex> lock(lock_);
   if (stream_) {
     LOG_INFO("Stopping stream");
