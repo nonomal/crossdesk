@@ -236,8 +236,7 @@ class Render {
 
  private:
   struct CDCache {
-    char client_id[10];
-    char password[7];
+    char client_id_with_password[17];
     int language;
     int video_quality;
     int video_encode_format;
@@ -364,11 +363,9 @@ class Render {
   bool password_validating_ = false;
   uint32_t password_validating_time_ = 0;
   bool show_settings_window_ = false;
-  bool is_create_connection_ = false;
   bool rejoin_ = false;
   bool local_id_copied_ = false;
   bool show_password_ = true;
-  bool password_inited_ = false;
   bool regenerate_password_ = false;
   bool show_about_window_ = false;
   bool show_connection_status_window_ = false;
@@ -407,6 +404,7 @@ class Render {
   uint64_t last_frame_time_;
   char client_id_[10] = "";
   char client_id_display_[12] = "";
+  char client_id_with_password_[17] = "";
   char password_saved_[7] = "";
   int language_button_value_ = 0;
   int video_quality_button_value_ = 0;

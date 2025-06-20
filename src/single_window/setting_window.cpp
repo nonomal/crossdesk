@@ -237,7 +237,6 @@ int Render::SettingWindow() {
         if (!stream_window_inited_) {
           LOG_INFO("Recreate peer instance");
           DestroyPeer(&peer_);
-          is_create_connection_ = false;
           CreateConnectionPeer();
         }
       }

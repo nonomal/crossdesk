@@ -174,10 +174,8 @@ int Render::LocalWindow() {
               regenerate_password_ ? ICON_FA_SPINNER : ICON_FA_ARROWS_ROTATE,
               ImVec2(22, 38))) {
         regenerate_password_ = true;
-        password_inited_ = false;
         regenerate_password_start_time_ = ImGui::GetTime();
         LeaveConnection(peer_, client_id_);
-        is_create_connection_ = false;
       }
       if (ImGui::GetTime() - regenerate_password_start_time_ > 0.3f) {
         regenerate_password_ = false;
@@ -259,8 +257,22 @@ int Render::LocalWindow() {
             focus_on_input_widget_ = true;
           } else {
             show_reset_password_window_ = false;
+            memset(&password_saved_, 0, sizeof(password_saved_));
+            strncpy(password_saved_, new_password_,
+                    sizeof(password_saved_) - 1);
+            password_saved_[sizeof(password_saved_) - 1] = '\0';
+
+            std::string client_id_with_password =
+                std::string(client_id_) + "@" + password_saved_;
+            strncpy(client_id_with_password_, client_id_with_password.c_str(),
+                    sizeof(client_id_with_password_) - 1);
+            client_id_with_password_[sizeof(client_id_with_password_) - 1] =
+                '\0';
+
+            SaveSettingsIntoCacheFile();
+
             LeaveConnection(peer_, client_id_);
-            is_create_connection_ = false;
+            DestroyPeer(&peer_);
             focus_on_input_widget_ = true;
           }
         }

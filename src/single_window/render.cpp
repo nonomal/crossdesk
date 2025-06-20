@@ -177,10 +177,10 @@ int Render::SaveSettingsIntoCacheFile() {
     return -1;
   }
 
-  memset(&cd_cache_.client_id, 0, sizeof(cd_cache_.client_id));
-  memcpy(cd_cache_.client_id, client_id_, sizeof(client_id_));
-  memset(&cd_cache_.password, 0, sizeof(cd_cache_.password));
-  memcpy(cd_cache_.password, password_saved_, sizeof(password_saved_));
+  memset(&cd_cache_.client_id_with_password, 0,
+         sizeof(cd_cache_.client_id_with_password));
+  memcpy(cd_cache_.client_id_with_password, client_id_with_password_,
+         sizeof(client_id_with_password_));
   memcpy(&cd_cache_.language, &language_button_value_,
          sizeof(language_button_value_));
   memcpy(&cd_cache_.video_quality, &video_quality_button_value_,
@@ -246,11 +246,28 @@ int Render::LoadSettingsFromCacheFile() {
   cd_cache_file.close();
   cd_cache_mutex_.unlock();
 
-  memset(&client_id_, 0, sizeof(client_id_));
-  memcpy(client_id_, cd_cache_.client_id, sizeof(client_id_));
-  memcpy(password_saved_, cd_cache_.password, sizeof(password_saved_));
-  if (0 != strcmp(password_saved_, "") && 7 == sizeof(password_saved_)) {
-    password_inited_ = true;
+  memset(&client_id_with_password_, 0, sizeof(client_id_with_password_));
+  memcpy(client_id_with_password_, cd_cache_.client_id_with_password,
+         sizeof(client_id_with_password_));
+
+  if (strchr(client_id_with_password_, '@') != nullptr) {
+    std::string id, password;
+    const char* at_pos = strchr(client_id_with_password_, '@');
+    if (at_pos == nullptr) {
+      id = client_id_with_password_;
+      password.clear();
+    } else {
+      id.assign(client_id_with_password_, at_pos - client_id_with_password_);
+      password = at_pos + 1;
+    }
+
+    memset(&client_id_, 0, sizeof(client_id_));
+    strncpy(client_id_, id.c_str(), sizeof(client_id_) - 1);
+    client_id_[sizeof(client_id_) - 1] = '\0';
+
+    memset(&password_saved_, 0, sizeof(password_saved_));
+    strncpy(password_saved_, password.c_str(), sizeof(password_saved_) - 1);
+    password_saved_[sizeof(password_saved_) - 1] = '\0';
   }
 
   memcpy(aes128_key_, cd_cache_.key, sizeof(cd_cache_.key));
@@ -461,7 +478,7 @@ int Render::CreateConnectionPeer() {
   params_.on_connection_status = OnConnectionStatusCb;
   params_.net_status_report = NetStatusReport;
 
-  params_.user_id = client_id_;
+  params_.user_id = client_id_with_password_;
   params_.user_data = this;
 
   peer_ = CreatePeer(&params_);
@@ -937,6 +954,10 @@ void Render::InitializeMainWindow() {
 
 void Render::MainLoop() {
   while (!exit_) {
+    if (!peer_) {
+      CreateConnectionPeer();
+    }
+
     UpdateLabels();
     ProcessSdlEvent();
     HandleRecentConnections();
@@ -948,13 +969,6 @@ void Render::MainLoop() {
     }
 
     UpdateInteractions();
-
-    if (SignalStatus::SignalConnected == signal_status_ &&
-        !is_create_connection_ && password_inited_) {
-      LOG_INFO("Connected with signal server, create p2p connection");
-      is_create_connection_ =
-          CreateConnection(peer_, client_id_, password_saved_) ? false : true;
-    }
 
     if (need_to_send_host_info_) {
       RemoteAction remote_action;

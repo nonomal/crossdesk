@@ -474,7 +474,7 @@ void Render::NetStatusReport(const char *client_id, size_t client_id_size,
     return;
   }
 
-  if (strchr(client_id, '@') != nullptr) {
+  if (strchr(client_id, '@') != nullptr && strchr(user_id, '-') == nullptr) {
     std::string id, password;
     const char *at_pos = strchr(client_id, '@');
     if (at_pos == nullptr) {
@@ -485,8 +485,6 @@ void Render::NetStatusReport(const char *client_id, size_t client_id_size,
       password = at_pos + 1;
     }
 
-    LOG_ERROR("{}:{}", id, password);
-
     memset(&render->client_id_, 0, sizeof(render->client_id_));
     strncpy(render->client_id_, id.c_str(), sizeof(render->client_id_) - 1);
     render->client_id_[sizeof(render->client_id_) - 1] = '\0';
@@ -495,11 +493,17 @@ void Render::NetStatusReport(const char *client_id, size_t client_id_size,
     strncpy(render->password_saved_, password.c_str(),
             sizeof(render->password_saved_) - 1);
     render->password_saved_[sizeof(render->password_saved_) - 1] = '\0';
-    LOG_INFO("Use client id [{}] and save id into cache file", client_id);
+
+    memset(&render->client_id_with_password_, 0,
+           sizeof(render->client_id_with_password_));
+    strncpy(render->client_id_with_password_, id.c_str(),
+            sizeof(render->client_id_with_password_) - 1);
+    render->client_id_with_password_[sizeof(render->client_id_with_password_) -
+                                     1] = '\0';
+
+    LOG_INFO("Use client id [{}] and save id into cache file", id);
     render->SaveSettingsIntoCacheFile();
   }
-
-  LOG_ERROR("{}", user_id);
 
   std::string remote_id(user_id, user_id_size);
   if (render->client_properties_.find(remote_id) ==

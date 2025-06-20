@@ -165,7 +165,9 @@ int Render::ConnectTo(const std::string &remote_id, const char *password,
               sizeof(props->remote_password_) - 1);
       props->remote_password_[sizeof(props->remote_password_) - 1] = '\0';
     }
-    ret = JoinConnection(props->peer_, remote_id.c_str(), password);
+
+    std::string remote_id_with_pwd = remote_id + "@" + password;
+    ret = JoinConnection(props->peer_, remote_id_with_pwd.c_str());
     if (0 == ret) {
       props->rejoin_ = false;
     } else {
