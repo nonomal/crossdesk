@@ -24,6 +24,8 @@ class PathManager {
 
   std::filesystem::path GetLogPath();
 
+  std::filesystem::path GetCertPath();
+
   bool CreateDirectories(const std::filesystem::path& p);
 
  private:

@@ -127,16 +127,25 @@ void ScaleNv12ToABGR(char* src, int src_w, int src_h, int dst_w, int dst_h,
   }
 }
 
-Thumbnail::Thumbnail() {
+Thumbnail::Thumbnail(std::string save_path) {
+  if (!save_path.empty()) {
+    save_path_ = save_path;
+  }
+
   RAND_bytes(aes128_key_, sizeof(aes128_key_));
   RAND_bytes(aes128_iv_, sizeof(aes128_iv_));
-  std::filesystem::create_directory(image_path_);
+  std::filesystem::create_directory(save_path_);
 }
 
-Thumbnail::Thumbnail(unsigned char* aes128_key, unsigned char* aes128_iv) {
+Thumbnail::Thumbnail(std::string save_path, unsigned char* aes128_key,
+                     unsigned char* aes128_iv) {
+  if (!save_path.empty()) {
+    save_path_ = save_path;
+  }
+
   memcpy(aes128_key_, aes128_key, sizeof(aes128_key_));
   memcpy(aes128_iv_, aes128_iv, sizeof(aes128_iv_));
-  std::filesystem::create_directory(image_path_);
+  std::filesystem::create_directory(save_path_);
 }
 
 Thumbnail::~Thumbnail() {
@@ -177,7 +186,7 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
 
   std::string cipher_password = AES_encrypt(password, aes128_key_, aes128_iv_);
   image_file_name = remote_id + 'Y' + host_name + '@' + cipher_password;
-  std::string file_path = image_path_ + image_file_name;
+  std::string file_path = save_path_ + image_file_name;
   stbi_write_png(file_path.data(), thumbnail_width_, thumbnail_height_, 4,
                  rgba_buffer_, thumbnail_width_ * 4);
 
@@ -197,14 +206,14 @@ int Thumbnail::LoadThumbnail(
   recent_connections.clear();
 
   std::vector<std::filesystem::path> image_paths =
-      FindThumbnailPath(image_path_);
+      FindThumbnailPath(save_path_);
 
   if (image_paths.size() == 0) {
     return -1;
   } else {
     for (int i = 0; i < image_paths.size(); i++) {
       size_t pos1 = image_paths[i].string().find('/') + 1;
-      std::string cipher_image_name = image_paths[i].string().substr(pos1);
+      std::string cipher_image_name = image_paths[i].filename().string();
       std::string remote_id;
       std::string cipher_password;
       std::string remote_host_name;
@@ -245,7 +254,7 @@ int Thumbnail::LoadThumbnail(
             AES_decrypt(cipher_password, aes128_key_, aes128_iv_);
       }
 
-      std::string image_path = image_path_ + cipher_image_name;
+      std::string image_path = save_path_ + cipher_image_name;
       recent_connections[original_image_name].texture = nullptr;
       LoadTextureFromFile(image_path.c_str(), renderer,
                           &(recent_connections[original_image_name].texture),
@@ -257,7 +266,7 @@ int Thumbnail::LoadThumbnail(
 }
 
 int Thumbnail::DeleteThumbnail(const std::string& filename_keyword) {
-  for (const auto& entry : std::filesystem::directory_iterator(image_path_)) {
+  for (const auto& entry : std::filesystem::directory_iterator(save_path_)) {
     if (entry.is_regular_file()) {
       const std::string filename = entry.path().filename().string();
       std::string id_hostname = filename_keyword.substr(0, filename.find('@'));
@@ -295,9 +304,9 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
 }
 
 int Thumbnail::DeleteAllFilesInDirectory() {
-  if (std::filesystem::exists(image_path_) &&
-      std::filesystem::is_directory(image_path_)) {
-    for (const auto& entry : std::filesystem::directory_iterator(image_path_)) {
+  if (std::filesystem::exists(save_path_) &&
+      std::filesystem::is_directory(save_path_)) {
+    for (const auto& entry : std::filesystem::directory_iterator(save_path_)) {
       if (std::filesystem::is_regular_file(entry.status())) {
         std::filesystem::remove(entry.path());
       }

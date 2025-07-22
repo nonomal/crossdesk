@@ -30,7 +30,7 @@ int KeyboardCapturer::Hook(OnKeyAction on_key_action, void* user_ptr) {
 
   keyboard_hook_ = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, NULL, 0);
   if (!keyboard_hook_) {
-    LOG_ERROR("Failed to install keyboard hook!")
+    LOG_ERROR("Failed to install keyboard hook");
     return -1;
   }
   return 0;

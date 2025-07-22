@@ -171,7 +171,7 @@ Render::~Render() {}
 
 int Render::SaveSettingsIntoCacheFile() {
   cd_cache_mutex_.lock();
-  std::ofstream cd_cache_file("cache.cd", std::ios::binary);
+  std::ofstream cd_cache_file(cache_path_ + "/cache.cd", std::ios::binary);
   if (!cd_cache_file) {
     cd_cache_mutex_.unlock();
     return -1;
@@ -212,7 +212,7 @@ int Render::SaveSettingsIntoCacheFile() {
 
 int Render::LoadSettingsFromCacheFile() {
   cd_cache_mutex_.lock();
-  std::ifstream cd_cache_file("cache.cd", std::ios::binary);
+  std::ifstream cd_cache_file(cache_path_ + "/cache.cd", std::ios::binary);
   if (!cd_cache_file) {
     cd_cache_mutex_.unlock();
 
@@ -235,7 +235,7 @@ int Render::LoadSettingsFromCacheFile() {
     config_center_.SetTurn(enable_turn_);
 
     thumbnail_.reset();
-    thumbnail_ = std::make_unique<Thumbnail>();
+    thumbnail_ = std::make_unique<Thumbnail>(cache_path_ + "/thumbnails/");
     thumbnail_->GetKeyAndIv(aes128_key_, aes128_iv_);
     thumbnail_->DeleteAllFilesInDirectory();
 
@@ -276,7 +276,8 @@ int Render::LoadSettingsFromCacheFile() {
   memcpy(aes128_iv_, cd_cache_.iv, sizeof(cd_cache_.iv));
 
   thumbnail_.reset();
-  thumbnail_ = std::make_unique<Thumbnail>(aes128_key_, aes128_iv_);
+  thumbnail_ = std::make_unique<Thumbnail>(cache_path_ + "/thumbnails/",
+                                           aes128_key_, aes128_iv_);
 
   language_button_value_ = cd_cache_.language;
   video_quality_button_value_ = cd_cache_.video_quality;
@@ -351,7 +352,7 @@ int Render::ScreenCapturerInit() {
 
 int Render::StartScreenCapturer() {
   if (screen_capturer_) {
-    LOG_INFO("Start screen capturer")
+    LOG_INFO("Start screen capturer");
     screen_capturer_->Start();
   }
 
@@ -360,7 +361,7 @@ int Render::StartScreenCapturer() {
 
 int Render::StopScreenCapturer() {
   if (screen_capturer_) {
-    LOG_INFO("Stop screen capturer")
+    LOG_INFO("Stop screen capturer");
     screen_capturer_->Stop();
   }
 
@@ -407,7 +408,7 @@ int Render::StartMouseController() {
 
   int mouse_controller_init_ret = mouse_controller_->Init(display_info_list_);
   if (0 != mouse_controller_init_ret) {
-    LOG_INFO("Destroy mouse controller")
+    LOG_INFO("Destroy mouse controller");
     mouse_controller_->Destroy();
     mouse_controller_ = nullptr;
   }
@@ -465,7 +466,9 @@ int Render::CreateConnectionPeer() {
   params_.turn_server_port = 3478;
   params_.turn_server_username = "dijunkun";
   params_.turn_server_password = "dijunkunpw";
-  params_.tls_cert_path = "certs/crossdesk.cn_root.crt";
+  params_.tls_cert_path =
+      cert_path_.empty() ? "certs/crossdesk.cn_root.crt" : cert_path_.c_str();
+  params_.log_path = dll_log_path_.empty() ? "logs" : dll_log_path_.c_str();
   params_.hardware_acceleration = config_center_.IsHardwareVideoCodec();
   params_.av1_encoding = config_center_.GetVideoEncodeFormat() ==
                                  ConfigCenter::VIDEO_ENCODE_FORMAT::AV1
@@ -704,6 +707,10 @@ int Render::DestroyStreamWindow() {
 int Render::SetupFontAndStyle() {
   // Setup Dear ImGui style
   ImGuiIO& io = ImGui::GetIO();
+
+  imgui_cache_path_ = cache_path_ + "/crossdesk.ini";
+  io.IniFilename = imgui_cache_path_.c_str();
+
   io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
   io.ConfigFlags |=
@@ -892,6 +899,16 @@ int Render::DrawStreamWindow() {
 }
 
 int Render::Run() {
+  path_manager_ = std::make_unique<PathManager>("CrossDesk");
+  if (path_manager_) {
+    cert_path_ =
+        (path_manager_->GetCertPath() / "crossdesk.cn_root.crt").string();
+    exec_log_path_ = path_manager_->GetLogPath().string();
+    dll_log_path_ = path_manager_->GetLogPath().string();
+    cache_path_ = path_manager_->GetCachePath().string();
+  }
+
+  InitializeLogger();
   InitializeSettings();
   InitializeSDL();
   InitializeModules();
@@ -905,6 +922,14 @@ int Render::Run() {
   Cleanup();
 
   return 0;
+}
+
+void Render::InitializeLogger() {
+  if (!exec_log_path_.empty()) {
+    InitLogger(exec_log_path_);
+  } else {
+    InitLogger("logs");
+  }
 }
 
 void Render::InitializeSettings() {

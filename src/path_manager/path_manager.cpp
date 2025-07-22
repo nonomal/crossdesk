@@ -16,7 +16,7 @@ std::filesystem::path PathManager::GetConfigPath() {
 
 std::filesystem::path PathManager::GetCachePath() {
 #ifdef _WIN32
-  return GetKnownFolder(FOLDERID_LocalAppData) / app_name_ / "Cache";
+  return GetKnownFolder(FOLDERID_LocalAppData) / app_name_ / "cache";
 #elif __APPLE__
   return GetEnvOrDefault("XDG_CACHE_HOME", GetHome() + "/.cache") / app_name_;
 #else
@@ -26,11 +26,25 @@ std::filesystem::path PathManager::GetCachePath() {
 
 std::filesystem::path PathManager::GetLogPath() {
 #ifdef _WIN32
-  return GetKnownFolder(FOLDERID_LocalAppData) / app_name_ / "Logs";
+  return GetKnownFolder(FOLDERID_LocalAppData) / app_name_ / "logs";
 #elif __APPLE__
   return GetHome() + "/Library/Logs/" + app_name_;
 #else
   return GetCachePath() / "logs";
+#endif
+}
+
+std::filesystem::path PathManager::GetCertPath() {
+#ifdef _WIN32
+  // %APPDATA%\AppName\Certs
+  return GetKnownFolder(FOLDERID_RoamingAppData) / app_name_ / "certs";
+#elif __APPLE__
+  // $HOME/Library/Application Support/AppName/certs
+  return GetHome() + "/Library/Application Support/" + app_name_ + "/certs";
+#else
+  // $XDG_CONFIG_HOME/AppName/certs
+  return GetEnvOrDefault("XDG_CONFIG_HOME", GetHome() + "/.config") /
+         app_name_ / "certs";
 #endif
 }
 

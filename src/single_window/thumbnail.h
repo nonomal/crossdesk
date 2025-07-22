@@ -25,8 +25,9 @@ class Thumbnail {
   };
 
  public:
-  Thumbnail();
-  explicit Thumbnail(unsigned char* aes128_key, unsigned char* aes128_iv);
+  Thumbnail(std::string save_path);
+  explicit Thumbnail(std::string save_path, unsigned char* aes128_key,
+                     unsigned char* aes128_iv);
   ~Thumbnail();
 
  public:
@@ -74,7 +75,7 @@ class Thumbnail {
   int thumbnail_width_ = 160;
   int thumbnail_height_ = 90;
   char* rgba_buffer_ = nullptr;
-  std::string image_path_ = "thumbnails/";
+  std::string save_path_ = "thumbnails/";
 
   unsigned char aes128_key_[16];
   unsigned char aes128_iv_[16];

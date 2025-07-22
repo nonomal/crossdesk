@@ -25,6 +25,7 @@
 #include "imgui_impl_sdlrenderer2.h"
 #include "imgui_internal.h"
 #include "minirtc.h"
+#include "path_manager.h"
 #include "screen_capturer_factory.h"
 #include "speaker_capturer_factory.h"
 #include "thumbnail.h"
@@ -118,6 +119,7 @@ class Render {
   int Run();
 
  private:
+  void InitializeLogger();
   void InitializeSettings();
   void InitializeSDL();
   void InitializeModules();
@@ -254,10 +256,15 @@ class Render {
   ConfigCenter config_center_;
   ConfigCenter::LANGUAGE localization_language_ =
       ConfigCenter::LANGUAGE::CHINESE;
+  std::unique_ptr<PathManager> path_manager_;
+  std::string cert_path_;
+  std::string exec_log_path_;
+  std::string dll_log_path_;
+  std::string cache_path_;
+  std::string imgui_cache_path_;
   int localization_language_index_ = -1;
   int localization_language_index_last_ = -1;
   bool modules_inited_ = false;
-
   /* ------ all windows property start ------ */
   float title_bar_width_ = 640;
   float title_bar_height_ = 30;

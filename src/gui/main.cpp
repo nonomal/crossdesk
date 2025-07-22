@@ -10,9 +10,7 @@
 #include "render.h"
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
-  LOG_INFO("Remote desk");
   Render render;
-
   render.Run();
 
   return 0;
