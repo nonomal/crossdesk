@@ -301,6 +301,10 @@ class Render {
   bool foucs_on_main_window_ = false;
   bool foucs_on_stream_window_ = false;
   bool audio_capture_ = false;
+  int main_window_width_real_ = 720;
+  int main_window_height_real_ = 540;
+  float main_window_dpi_scaling_w_ = 1.0f;
+  float main_window_dpi_scaling_h_ = 1.0f;
   float main_window_width_default_ = 640;
   float main_window_height_default_ = 480;
   float main_window_width_ = 640;
@@ -364,6 +368,10 @@ class Render {
   float stream_window_width_ = 1280;
   float stream_window_height_ = 720;
   SDL_PixelFormat stream_pixformat_ = SDL_PIXELFORMAT_NV12;
+  int stream_window_width_real_ = 1280;
+  int stream_window_height_real_ = 720;
+  float stream_window_dpi_scaling_w_ = 1.0f;
+  float stream_window_dpi_scaling_h_ = 1.0f;
 
   bool label_inited_ = false;
   bool connect_button_pressed_ = false;

@@ -729,6 +729,15 @@ int Render::SetupMainWindow() {
 
   SetupFontAndStyle();
 
+  SDL_GetWindowSizeInPixels(main_window_, &main_window_width_real_,
+                            &main_window_height_real_);
+  main_window_dpi_scaling_w_ = main_window_width_real_ / main_window_width_;
+  main_window_dpi_scaling_h_ = main_window_width_real_ / main_window_width_;
+  SDL_SetRenderScale(main_renderer_, main_window_dpi_scaling_w_,
+                     main_window_dpi_scaling_h_);
+  LOG_INFO("Use dpi scaling [{}x{}] for main window",
+           main_window_dpi_scaling_w_, main_window_dpi_scaling_h_);
+
   ImGui_ImplSDL3_InitForSDLRenderer(main_window_, main_renderer_);
   ImGui_ImplSDLRenderer3_Init(main_renderer_);
 
@@ -757,6 +766,19 @@ int Render::SetupStreamWindow() {
   ImGui::SetCurrentContext(stream_ctx_);
 
   SetupFontAndStyle();
+
+  SDL_GetWindowSizeInPixels(stream_window_, &stream_window_width_real_,
+                            &stream_window_height_real_);
+
+  stream_window_dpi_scaling_w_ =
+      stream_window_width_real_ / stream_window_width_;
+  stream_window_dpi_scaling_h_ =
+      stream_window_width_real_ / stream_window_width_;
+
+  SDL_SetRenderScale(stream_renderer_, stream_window_dpi_scaling_w_,
+                     stream_window_dpi_scaling_h_);
+  LOG_INFO("Use dpi scaling [{}x{}] for stream window",
+           stream_window_dpi_scaling_w_, stream_window_dpi_scaling_h_);
 
   ImGui_ImplSDL3_InitForSDLRenderer(stream_window_, stream_renderer_);
   ImGui_ImplSDLRenderer3_Init(stream_renderer_);
