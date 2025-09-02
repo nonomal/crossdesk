@@ -31,6 +31,7 @@ class KeyboardCapturer : public DeviceController {
   bool control_flag_ = false;
   bool option_flag_ = false;
   bool command_flag_ = false;
+  int fn_key_code_ = 0x3F;
 };
 
 #endif

@@ -123,12 +123,44 @@ int KeyboardCapturer::Unhook() {
   return 0;
 }
 
+inline bool IsFunctionKey(int key_code) {
+  switch (key_code) {
+    case 0x7A:
+    case 0x78:
+    case 0x63:
+    case 0x76:
+    case 0x60:
+    case 0x61:
+    case 0x62:
+    case 0x64:
+    case 0x65:
+    case 0x6D:
+    case 0x67:
+    case 0x6F:
+      return true;
+    default:
+      return false;
+  }
+}
+
 int KeyboardCapturer::SendKeyboardCommand(int key_code, bool is_down) {
   if (vkCodeToCGKeyCode.find(key_code) != vkCodeToCGKeyCode.end()) {
     CGKeyCode cg_key_code = vkCodeToCGKeyCode[key_code];
     CGEventRef event = CGEventCreateKeyboardEvent(NULL, cg_key_code, is_down);
+    CGEventRef clearFlags =
+        CGEventCreateKeyboardEvent(NULL, (CGKeyCode)0, true);
+    CGEventSetFlags(clearFlags, 0);
     CGEventPost(kCGHIDEventTap, event);
     CFRelease(event);
+
+    // F1-F12 keys often require the FN key to be pressed on Mac keyboards, so
+    // we simulate the FN key release when an F1-F12 key is released.
+    if (IsFunctionKey(cg_key_code) && !is_down) {
+      CGEventRef fn_release_event =
+          CGEventCreateKeyboardEvent(NULL, fn_key_code_, false);
+      CGEventPost(kCGHIDEventTap, fn_release_event);
+      CFRelease(fn_release_event);
+    }
   }
 
   return 0;
