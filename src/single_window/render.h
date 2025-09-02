@@ -348,7 +348,6 @@ class Render {
   std::string focused_remote_id_ = "";
   bool need_to_send_host_info_ = false;
   SDL_Event last_mouse_event;
-  SDL_AudioStream *input_stream_;
   SDL_AudioStream *output_stream_;
   uint32_t STREAM_REFRESH_EVENT = 0;
 

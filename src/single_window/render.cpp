@@ -512,22 +512,10 @@ int Render::CreateConnectionPeer() {
 }
 
 int Render::AudioDeviceInit() {
-  SDL_AudioSpec desired_in{};
-  desired_in.freq = 48000;
-  desired_in.format = SDL_AUDIO_S16;
-  desired_in.channels = 1;
-
   SDL_AudioSpec desired_out{};
   desired_out.freq = 48000;
   desired_out.format = SDL_AUDIO_S16;
   desired_out.channels = 1;
-
-  input_stream_ = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING,
-                                            &desired_in, nullptr, nullptr);
-  if (!input_stream_) {
-    LOG_ERROR("Failed to open input stream: {}", SDL_GetError());
-    return -1;
-  }
 
   output_stream_ = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
                                              &desired_out, nullptr, nullptr);
@@ -536,18 +524,12 @@ int Render::AudioDeviceInit() {
     return -1;
   }
 
-  SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(input_stream_));
   SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(output_stream_));
 
   return 0;
 }
 
 int Render::AudioDeviceDestroy() {
-  if (input_stream_) {
-    SDL_CloseAudioDevice(SDL_GetAudioStreamDevice(input_stream_));
-    SDL_DestroyAudioStream(input_stream_);
-    input_stream_ = nullptr;
-  }
   if (output_stream_) {
     SDL_CloseAudioDevice(SDL_GetAudioStreamDevice(output_stream_));
     SDL_DestroyAudioStream(output_stream_);
