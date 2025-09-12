@@ -42,7 +42,8 @@ Description: $DESCRIPTION
 Depends: libc6 (>= 2.29), libstdc++6 (>= 9), libx11-6, libxcb1,
  libxcb-randr0, libxcb-xtest0, libxcb-xinerama0, libxcb-shape0,
  libxcb-xkb1, libxcb-xfixes0, libxv1, libxtst6, libasound2,
- libsndio7.0, libxcb-shm0, libpulse0, nvidia-cuda-toolkit
+ libsndio7.0, libxcb-shm0, libpulse0
+Recommends: nvidia-cuda-toolkit
 Priority: optional
 Section: utils
 EOF
