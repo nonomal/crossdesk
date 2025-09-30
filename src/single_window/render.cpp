@@ -899,13 +899,7 @@ int Render::Run() {
   return 0;
 }
 
-void Render::InitializeLogger() {
-  if (std::filesystem::exists(exec_log_path_)) {
-    InitLogger(exec_log_path_);
-  } else {
-    InitLogger("logs");
-  }
-}
+void Render::InitializeLogger() { InitLogger(exec_log_path_); }
 
 void Render::InitializeSettings() {
   LoadSettingsFromCacheFile();
