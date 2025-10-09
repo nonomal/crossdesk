@@ -1,6 +1,6 @@
 # CrossDesk
 
-#### More than remote desktop
+#### Bridging work, uniting efficiency
 
 ----
 [中文](README_CN.md) / [English](README.md)
@@ -9,59 +9,52 @@
 
 # Intro
 
-CrossDesk is a lightweight cross-platform remote desktop. It allows multiple users to remotely control the same computer at the same time. In addition to desktop image transmission, it also supports end-to-end voice transmission, providing collaboration capabilities on the basis of remote desktop.
+CrossDesk is a lightweight cross-platform remote desktop software.
 
-CrossDesk is an experimental application of [Projectx](https://github.com/dijunkun/projectx) real-time communications library. Projectx is a lightweight cross-platform real-time communications library. It has basic capabilities such as network traversal ([RFC5245](https://datatracker.ietf.org/doc/html/rfc5245)), video software/hardware encoding/decoding (H264), audio encoding/decoding ([Opus](https://github.com/xiph/opus)), signaling interaction, and network congestion control ([TCP over UDP](https://libnice.freedesktop.org/)).
+CrossDesk is an experimental application of [MiniRTC](https://github.com/kunkundi/minirtc.git), a lightweight cross-platform real-time audio and video transmission library. MiniRTC provides fundamental capabilities including network traversal ([RFC5245](https://datatracker.ietf.org/doc/html/rfc5245)), video software/hardware encoding and decoding (H264/AV1), audio encoding/decoding ([Opus](https://github.com/xiph/opus)), signaling interaction, network congestion control ([TCP over UDP](https://libnice.freedesktop.org/)), and transmission encryption ([SRTP](https://tools.ietf.org/html/rfc3711)).
 
 ## Usage
 
-Enter the remote desktop ID in the 'REMOTE ID' field on the menu bar, and click 'Connect' button to initiate the remote connection.
+Enter the remote desktop ID in the menu bar’s “Remote ID” field and click “→” to initiate a remote connection.
 
 ![usage1](https://github.com/dijunkun/continuous-desk/assets/29698109/2ad59e6d-bdba-46d0-90cf-cbc9c06c2278)
 
-If the remote desktop is set with a connection password, the local end needs to enter the correct password to initiate the remote connection. If the password is incorrect, an "Incorrect password" alert will appear in the status bar.
+If the remote desktop requires a connection password, you must enter the correct password on your side to successfully establish the connection.
 
 ![incorrect password](https://github.com/dijunkun/continuous-desk/assets/29698109/cb05501c-ec4e-4adf-952d-7a55ef770a97)
 
-After connection successfully established, the status bar will display the message "ClientConnected."
-
-![success](https://github.com/dijunkun/continuous-desk/assets/29698109/0cca21f7-48fe-44a5-b83d-eafeb8a81eb1)
+Before connecting, you can customize configuration options in the settings, such as language and video encoding format.
 
 ## How to build
 
 Requirements:
 - [xmake](https://xmake.io/#/guide/installation)
 - [cmake](https://cmake.org/download/)
-- [vcpkg](https://vcpkg.io/en/getting-started)
 
 Following packages need to be installed on Linux:
 
 ```
-sudo apt-get install -y nvidia-cuda-toolkit libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev libxcb-xfixes0-dev libxcb-shm0-dev libxv-dev libasound2-dev libsndio-dev libasound2-dev libpulse-dev
+sudo apt-get install -y software-properties-common git curl unzip build-essential libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev libxcb-xfixes0-dev libxv-dev libxtst-dev libasound2-dev libsndio-dev libxcb-shm0-dev libasound2-dev libpulse-dev
 ```
 
-Commands:
+Build:
 ```
-git clone https://github.com/dijunkun/continuous-desk
+git clone https://github.com/kunkundi/crossdesk.git
 
-cd continuous-desk
+cd crossdesk
 
 git submodule init 
 
 git submodule update
 
-xmake b remote_desk
+xmake b crossdesk
 ```
 Run:
 ```
-# Windows/MacOS
-xmake r remote_desk
-
-# root privileges are required on Linux
-./remote_desk
+xmake r crossdesk
 ```
 
 ## LICENSE
 
-Continuous Desk is licenced under MIT, and some third-party libraries are distributed under their licenses.
+CrossDesk is licenced under MIT, and some third-party libraries are distributed under their licenses.
 
