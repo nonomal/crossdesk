@@ -5,7 +5,7 @@
 ----
 [中文](README_CN.md) / [English](README.md)
 
-![sup_example](https://github.com/dijunkun/continuous-desk/assets/29698109/46536bc8-3ddd-438d-bf52-dccf143f1c20)
+![sup_example](https://github.com/user-attachments/assets/3f17d8f3-7c4a-4b63-bae4-903363628687)
 
 # Intro
 
@@ -17,13 +17,16 @@ CrossDesk is an experimental application of [MiniRTC](https://github.com/kunkund
 
 Enter the remote desktop ID in the menu bar’s “Remote ID” field and click “→” to initiate a remote connection.
 
-![usage1](https://github.com/dijunkun/continuous-desk/assets/29698109/2ad59e6d-bdba-46d0-90cf-cbc9c06c2278)
+![usage1](https://github.com/user-attachments/assets/f04e9b6f-42ac-40a7-a0ff-9a8d32f1d0be)
 
 If the remote desktop requires a connection password, you must enter the correct password on your side to successfully establish the connection.
 
-![incorrect password](https://github.com/dijunkun/continuous-desk/assets/29698109/cb05501c-ec4e-4adf-952d-7a55ef770a97)
+![password](https://github.com/user-attachments/assets/a764f748-d5e0-4335-8e1f-ab2b948248c4)
 
 Before connecting, you can customize configuration options in the settings, such as language and video encoding format.
+
+![settings](https://github.com/user-attachments/assets/48dfcab5-09a8-40d1-a0e9-4321e9535849)
+
 
 ## How to build
 
