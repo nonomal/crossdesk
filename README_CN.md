@@ -5,7 +5,7 @@
 ----
 [English](README.md) / [中文](README_CN.md)
 
-![sup_example](https://github.com/dijunkun/continuous-desk/assets/29698109/46536bc8-3ddd-438d-bf52-dccf143f1c20)
+![sup_example](https://github.com/user-attachments/assets/eeb64fbe-1f07-4626-be1c-b77396beb905)
 
 ## 简介
 
@@ -18,13 +18,14 @@ CrossDesk 是 [MiniRTC](https://github.com/kunkundi/minirtc.git) 实时音视频
 
 在菜单栏“对端ID”处输入远端桌面的ID，点击“→”即可发起远程连接。
 
-![usage1](https://github.com/dijunkun/continuous-desk/assets/29698109/2ad59e6d-bdba-46d0-90cf-cbc9c06c2278)
+![usage1](https://github.com/user-attachments/assets/3a4bb59f-c84c-44d2-9a20-11790aac510e)
 
 如果远端桌面设置了连接密码，则本端需填写正确的连接密码才能成功发起远程连接。
 
-![incorrect password](https://github.com/dijunkun/continuous-desk/assets/29698109/cb05501c-ec4e-4adf-952d-7a55ef770a97)
+![password](https://github.com/user-attachments/assets/1beadcce-640d-4f5c-8e77-51917b5294d5)
 
 发起连接前，可在设置中自定义配置项，如语言、视频编码格式等。
+![settings](https://github.com/user-attachments/assets/8bc5468d-7bbb-4e30-95bd-da1f352ac08c)
 
 ## 编译
 
