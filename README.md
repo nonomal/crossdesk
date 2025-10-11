@@ -69,6 +69,9 @@ xmake b --root crossdesk
 xmake r crossdesk
 ```
 
+#### 注意
+运行时如果客户端状态栏显示 **未连接服务器**，请先在 [CrossDesk 官方网站](https://www.crossdesk.cn/) 安装客户端，以便在环境中安装所需的证书文件。
+
 ## 关于 Xmake
 
 #### 安装 Xmake
