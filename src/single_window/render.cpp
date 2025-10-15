@@ -185,6 +185,8 @@ int Render::SaveSettingsIntoCacheFile() {
          sizeof(language_button_value_));
   memcpy(&cd_cache_.video_quality, &video_quality_button_value_,
          sizeof(video_quality_button_value_));
+  memcpy(&cd_cache_.video_frame_rate, &video_frame_rate_button_value_,
+         sizeof(video_frame_rate_button_value_));
   memcpy(&cd_cache_.video_encode_format, &video_encode_format_button_value_,
          sizeof(video_encode_format_button_value_));
   memcpy(&cd_cache_.enable_hardware_video_codec, &enable_hardware_video_codec_,
@@ -201,6 +203,8 @@ int Render::SaveSettingsIntoCacheFile() {
   config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
   config_center_.SetVideoQuality(
       (ConfigCenter::VIDEO_QUALITY)video_quality_button_value_);
+  config_center_.SetVideoFrameRate(
+      (ConfigCenter::VIDEO_FRAME_RATE)video_frame_rate_button_value_);
   config_center_.SetVideoEncodeFormat(
       (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
   config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
@@ -232,6 +236,8 @@ int Render::LoadSettingsFromCacheFile() {
     config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
     config_center_.SetVideoQuality(
         (ConfigCenter::VIDEO_QUALITY)video_quality_button_value_);
+    config_center_.SetVideoFrameRate(
+        (ConfigCenter::VIDEO_FRAME_RATE)video_frame_rate_button_value_);
     config_center_.SetVideoEncodeFormat(
         (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
     config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
@@ -285,6 +291,7 @@ int Render::LoadSettingsFromCacheFile() {
 
   language_button_value_ = cd_cache_.language;
   video_quality_button_value_ = cd_cache_.video_quality;
+  video_frame_rate_button_value_ = cd_cache_.video_frame_rate;
   video_encode_format_button_value_ = cd_cache_.video_encode_format;
   enable_hardware_video_codec_ = cd_cache_.enable_hardware_video_codec;
   enable_turn_ = cd_cache_.enable_turn;
@@ -300,6 +307,8 @@ int Render::LoadSettingsFromCacheFile() {
   config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
   config_center_.SetVideoQuality(
       (ConfigCenter::VIDEO_QUALITY)video_quality_button_value_);
+  config_center_.SetVideoFrameRate(
+      (ConfigCenter::VIDEO_FRAME_RATE)video_frame_rate_button_value_);
   config_center_.SetVideoEncodeFormat(
       (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
   config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
@@ -312,25 +321,25 @@ int Render::LoadSettingsFromCacheFile() {
 }
 
 int Render::ScreenCapturerInit() {
-  if (screen_capturer_) {
-    LOG_INFO("Screen capturer already initialized");
-    return 0;
+  if (!screen_capturer_) {
+    screen_capturer_ = (ScreenCapturer*)screen_capturer_factory_->Create();
   }
 
-  screen_capturer_ = (ScreenCapturer*)screen_capturer_factory_->Create();
   last_frame_time_ = std::chrono::duration_cast<std::chrono::milliseconds>(
                          std::chrono::steady_clock::now().time_since_epoch())
                          .count();
+  int fps = config_center_.GetVideoFrameRate();
+  LOG_INFO("Init screen capturer with {} fps", fps);
 
   int screen_capturer_init_ret = screen_capturer_->Init(
-      60,
+      fps,
       [this](unsigned char* data, int size, int width, int height,
              const char* display_name) -> void {
         auto now_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now().time_since_epoch())
                             .count();
         auto duration = now_time - last_frame_time_;
-        if (duration >= 16) {  // ~60 FPS
+        if (duration * config_center_.GetVideoFrameRate() >= 1000) {  // ~60 FPS
           XVideoFrame frame;
           frame.data = (const char*)data;
           frame.size = size;

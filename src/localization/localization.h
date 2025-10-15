@@ -71,6 +71,9 @@ static std::vector<std::string> language_en = {
     reinterpret_cast<const char*>(u8"英文"), "English"};
 static std::vector<std::string> video_quality = {
     reinterpret_cast<const char*>(u8"视频质量:"), "Video Quality:"};
+static std::vector<std::string> video_frame_rate = {
+    reinterpret_cast<const char*>(u8"画面采集帧率:"),
+    "Video Capture Frame Rate:"};
 static std::vector<std::string> video_quality_high = {
     reinterpret_cast<const char*>(u8"高"), "High"};
 static std::vector<std::string> video_quality_medium = {

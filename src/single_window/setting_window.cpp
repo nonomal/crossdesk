@@ -6,7 +6,7 @@
 int Render::SettingWindow() {
   if (show_settings_window_) {
     if (settings_window_pos_reset_) {
-      const ImGuiViewport *viewport = ImGui::GetMainViewport();
+      const ImGuiViewport* viewport = ImGui::GetMainViewport();
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
         ImGui::SetNextWindowPos(
             ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
@@ -36,6 +36,9 @@ int Render::SettingWindow() {
 
     // Settings
     {
+      static int settings_items_padding = 30;
+      int settings_items_offset = 0;
+
       ImGui::SetWindowFontScale(0.5f);
       ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
       ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
@@ -49,11 +52,12 @@ int Render::SettingWindow() {
       ImGui::SetWindowFontScale(0.5f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
       {
-        const char *language_items[] = {
+        const char* language_items[] = {
             localization::language_zh[localization_language_index_].c_str(),
             localization::language_en[localization_language_index_].c_str()};
 
-        ImGui::SetCursorPosY(32);
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 2);
         ImGui::Text(
             "%s", localization::language[localization_language_index_].c_str());
         if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
@@ -61,7 +65,7 @@ int Render::SettingWindow() {
         } else {
           ImGui::SetCursorPosX(LANGUAGE_SELECT_WINDOW_PADDING_EN);
         }
-        ImGui::SetCursorPosY(30);
+        ImGui::SetCursorPosY(settings_items_offset);
         ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
 
         ImGui::Combo("##language", &language_button_value_, language_items,
@@ -75,7 +79,7 @@ int Render::SettingWindow() {
       }
 
       {
-        const char *video_quality_items[] = {
+        const char* video_quality_items[] = {
             localization::video_quality_high[localization_language_index_]
                 .c_str(),
             localization::video_quality_medium[localization_language_index_]
@@ -83,7 +87,8 @@ int Render::SettingWindow() {
             localization::video_quality_low[localization_language_index_]
                 .c_str()};
 
-        ImGui::SetCursorPosY(62);
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 2);
         ImGui::Text(
             "%s",
             localization::video_quality[localization_language_index_].c_str());
@@ -93,7 +98,7 @@ int Render::SettingWindow() {
         } else {
           ImGui::SetCursorPosX(VIDEO_QUALITY_SELECT_WINDOW_PADDING_EN);
         }
-        ImGui::SetCursorPosY(60);
+        ImGui::SetCursorPosY(settings_items_offset);
         ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
 
         ImGui::Combo("##video_quality", &video_quality_button_value_,
@@ -103,11 +108,36 @@ int Render::SettingWindow() {
       ImGui::Separator();
 
       {
-        const char *video_encode_format_items[] = {
+        const char* video_frame_rate_items[] = {"30", "60"};
+
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::Text("%s",
+                    localization::video_frame_rate[localization_language_index_]
+                        .c_str());
+
+        if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+          ImGui::SetCursorPosX(VIDEO_FRAME_RATE_SELECT_WINDOW_PADDING_CN);
+        } else {
+          ImGui::SetCursorPosX(VIDEO_FRAME_RATE_SELECT_WINDOW_PADDING_EN);
+        }
+        ImGui::SetCursorPosY(settings_items_offset);
+        ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
+
+        ImGui::Combo("##video_frame_rate", &video_frame_rate_button_value_,
+                     video_frame_rate_items,
+                     IM_ARRAYSIZE(video_frame_rate_items));
+      }
+
+      ImGui::Separator();
+
+      {
+        const char* video_encode_format_items[] = {
             localization::av1[localization_language_index_].c_str(),
             localization::h264[localization_language_index_].c_str()};
 
-        ImGui::SetCursorPosY(92);
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 2);
         ImGui::Text(
             "%s",
             localization::video_encode_format[localization_language_index_]
@@ -118,7 +148,7 @@ int Render::SettingWindow() {
         } else {
           ImGui::SetCursorPosX(VIDEO_ENCODE_FORMAT_SELECT_WINDOW_PADDING_EN);
         }
-        ImGui::SetCursorPosY(90);
+        ImGui::SetCursorPosY(settings_items_offset);
         ImGui::SetNextItemWidth(SETTINGS_SELECT_WINDOW_WIDTH);
 
         ImGui::Combo(
@@ -129,7 +159,8 @@ int Render::SettingWindow() {
       ImGui::Separator();
 
       {
-        ImGui::SetCursorPosY(122);
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 2);
         ImGui::Text("%s", localization::enable_hardware_video_codec
                               [localization_language_index_]
                                   .c_str());
@@ -139,7 +170,7 @@ int Render::SettingWindow() {
         } else {
           ImGui::SetCursorPosX(ENABLE_HARDWARE_VIDEO_CODEC_CHECKBOX_PADDING_EN);
         }
-        ImGui::SetCursorPosY(120);
+        ImGui::SetCursorPosY(settings_items_offset);
         ImGui::Checkbox("##enable_hardware_video_codec",
                         &enable_hardware_video_codec_);
       }
@@ -147,7 +178,8 @@ int Render::SettingWindow() {
       ImGui::Separator();
 
       {
-        ImGui::SetCursorPosY(152);
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 2);
         ImGui::Text(
             "%s",
             localization::enable_turn[localization_language_index_].c_str());
@@ -157,14 +189,15 @@ int Render::SettingWindow() {
         } else {
           ImGui::SetCursorPosX(ENABLE_TURN_CHECKBOX_PADDING_EN);
         }
-        ImGui::SetCursorPosY(150);
+        ImGui::SetCursorPosY(settings_items_offset);
         ImGui::Checkbox("##enable_turn", &enable_turn_);
       }
 
       ImGui::Separator();
 
       {
-        ImGui::SetCursorPosY(182);
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 2);
         ImGui::Text(
             "%s",
             localization::enable_srtp[localization_language_index_].c_str());
@@ -174,7 +207,7 @@ int Render::SettingWindow() {
         } else {
           ImGui::SetCursorPosX(ENABLE_SRTP_CHECKBOX_PADDING_EN);
         }
-        ImGui::SetCursorPosY(180);
+        ImGui::SetCursorPosY(settings_items_offset);
         ImGui::Checkbox("##enable_srtp", &enable_srtp_);
       }
 
@@ -187,7 +220,9 @@ int Render::SettingWindow() {
       } else {
         ImGui::SetCursorPosX(SETTINGS_OK_BUTTON_PADDING_EN);
       }
-      ImGui::SetCursorPosY(220.0f);
+
+      settings_items_offset += settings_items_padding;
+      ImGui::SetCursorPosY(settings_items_offset);
       ImGui::PopStyleVar();
 
       // OK
