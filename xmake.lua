@@ -26,6 +26,7 @@ if is_os("windows") then
         "SDL3-static", "gdi32", "winmm", "setupapi", "version",
         "Imm32", "iphlpapi")
     add_cxflags("/WX")
+    set_runtimes("MT")
 elseif is_os("linux") then
     add_links("pulse-simple", "pulse")
     add_requires("libyuv") 
