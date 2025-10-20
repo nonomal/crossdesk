@@ -2,12 +2,14 @@
 
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+[![GitHub last commit](https://img.shields.io/github/last-commit/kunkundi/crossdesk)](https://github.com/kunkundi/crossdesk/commits/self-hosted-server)
 [![Build Status](https://github.com/kunkundi/crossdesk/actions/workflows/build.yaml/badge.svg)](https://github.com/kunkundi/crossdesk/actions)  
+[![Docker Pulls](https://img.shields.io/docker/pulls/crossdesk/crossdesk-server)](https://hub.docker.com/r/crossdesk/crossdesk-server/tags)
 [![GitHub issues](https://img.shields.io/github/issues/kunkundi/crossdesk.svg)]()
 [![GitHub stars](https://img.shields.io/github/stars/kunkundi/crossdesk.svg?style=social)]()
 [![GitHub forks](https://img.shields.io/github/forks/kunkundi/crossdesk.svg?style=social)]()
 
-[中文](README.md) / [English](README_EN.md)
+[ [中文](README.md) / English ]
 
 ![sup_example](https://github.com/user-attachments/assets/3f17d8f3-7c4a-4b63-bae4-903363628687)
 
