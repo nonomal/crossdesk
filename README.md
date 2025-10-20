@@ -55,24 +55,45 @@ git submodule init
 
 git submodule update
 
-xmake b crossdesk
+xmake b -vy crossdesk
 ```
-#### 无 CUDA 环境下的开发支持
 
-对于未安装 **CUDA 环境** 的Linux开发者，这里提供了预配置的 [Ubuntu 22.04 Docker 镜像](https://hub.docker.com/r/crossdesk/ubuntu22.04)。  
-该镜像内置必要的构建依赖，可在容器中开箱即用，无需额外配置即可直接编译项目。
+运行
+```
+xmake r crossdesk
+```
+
+### 无 CUDA 环境下的开发支持
+
+对于未安装 **CUDA 环境** 的 Linux 开发者，这里提供了预配置的 [Ubuntu 22.04 Docker 镜像](https://hub.docker.com/r/crossdesk/ubuntu22.04)。该镜像内置必要的构建依赖，可在容器中开箱即用，无需额外配置即可直接编译项目。
 
 进入容器，下载工程后执行：
 ```
 export CUDA_PATH=/usr/local/cuda
 export XMAKE_GLOBALDIR=/data
 
-xmake b --root crossdesk
+xmake b --root -vy crossdesk
 ```
 
-运行
+对于未安装 **CUDA 环境** 的 Windows 开发者，执行下面的命令安装 CUDA 编译环境：
 ```
-xmake r crossdesk
+xmake require -vy "cuda 12.6.3"
+```
+安装完成后执行:
+```
+xmake require --info "cuda 12.6.3"
+```
+输出如下:
+
+<img width="860" height="226" alt="Image" src="https://github.com/user-attachments/assets/999ac365-581a-4b9a-806e-05eb3e4cf44d" />
+
+根据上述输出获取到 CUDA 的安装目录，即 installdir 指向的位置。将 CUDA_PATH 加入系统环境变量，或在终端中输入：
+```
+set CUDA_PATH=path_to_cuda_installdir
+```
+重新执行：
+```
+xmake b -vy crossdesk
 ```
 
 #### 注意

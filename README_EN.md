@@ -55,12 +55,17 @@ git submodule init
 
 git submodule update
 
-xmake b crossdesk
+xmake b -vy crossdesk
+```
+
+Run:
+```
+xmake r crossdesk
 ```
 
 #### Development Without CUDA Environment
 
-For developers who do not have a **CUDA environment** installed, a preconfigured [Ubuntu 22.04 Docker image](https://hub.docker.com/r/crossdesk/ubuntu22.04) is provided.  
+For **Linux** developers who do not have a **CUDA environment** installed, a preconfigured [Ubuntu 22.04 Docker image](https://hub.docker.com/r/crossdesk/ubuntu22.04) is provided.  
 This image comes with all required build dependencies and allows you to build the project directly inside the container without any additional setup.
 
 After entering the container, download the project and run:
@@ -68,12 +73,29 @@ After entering the container, download the project and run:
 export CUDA_PATH=/usr/local/cuda
 export XMAKE_GLOBALDIR=/data
 
-xmake b --root crossdesk
+xmake b --root -vy crossdesk
 ```
 
-Run:
+For **Windows** developers without a **CUDA environment** installed, run the following command to install the CUDA build environment:
 ```
-xmake r crossdesk
+xmake require -vy "cuda 12.6.3"
+```
+After the installation is complete, execute:
+```
+xmake require --info "cuda 12.6.3"
+```
+The output will look like this:
+
+<img width="860" height="226" alt="Image" src="https://github.com/user-attachments/assets/999ac365-581a-4b9a-806e-05eb3e4cf44d" />
+
+From the output above, locate the CUDA installation directory — this is the path pointed to by installdir.
+Add this path to your system environment variable CUDA_PATH, or set it in the terminal using:
+```
+set CUDA_PATH=path_to_cuda_installdir:
+```
+Then re-run:
+```
+xmake b -vy crossdesk
 ```
 
 #### Notice
