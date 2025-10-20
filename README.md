@@ -230,7 +230,7 @@ echo "  Server certificate: $SERVER_CERT"
 执行
 ```
 chmod +x generate_certs.sh
-./generate_certs.sh 服务器外网IP
+./generate_certs.sh 服务器公网IP
 
 # 例如 ./generate_certs.sh 111.111.111.111
 ```
