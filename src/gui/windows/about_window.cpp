@@ -27,8 +27,8 @@ int Render::AboutWindow() {
     ImGui::SetWindowFontScale(0.5f);
 
     std::string version;
-#ifdef RD_VERSION
-    version = RD_VERSION;
+#ifdef CROSSDESK_VERSION
+    version = CROSSDESK_VERSION;
 #else
     version = "Unknown";
 #endif

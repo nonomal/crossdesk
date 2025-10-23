@@ -52,6 +52,7 @@ jobs:
           XMAKE_GLOBALDIR: /data
         run: |
           ls -la $XMAKE_GLOBALDIR
+          xmake f --CROSSDESK_VERSION=${LEGAL_VERSION}
           xmake b -vy --root crossdesk
 
       - name: Decode and save certificate
@@ -113,6 +114,7 @@ jobs:
           CUDA_PATH: /usr/local/cuda
           XMAKE_GLOBALDIR: /data
         run: |
+          xmake f --CROSSDESK_VERSION=${LEGAL_VERSION}
           xmake b -vy --root crossdesk
 
       - name: Decode and save certificate
@@ -177,7 +179,9 @@ jobs:
         run: git submodule update --init --recursive
 
       - name: Build CrossDesk
-        run: xmake b -vy crossdesk
+        run: |
+          xmake f --CROSSDESK_VERSION=${LEGAL_VERSION}
+          xmake b -vy crossdesk
 
       - name: Decode and save certificate
         shell: bash
@@ -281,7 +285,9 @@ jobs:
           copy "${{ github.workspace }}\scripts\windows\nsProcess.dll" $nsisPluginDir
 
       - name: Build CrossDesk
-        run: xmake b -vy crossdesk
+        run: |
+          xmake f --CROSSDESK_VERSION=${LEGAL_VERSION}
+          xmake b -vy crossdesk
 
       - name: Decode and save certificate
         shell: powershell
