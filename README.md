@@ -3,7 +3,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![GitHub last commit](https://img.shields.io/github/last-commit/kunkundi/crossdesk)](https://github.com/kunkundi/crossdesk/commits/self-hosted-server)
-[![Build Status](https://github.com/kunkundi/crossdesk/actions/workflows/build.yaml/badge.svg)](https://github.com/kunkundi/crossdesk/actions)  
+[![Build Status](https://github.com/kunkundi/crossdesk/actions/workflows/build.yml/badge.svg)](https://github.com/kunkundi/crossdesk/actions)  
 [![Docker Pulls](https://img.shields.io/docker/pulls/crossdesk/crossdesk-server)](https://hub.docker.com/r/crossdesk/crossdesk-server/tags)
 [![GitHub issues](https://img.shields.io/github/issues/kunkundi/crossdesk.svg)]()
 [![GitHub stars](https://img.shields.io/github/stars/kunkundi/crossdesk.svg?style=social)]()
@@ -65,7 +65,7 @@ xmake r crossdesk
 
 ### 无 CUDA 环境下的开发支持
 
-对于未安装 **CUDA 环境** 的 Linux 开发者，这里提供了预配置的 [Ubuntu 22.04 Docker 镜像](https://hub.docker.com/r/crossdesk/ubuntu22.04)。该镜像内置必要的构建依赖，可在容器中开箱即用，无需额外配置即可直接编译项目。
+对于**未安装 CUDA 环境的 Linux 开发者**，这里提供了预配置的 [Ubuntu 22.04 Docker 镜像](https://hub.docker.com/r/crossdesk/ubuntu22.04)。该镜像内置必要的构建依赖，可在容器中开箱即用，无需额外配置即可直接编译项目。
 
 进入容器，下载工程后执行：
 ```
@@ -75,7 +75,7 @@ export XMAKE_GLOBALDIR=/data
 xmake b --root -vy crossdesk
 ```
 
-对于未安装 **CUDA 环境** 的 Windows 开发者，执行下面的命令安装 CUDA 编译环境：
+对于**未安装 CUDA 环境的 Windows 开发者**，执行下面的命令安装 CUDA 编译环境：
 ```
 xmake require -vy "cuda 12.6.3"
 ```
@@ -295,3 +295,6 @@ Generation complete. Deployment files::
 
 7. 勾选使用**自托管服务器配置**，点击确认配置生效。<br><br>
 <img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/1e455dc3-4087-4f37-a544-1ff9f8789383" /><br><br>
+
+# 常见问题
+见 [常见问题](https://github.com/kunkundi/crossdesk/blob/self-hosted-server/docs/FAQ.md) 。

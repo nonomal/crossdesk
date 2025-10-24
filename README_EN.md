@@ -3,7 +3,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![GitHub last commit](https://img.shields.io/github/last-commit/kunkundi/crossdesk)](https://github.com/kunkundi/crossdesk/commits/self-hosted-server)
-[![Build Status](https://github.com/kunkundi/crossdesk/actions/workflows/build.yaml/badge.svg)](https://github.com/kunkundi/crossdesk/actions)  
+[![Build Status](https://github.com/kunkundi/crossdesk/actions/workflows/build.yml/badge.svg)](https://github.com/kunkundi/crossdesk/actions)  
 [![Docker Pulls](https://img.shields.io/docker/pulls/crossdesk/crossdesk-server)](https://hub.docker.com/r/crossdesk/crossdesk-server/tags)
 [![GitHub issues](https://img.shields.io/github/issues/kunkundi/crossdesk.svg)]()
 [![GitHub stars](https://img.shields.io/github/stars/kunkundi/crossdesk.svg?style=social)]()
@@ -65,7 +65,7 @@ xmake r crossdesk
 
 #### Development Without CUDA Environment
 
-For **Linux** developers who do not have a **CUDA environment** installed, a preconfigured [Ubuntu 22.04 Docker image](https://hub.docker.com/r/crossdesk/ubuntu22.04) is provided.  
+For **Linux developers who do not have a CUDA environment** installed, a preconfigured [Ubuntu 22.04 Docker image](https://hub.docker.com/r/crossdesk/ubuntu22.04) is provided.  
 This image comes with all required build dependencies and allows you to build the project directly inside the container without any additional setup.
 
 After entering the container, download the project and run:
@@ -76,7 +76,7 @@ export XMAKE_GLOBALDIR=/data
 xmake b --root -vy crossdesk
 ```
 
-For **Windows** developers without a **CUDA environment** installed, run the following command to install the CUDA build environment:
+For **Windows developers without a CUDA environment** installed, run the following command to install the CUDA build environment:
 ```
 xmake require -vy "cuda 12.6.3"
 ```
@@ -300,3 +300,6 @@ Place **crossdesk.cn.key** and **crossdesk.cn_bundle.crt** into the **/path/to/y
 
 4. Check the option to use **Self-Hosted Server Configuration**.<br><br>
 <img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/1e455dc3-4087-4f37-a544-1ff9f8789383" /><br><br>
+
+# FAQ
+See [FAQ](https://github.com/kunkundi/crosssesk/blob/self-hosted-server/docs/FAQ.md) .
