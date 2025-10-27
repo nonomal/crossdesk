@@ -149,13 +149,16 @@ It is recommended to deploy CrossDesk Server using Docker.
 sudo docker run -d \
   --name crossdesk_server \
   --network host \
-  -e EXTERNAL_IP=150.158.81.30 \
-  -e INTERNAL_IP=10.0.4.3 \
-  -e CROSSDESK_SERVER_PORT=9099 \
+  -e EXTERNAL_IP=xxx.xxx.xxx.xxx \
+  -e INTERNAL_IP=xxx.xxx.xxx.xxx \
+  -e CROSSDESK_SERVER_PORT=xxxx \
+  -e COTURN_PORT=xxxx \
+  -e MIN_PORT=xxxxx \
+  -e MAX_PORT=xxxxx \
   -v /path/to/your/certs:/crossdesk-server/certs \
   -v /path/to/your/db:/crossdesk-server/db \
   -v /path/to/your/logs:/crossdesk-server/logs \
-  crossdesk/crossdesk-server:latest
+  crossdesk/crossdesk-server:v1.0.0
 ```
 
 The parameters you need to pay attention to are as follows:
@@ -165,6 +168,10 @@ The parameters you need to pay attention to are as follows:
 - **INTERNAL_IP**: The server's internal IP.
 
 - **CROSSDESK_SERVER_PORT**: The port used by the self-hosted server, corresponding to the **Server Port** in the CrossDesk client **Self-Hosted Server Configuration**.
+
+- **COTURN_PORT**: The port used by Coturn, corresponding to the **Coturn Port** in the CrossDesk client **Self-Hosted Server Configuration**.
+
+- **MIN_PORT** and **MAX_PORT**: The range of ports used by the self-hosted server, corresponding to the **Minimum Port** and **Maximum Port** in the CrossDesk client **Self-Hosted Server Configuration**.
 
 - **/path/to/your/certs**: Directory for certificate files.
 

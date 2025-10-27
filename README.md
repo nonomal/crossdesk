@@ -146,11 +146,14 @@ sudo docker run -d \
   --network host \
   -e EXTERNAL_IP=xxx.xxx.xxx.xxx \
   -e INTERNAL_IP=xxx.xxx.xxx.xxx \
-  -e CROSSDESK_SERVER_PORT=9099 \
+  -e CROSSDESK_SERVER_PORT=xxxx \
+  -e COTURN_PORT=xxxx \
+  -e MIN_PORT=xxxxx \
+  -e MAX_PORT=xxxxx \
   -v /path/to/your/certs:/crossdesk-server/certs \
   -v /path/to/your/db:/crossdesk-server/db \
   -v /path/to/your/logs:/crossdesk-server/logs \
-  crossdesk/crossdesk-server:latest
+  crossdesk/crossdesk-server:v1.0.0
 ```
 
 上述命令中，用户需注意的参数如下：
@@ -160,6 +163,10 @@ sudo docker run -d \
 - INTERNAL_IP：服务器内网 IP
 
 - CROSSDESK_SERVER_PORT：自托管服务使用的端口，对应 CrossDesk 客户端**自托管服务器配置**中填写的**服务器端口**
+
+- COTURN_PORT: COTURN 服务使用的端口, 对应 CrossDesk 客户端**自托管服务器配置**中填写的**COTURN 服务端口**
+
+- MIN_PORT/MAX_PORT：COTURN 服务使用的端口范围
 
 - /path/to/your/certs：证书文件目录
 
