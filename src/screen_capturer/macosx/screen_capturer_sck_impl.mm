@@ -22,8 +22,11 @@
 #include "display_info.h"
 #include "rd_log.h"
 
-static const int kFullDesktopScreenId = -1;
+using namespace crossdesk;
+
 class ScreenCapturerSckImpl;
+
+static const int kFullDesktopScreenId = -1;
 
 // The ScreenCaptureKit API was available in macOS 12.3, but full-screen capture
 // was reported to be broken before macOS 13 - see http://crbug.com/40234870.
@@ -424,10 +427,6 @@ void ScreenCapturerSckImpl::StartOrReconfigureCapturer() {
   [SCShareableContent getShareableContentWithCompletionHandler:handler];
 }
 
-std::unique_ptr<ScreenCapturer> ScreenCapturerSck::CreateScreenCapturerSck() {
-  return std::make_unique<ScreenCapturerSckImpl>();
-}
-
 @implementation SckHelper {
   // This lock is to prevent the capturer being destroyed while an instance
   // method is still running on another thread.
@@ -486,3 +485,7 @@ std::unique_ptr<ScreenCapturer> ScreenCapturerSck::CreateScreenCapturerSck() {
 }
 
 @end
+
+std::unique_ptr<ScreenCapturer> ScreenCapturerSck::CreateScreenCapturerSck() {
+  return std::make_unique<ScreenCapturerSckImpl>();
+}
