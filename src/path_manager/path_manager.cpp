@@ -18,7 +18,11 @@ std::filesystem::path PathManager::GetConfigPath() {
 
 std::filesystem::path PathManager::GetCachePath() {
 #ifdef _WIN32
+#ifdef CROSSDESK_DEBUG
+  return "cache";
+#else
   return GetKnownFolder(FOLDERID_LocalAppData) / app_name_ / "cache";
+#endif
 #elif __APPLE__
   return GetEnvOrDefault("XDG_CACHE_HOME", GetHome() + "/.cache") / app_name_;
 #else

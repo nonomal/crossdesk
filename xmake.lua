@@ -16,7 +16,7 @@ set_encodings("utf-8")
 
 add_defines("UNICODE")
 if is_mode("debug") then
-    add_defines("DESK_PORT_DEBUG")
+    add_defines("CROSSDESK_DEBUG")
 end
 
 add_requires("spdlog 1.14.1", {system = false})

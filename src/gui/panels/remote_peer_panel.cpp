@@ -145,6 +145,10 @@ int Render::ConnectTo(const std::string& remote_id, const char* password,
     memcpy(&props->params_, &params_, sizeof(Params));
     props->params_.user_id = props->local_id_.c_str();
     props->peer_ = CreatePeer(&props->params_);
+
+    for (auto& display_info : display_info_list_) {
+      AddVideoStream(peer_, display_info.name.c_str());
+    }
     AddAudioStream(props->peer_, props->audio_label_.c_str());
     AddDataStream(props->peer_, props->data_label_.c_str());
 

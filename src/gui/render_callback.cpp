@@ -6,7 +6,7 @@
 
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 
-#ifdef DESK_PORT_DEBUG
+#ifdef CROSSDESK_DEBUG
 #else
 #define MOUSE_CONTROL 1
 #endif
