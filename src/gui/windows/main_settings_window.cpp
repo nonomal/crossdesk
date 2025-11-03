@@ -231,8 +231,7 @@ int Render::SettingWindow() {
           ImGui::SetCursorPosX(ENABLE_SELF_HOSTED_SERVER_CHECKBOX_PADDING_EN);
         }
         ImGui::SetCursorPosY(settings_items_offset);
-        ImGui::Checkbox("##enable_self_hosted_server",
-                        &enable_self_hosted_server_);
+        ImGui::Checkbox("##enable_self_hosted", &enable_self_hosted_);
       }
 #if _WIN32
       ImGui::Separator();
@@ -332,11 +331,12 @@ int Render::SettingWindow() {
         }
         enable_srtp_last_ = enable_srtp_;
 
-        if (enable_self_hosted_server_) {
+        if (enable_self_hosted_) {
           config_center_->SetSelfHosted(true);
         } else {
           config_center_->SetSelfHosted(false);
         }
+        enable_self_hosted_last_ = enable_self_hosted_;
 
         settings_window_pos_reset_ = true;
 

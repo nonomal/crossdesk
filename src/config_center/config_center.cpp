@@ -181,8 +181,9 @@ int ConfigCenter::SetServerPort(int signal_server_port) {
 
 int ConfigCenter::SetCoturnServerPort(int coturn_server_port) {
   coturn_server_port_ = coturn_server_port;
-  SI_Error rc = ini_.SetLongValue(section_, "coturn_server_port",
-                                  static_cast<long>(coturn_server_port_));
+  ini_.SetLongValue(section_, "coturn_server_port",
+                    static_cast<long>(coturn_server_port_));
+  SI_Error rc = ini_.SaveFile(config_path_.c_str());
   if (rc < 0) {
     return -1;
   }
@@ -201,6 +202,7 @@ int ConfigCenter::SetCertFilePath(const std::string& cert_file_path) {
 
 int ConfigCenter::SetSelfHosted(bool enable_self_hosted) {
   enable_self_hosted_ = enable_self_hosted;
+  ini_.SetBoolValue(section_, "enable_self_hosted", enable_self_hosted_);
   SI_Error rc = ini_.SaveFile(config_path_.c_str());
   if (rc < 0) {
     return -1;
@@ -210,6 +212,12 @@ int ConfigCenter::SetSelfHosted(bool enable_self_hosted) {
 
 int ConfigCenter::SetMinimizeToTray(bool enable_minimize_to_tray) {
   enable_minimize_to_tray_ = enable_minimize_to_tray;
+  ini_.SetBoolValue(section_, "enable_minimize_to_tray",
+                    enable_minimize_to_tray_);
+  SI_Error rc = ini_.SaveFile(config_path_.c_str());
+  if (rc < 0) {
+    return -1;
+  }
   return 0;
 }
 

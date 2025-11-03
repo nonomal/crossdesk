@@ -445,13 +445,14 @@ class Render {
   char signal_server_port_[6] = "9099";
   char coturn_server_port_[6] = "3478";
   char cert_file_path_[256] = "";
-  bool enable_self_hosted_server_ = false;
+  bool enable_self_hosted_ = false;
   int language_button_value_last_ = 0;
   int video_quality_button_value_last_ = 0;
   int video_encode_format_button_value_last_ = 0;
   bool enable_hardware_video_codec_last_ = false;
   bool enable_turn_last_ = false;
   bool enable_srtp_last_ = false;
+  bool enable_self_hosted_last_ = false;
   bool enable_minimize_to_tray_ = false;
   bool enable_minimize_to_tray_last_ = false;
   char signal_server_ip_self_[256] = "";
