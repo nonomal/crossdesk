@@ -6,11 +6,6 @@
 
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 
-#ifdef CROSSDESK_DEBUG
-#else
-#define MOUSE_CONTROL 1
-#endif
-
 namespace crossdesk {
 
 int Render::SendKeyCommand(int key_code, bool is_down) {
@@ -461,7 +456,12 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
         render->need_to_send_host_info_ = true;
         render->start_screen_capturer_ = true;
         render->start_speaker_capturer_ = true;
+#ifdef CROSSDESK_DEBUG
+        render->start_mouse_controller_ = false;
+        render->start_keyboard_capturer_ = false;
+#else
         render->start_mouse_controller_ = true;
+#endif
         break;
       }
       case ConnectionStatus::Closed: {
