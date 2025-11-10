@@ -49,10 +49,10 @@ class Render {
     bool connection_established_ = false;
     bool rejoin_ = false;
     bool net_traffic_stats_button_pressed_ = false;
-    bool mouse_control_button_pressed_ = false;
+    bool mouse_control_button_pressed_ = true;
     bool mouse_controller_is_started_ = false;
     bool audio_capture_button_pressed_ = true;
-    bool control_mouse_ = false;
+    bool control_mouse_ = true;
     bool streaming_ = false;
     bool is_control_bar_in_left_ = true;
     bool control_bar_hovered_ = false;
@@ -313,7 +313,7 @@ class Render {
   bool screen_capturer_is_started_ = false;
   bool start_speaker_capturer_ = false;
   bool speaker_capturer_is_started_ = false;
-  bool start_keyboard_capturer_ = false;
+  bool start_keyboard_capturer_ = true;
   bool keyboard_capturer_is_started_ = false;
   bool foucs_on_main_window_ = false;
   bool foucs_on_stream_window_ = false;
@@ -472,6 +472,9 @@ class Render {
       client_properties_;
   void CloseTab(decltype(client_properties_)::iterator& it);
   /* ------ stream window property end ------ */
+
+  /* ------ server mode ------ */
+  std::unordered_map<std::string, ConnectionStatus> connection_status_;
 };
 }  // namespace crossdesk
 #endif

@@ -403,7 +403,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
     props->connection_status_ = status;
 
     switch (status) {
-      case ConnectionStatus::Connected:
+      case ConnectionStatus::Connected: {
         if (!render->need_to_create_stream_window_ &&
             !render->client_properties_.empty()) {
           render->need_to_create_stream_window_ = true;
@@ -414,15 +414,10 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
             (int)render->stream_window_width_,
             (int)(render->stream_window_height_ - render->title_bar_height_)};
         break;
+      }
       case ConnectionStatus::Disconnected:
       case ConnectionStatus::Failed:
-      case ConnectionStatus::Closed:
-        render->password_validating_time_ = 0;
-        render->start_screen_capturer_ = false;
-        render->start_speaker_capturer_ = false;
-        render->start_mouse_controller_ = false;
-        render->start_keyboard_capturer_ = false;
-        render->control_mouse_ = false;
+      case ConnectionStatus::Closed: {
         props->connection_established_ = false;
         props->mouse_control_button_pressed_ = false;
         if (props->dst_buffer_) {
@@ -431,8 +426,10 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
                             props->texture_width_);
         }
         render->CleanSubStreamWindowProperties(props);
+
         break;
-      case ConnectionStatus::IncorrectPassword:
+      }
+      case ConnectionStatus::IncorrectPassword: {
         render->password_validating_ = false;
         render->password_validating_time_++;
         if (render->connect_button_pressed_) {
@@ -442,39 +439,53 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
               localization::connect[render->localization_language_index_];
         }
         break;
-      case ConnectionStatus::NoSuchTransmissionId:
+      }
+      case ConnectionStatus::NoSuchTransmissionId: {
         if (render->connect_button_pressed_) {
           props->connection_established_ = false;
           render->connect_button_label_ =
               localization::connect[render->localization_language_index_];
         }
         break;
+      }
       default:
         break;
     }
   } else {
     render->is_client_mode_ = false;
     render->show_connection_status_window_ = true;
+    render->connection_status_[remote_id] = status;
 
     switch (status) {
-      case ConnectionStatus::Connected:
+      case ConnectionStatus::Connected: {
         render->need_to_send_host_info_ = true;
         render->start_screen_capturer_ = true;
         render->start_speaker_capturer_ = true;
         render->start_mouse_controller_ = true;
         break;
-      case ConnectionStatus::Closed:
-        render->start_screen_capturer_ = false;
-        render->start_speaker_capturer_ = false;
-        render->start_mouse_controller_ = false;
-        render->start_keyboard_capturer_ = false;
-        render->need_to_send_host_info_ = false;
-        if (props) props->connection_established_ = false;
-        if (render->audio_capture_) {
-          render->StopSpeakerCapturer();
-          render->audio_capture_ = false;
+      }
+      case ConnectionStatus::Closed: {
+        if (std::all_of(render->connection_status_.begin(),
+                        render->connection_status_.end(), [](const auto& kv) {
+                          return kv.second == ConnectionStatus::Closed ||
+                                 kv.second == ConnectionStatus::Failed ||
+                                 kv.second == ConnectionStatus::Disconnected;
+                        })) {
+          render->start_screen_capturer_ = false;
+          render->start_speaker_capturer_ = false;
+          render->start_mouse_controller_ = false;
+          render->start_keyboard_capturer_ = false;
+          render->need_to_send_host_info_ = false;
+          if (props) props->connection_established_ = false;
+          if (render->audio_capture_) {
+            render->StopSpeakerCapturer();
+            render->audio_capture_ = false;
+          }
+
+          render->connection_status_.erase(remote_id);
         }
         break;
+      }
       default:
         break;
     }
