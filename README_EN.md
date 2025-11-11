@@ -33,6 +33,11 @@ Before connecting, you can customize configuration options in the settings, such
 
 ![settings](https://github.com/user-attachments/assets/8bc5468d-7bbb-4e30-95bd-da1f352ac08c)
 
+### Web Client
+
+Visit  [CrossDesk Web Client](https://web.crossdesk.cn/).
+Enter the **Remote Device ID** and **Password**, then click Connect to access the remote device.
+
 ## How to build
 
 Requirements:
@@ -158,7 +163,7 @@ sudo docker run -d \
   -v /path/to/your/certs:/crossdesk-server/certs \
   -v /path/to/your/db:/crossdesk-server/db \
   -v /path/to/your/logs:/crossdesk-server/logs \
-  crossdesk/crossdesk-server:v1.0.0
+  crossdesk/crossdesk-server:v1.1.0
 ```
 
 The parameters you need to pay attention to are as follows:

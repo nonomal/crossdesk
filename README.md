@@ -15,7 +15,7 @@
 
 ## 简介
 
-CrossDesk 是一个轻量级的跨平台远程桌面软件。
+CrossDesk 是一个轻量级的跨平台远程桌面软件，支持 Web 端控制远程设备。
 
 CrossDesk 是 [MiniRTC](https://github.com/kunkundi/minirtc.git) 实时音视频传输库的实验性应用。MiniRTC 是一个轻量级的跨平台实时音视频传输库。它具有网络透传（[RFC5245](https://datatracker.ietf.org/doc/html/rfc5245)），视频软硬编解码（H264/AV1），音频编解码（[Opus](https://github.com/xiph/opus)），信令交互，网络拥塞控制，传输加密（[SRTP](https://tools.ietf.org/html/rfc3711)）等基础能力。
 
@@ -32,6 +32,10 @@ CrossDesk 是 [MiniRTC](https://github.com/kunkundi/minirtc.git) 实时音视频
 
 发起连接前，可在设置中自定义配置项，如语言、视频编码格式等。
 ![settings](https://github.com/user-attachments/assets/8bc5468d-7bbb-4e30-95bd-da1f352ac08c)
+
+### Web 客户端
+浏览器访问 [CrossDesk Web Client](https://web.crossdesk.cn/)。
+输入 **远程设备 ID** 与 **密码**，点击连接即可接入远程设备。
 
 ## 如何编译
 
@@ -153,7 +157,7 @@ sudo docker run -d \
   -v /path/to/your/certs:/crossdesk-server/certs \
   -v /path/to/your/db:/crossdesk-server/db \
   -v /path/to/your/logs:/crossdesk-server/logs \
-  crossdesk/crossdesk-server:v1.0.0
+  crossdesk/crossdesk-server:latest
 ```
 
 上述命令中，用户需注意的参数如下：
