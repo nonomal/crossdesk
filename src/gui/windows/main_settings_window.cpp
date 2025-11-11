@@ -82,11 +82,11 @@ int Render::SettingWindow() {
 
       {
         const char* video_quality_items[] = {
-            localization::video_quality_high[localization_language_index_]
+            localization::video_quality_low[localization_language_index_]
                 .c_str(),
             localization::video_quality_medium[localization_language_index_]
                 .c_str(),
-            localization::video_quality_low[localization_language_index_]
+            localization::video_quality_high[localization_language_index_]
                 .c_str()};
 
         settings_items_offset += settings_items_padding;

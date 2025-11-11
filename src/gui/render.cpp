@@ -495,6 +495,8 @@ int Render::CreateConnectionPeer() {
                              : false;
   params_.enable_turn = config_center_->IsEnableTurn();
   params_.enable_srtp = config_center_->IsEnableSrtp();
+  params_.video_quality =
+      static_cast<VideoQuality>(config_center_->GetVideoQuality());
   params_.on_receive_video_buffer = nullptr;
   params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
   params_.on_receive_data_buffer = OnReceiveDataBufferCb;

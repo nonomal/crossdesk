@@ -225,6 +225,8 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame* video_frame,
     props->video_height_ = video_frame->height;
     props->video_size_ = video_frame->size;
 
+    LOG_ERROR("receive: {}x{}", props->video_width_, props->video_height_);
+
     if (need_to_update_render_rect) {
       render->UpdateRenderRect();
     }
