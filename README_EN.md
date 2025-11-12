@@ -2,7 +2,7 @@
 
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-brightgreen.svg)]()
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
-[![GitHub last commit](https://img.shields.io/github/last-commit/kunkundi/crossdesk)](https://github.com/kunkundi/crossdesk/commits/self-hosted-server)
+[![GitHub last commit](https://img.shields.io/github/last-commit/kunkundi/crossdesk)](https://github.com/kunkundi/crossdesk/commits/web-client)
 [![Build Status](https://github.com/kunkundi/crossdesk/actions/workflows/build.yml/badge.svg)](https://github.com/kunkundi/crossdesk/actions)  
 [![Docker Pulls](https://img.shields.io/docker/pulls/crossdesk/crossdesk-server)](https://hub.docker.com/r/crossdesk/crossdesk-server/tags)
 [![GitHub issues](https://img.shields.io/github/issues/kunkundi/crossdesk.svg)]()
@@ -45,7 +45,9 @@ Before connecting, you can customize configuration options in the settings, such
 ### Web Client
 
 Visit  [CrossDesk Web Client](https://web.crossdesk.cn/).
-Enter the **Remote Device ID** and **Password**, then click Connect to access the remote device.
+Enter the **Remote Device ID** and **Password**, then click Connect to access the remote device. As shown, **iOS Safari remotely controlling Windows 11**:
+
+<img width="645" height="300" alt="_cgi-bin_mmwebwx-bin_webwxgetmsgimg__ MsgID=932911462648581698 skey=@crypt_1f5153b1_b550ca7462b5009ce03c991cca2a92a7 mmweb_appid=wx_webfilehelper" src="https://github.com/user-attachments/assets/a5109e6f-752c-4654-9f4e-7e161bddf43e" />
 
 ## How to build
 
