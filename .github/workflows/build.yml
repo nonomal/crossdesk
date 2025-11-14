@@ -342,9 +342,11 @@ jobs:
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
           BUILD_DATE=$(date +%Y%m%d)
           BUILD_DATE_ISO=$(date +%Y-%m-%d)
-          VERSION_NUM="v${VERSION#v}-${BUILD_DATE}-${SHORT_SHA}"
+          VERSION_NUM="${VERSION#v}-${BUILD_DATE}-${SHORT_SHA}"
+          VERSION_WITH_V="v${VERSION_NUM}"
           VERSION_ONLY="${VERSION#v}"
           echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
+          echo "VERSION_WITH_V=${VERSION_WITH_V}" >> $GITHUB_OUTPUT
           echo "VERSION_ONLY=${VERSION_ONLY}" >> $GITHUB_OUTPUT
           echo "BUILD_DATE=${BUILD_DATE}" >> $GITHUB_OUTPUT
           echo "BUILD_DATE_ISO=${BUILD_DATE_ISO}" >> $GITHUB_OUTPUT
@@ -352,11 +354,11 @@ jobs:
       - name: Rename artifacts
         run: |
           mkdir -p release
-          cp artifacts/crossdesk-macos-x64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-macos-x64-${{ steps.version.outputs.VERSION_NUM }}.pkg
-          cp artifacts/crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_NUM }}.pkg
-          cp artifacts/crossdesk-linux-amd64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-linux-amd64-${{ steps.version.outputs.VERSION_NUM }}.deb
-          cp artifacts/crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_NUM }}.deb
-          cp artifacts/crossdesk-win-x64-${{ steps.version.outputs.VERSION_NUM }}/* release/crossdesk-win-x64-${{ steps.version.outputs.VERSION_NUM }}.exe
+          cp artifacts/crossdesk-macos-x64-${{ steps.version.outputs.VERSION_WITH_V }}/* release/crossdesk-macos-x64-${{ steps.version.outputs.VERSION_WITH_V }}.pkg
+          cp artifacts/crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_WITH_V }}/* release/crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_WITH_V }}.pkg
+          cp artifacts/crossdesk-linux-amd64-${{ steps.version.outputs.VERSION_WITH_V }}/* release/crossdesk-linux-amd64-${{ steps.version.outputs.VERSION_WITH_V }}.deb
+          cp artifacts/crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_WITH_V }}/* release/crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_WITH_V }}.deb
+          cp artifacts/crossdesk-win-x64-${{ steps.version.outputs.VERSION_WITH_V }}/* release/crossdesk-win-x64-${{ steps.version.outputs.VERSION_WITH_V }}.exe
 
       - name: List release files
         run: ls -lh release/
@@ -364,8 +366,8 @@ jobs:
       - name: Upload to Versioned GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.VERSION_NUM }}
-          name: Release v${{ steps.version.outputs.VERSION_NUM }}
+          tag_name: ${{ steps.version.outputs.VERSION_WITH_V }}
+          name: Release ${{ steps.version.outputs.VERSION_WITH_V }}
           draft: false
           prerelease: false
           files: release/*
@@ -408,24 +410,24 @@ jobs:
             "releaseDate": "${{ steps.version.outputs.BUILD_DATE_ISO }}",
             "downloads": {
               "windows-x64": {
-                "url": "https://downloads.crossdesk.cn/crossdesk-win-x64-${{ steps.version.outputs.VERSION_NUM }}.exe",
-                "filename": "crossdesk-win-x64-${{ steps.version.outputs.VERSION_NUM }}.exe"
+                "url": "https://downloads.crossdesk.cn/crossdesk-win-x64-${{ steps.version.outputs.VERSION_WITH_V }}.exe",
+                "filename": "crossdesk-win-x64-${{ steps.version.outputs.VERSION_WITH_V }}.exe"
               },
               "macos-x64": {
-                "url": "https://downloads.crossdesk.cn/crossdesk-macos-x64-${{ steps.version.outputs.VERSION_NUM }}.pkg",
-                "filename": "crossdesk-macos-x64-${{ steps.version.outputs.VERSION_NUM }}.pkg"
+                "url": "https://downloads.crossdesk.cn/crossdesk-macos-x64-${{ steps.version.outputs.VERSION_WITH_V }}.pkg",
+                "filename": "crossdesk-macos-x64-${{ steps.version.outputs.VERSION_WITH_V }}.pkg"
               },
               "macos-arm64": {
-                "url": "https://downloads.crossdesk.cn/crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_NUM }}.pkg",
-                "filename": "crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_NUM }}.pkg"
+                "url": "https://downloads.crossdesk.cn/crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_WITH_V }}.pkg",
+                "filename": "crossdesk-macos-arm64-${{ steps.version.outputs.VERSION_WITH_V }}.pkg"
               },
               "linux-amd64": {
-                "url": "https://downloads.crossdesk.cn/crossdesk-linux-amd64-${{ steps.version.outputs.VERSION_NUM }}.deb",
-                "filename": "crossdesk-linux-amd64-${{ steps.version.outputs.VERSION_NUM }}.deb"
+                "url": "https://downloads.crossdesk.cn/crossdesk-linux-amd64-${{ steps.version.outputs.VERSION_WITH_V }}.deb",
+                "filename": "crossdesk-linux-amd64-${{ steps.version.outputs.VERSION_WITH_V }}.deb"
               },
               "linux-arm64": {
-                "url": "https://downloads.crossdesk.cn/crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_NUM }}.deb",
-                "filename": "crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_NUM }}.deb"
+                "url": "https://downloads.crossdesk.cn/crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_WITH_V }}.deb",
+                "filename": "crossdesk-linux-arm64-${{ steps.version.outputs.VERSION_WITH_V }}.deb"
               }
             }
           }
