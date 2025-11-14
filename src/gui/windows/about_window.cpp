@@ -8,8 +8,10 @@
 
 namespace crossdesk {
 
-void Hyperlink(const std::string& label, const std::string& url) {
+void Hyperlink(const std::string& label, const std::string& url,
+               const float window_width) {
   ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 0, 255, 255));
+  ImGui::SetCursorPosX(window_width * 0.1f);
   ImGui::Text("%s", label.c_str());
   ImGui::PopStyleColor();
 
@@ -67,7 +69,8 @@ int Render::AboutWindow() {
 #endif
 
     std::string text = localization::version[localization_language_index_] +
-                       ": CrossDesk v" + version;
+                       ": CrossDesk " + version;
+    ImGui::SetCursorPosX(about_window_width_ * 0.1f);
     ImGui::Text("%s", text.c_str());
 
     if (update_available_) {
@@ -76,14 +79,16 @@ int Render::AboutWindow() {
           ": " + latest_version_;
       std::string access_website =
           localization::access_website[localization_language_index_];
-      Hyperlink(latest_version, "https://crossdesk.cn");
+      Hyperlink(latest_version, "https://crossdesk.cn", about_window_width_);
     }
 
     ImGui::Text("");
 
     std::string copyright_text = "© 2025 by JUNKUN DI. All rights reserved.";
     std::string license_text = "Licensed under GNU LGPL v3.";
+    ImGui::SetCursorPosX(about_window_width_ * 0.1f);
     ImGui::Text("%s", copyright_text.c_str());
+    ImGui::SetCursorPosX(about_window_width_ * 0.1f);
     ImGui::Text("%s", license_text.c_str());
 
     ImGui::SetCursorPosX(about_window_width_ * 0.42f);
