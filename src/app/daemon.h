@@ -10,7 +10,6 @@
 #include <functional>
 #include <string>
 
-// default restart delay (milliseconds)
 #define DAEMON_DEFAULT_RESTART_DELAY_MS 1000
 
 class Daemon {
@@ -19,13 +18,10 @@ class Daemon {
 
   Daemon(const std::string& name);
 
-  // start daemon (restart after 1 second by default)
   bool start(MainLoopFunc loop);
 
-  // request exit
   void stop();
 
-  // check if running
   bool isRunning() const;
 
  private:
@@ -36,7 +32,6 @@ class Daemon {
   bool running_;
 #else
   static Daemon* instance_;
-  void runUnix(MainLoopFunc loop);
   volatile bool running_;
 #endif
 };
