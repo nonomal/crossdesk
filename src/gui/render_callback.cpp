@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "device_controller.h"
 #include "localization.h"
 #include "platform.h"
@@ -101,28 +103,39 @@ int Render::ProcessMouseEvent(const SDL_Event& event) {
                last_mouse_event.button.y >= props->stream_render_rect_.y &&
                last_mouse_event.button.y <= props->stream_render_rect_.y +
                                                 props->stream_render_rect_.h) {
-      int scroll_x = event.wheel.x;
-      int scroll_y = event.wheel.y;
+      float scroll_x = event.wheel.x;
+      float scroll_y = event.wheel.y;
       if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
         scroll_x = -scroll_x;
         scroll_y = -scroll_y;
       }
 
       remote_action.type = ControlType::mouse;
-      if (scroll_x == 0) {
+
+      auto roundUp = [](float value) -> int {
+        if (value > 0) {
+          return static_cast<int>(std::ceil(value));
+        } else if (value < 0) {
+          return static_cast<int>(std::floor(value));
+        }
+        return 0;
+      };
+
+      if (std::abs(scroll_y) >= std::abs(scroll_x)) {
         remote_action.m.flag = MouseFlag::wheel_vertical;
-        remote_action.m.s = scroll_y;
-      } else if (scroll_y == 0) {
+        remote_action.m.s = roundUp(scroll_y);
+      } else {
         remote_action.m.flag = MouseFlag::wheel_horizontal;
-        remote_action.m.s = scroll_x;
+        remote_action.m.s = roundUp(scroll_x);
       }
 
       render_width = props->stream_render_rect_.w;
       render_height = props->stream_render_rect_.h;
       remote_action.m.x =
-          (float)(event.button.x - props->stream_render_rect_.x) / render_width;
+          (float)(last_mouse_event.button.x - props->stream_render_rect_.x) /
+          render_width;
       remote_action.m.y =
-          (float)(event.button.y - props->stream_render_rect_.y) /
+          (float)(last_mouse_event.button.y - props->stream_render_rect_.y) /
           render_height;
 
       std::string msg = remote_action.to_json();
@@ -224,8 +237,6 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame* video_frame,
     props->video_width_ = video_frame->width;
     props->video_height_ = video_frame->height;
     props->video_size_ = video_frame->size;
-
-    LOG_ERROR("receive: {}x{}", props->video_width_, props->video_height_);
 
     if (need_to_update_render_rect) {
       render->UpdateRenderRect();
