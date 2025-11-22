@@ -448,7 +448,7 @@ class Render {
   int video_frame_rate_button_value_ = 1;
   int video_encode_format_button_value_ = 0;
   bool enable_hardware_video_codec_ = false;
-  bool enable_turn_ = false;
+  bool enable_turn_ = true;
   bool enable_srtp_ = false;
   char signal_server_ip_[256] = "api.crossdesk.cn";
   char signal_server_port_[6] = "9099";
@@ -460,7 +460,7 @@ class Render {
   int video_frame_rate_button_value_last_ = 0;
   int video_encode_format_button_value_last_ = 0;
   bool enable_hardware_video_codec_last_ = false;
-  bool enable_turn_last_ = false;
+  bool enable_turn_last_ = true;
   bool enable_srtp_last_ = false;
   bool enable_self_hosted_last_ = false;
   bool enable_autostart_ = false;

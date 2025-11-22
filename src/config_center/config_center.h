@@ -79,7 +79,7 @@ class ConfigCenter {
   VIDEO_FRAME_RATE video_frame_rate_ = VIDEO_FRAME_RATE::FPS_60;
   VIDEO_ENCODE_FORMAT video_encode_format_ = VIDEO_ENCODE_FORMAT::H264;
   bool hardware_video_codec_ = false;
-  bool enable_turn_ = false;
+  bool enable_turn_ = true;
   bool enable_srtp_ = false;
   std::string signal_server_host_ = "api.crossdesk.cn";
   std::string signal_server_host_default_ = "api.crossdesk.cn";
