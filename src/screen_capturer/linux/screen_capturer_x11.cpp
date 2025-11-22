@@ -1,5 +1,7 @@
 #include "screen_capturer_x11.h"
 
+#include <X11/extensions/Xfixes.h>
+
 #include <chrono>
 #include <thread>
 
@@ -100,6 +102,7 @@ int ScreenCapturerX11::Destroy() {
 
 int ScreenCapturerX11::Start(bool show_cursor) {
   if (running_) return 0;
+  show_cursor_ = show_cursor;
   running_ = true;
   paused_ = false;
   thread_ = std::thread([this]() {
@@ -156,6 +159,20 @@ void ScreenCapturerX11::OnFrame() {
                             AllPlanes, ZPixmap);
   if (!image) return;
 
+  // if enable show cursor, draw cursor
+  if (show_cursor_) {
+    Window root_return, child_return;
+    int root_x, root_y, win_x, win_y;
+    unsigned int mask;
+    if (XQueryPointer(display_, root_, &root_return, &child_return, &root_x,
+                      &root_y, &win_x, &win_y, &mask)) {
+      if (root_x >= left_ && root_x < left_ + width_ && root_y >= top_ &&
+          root_y < top_ + height_) {
+        DrawCursor(image, root_x - left_, root_y - top_);
+      }
+    }
+  }
+
   bool needs_copy = image->bytes_per_line != width_ * 4;
   std::vector<uint8_t> argb_buf;
   uint8_t* src_argb = nullptr;
@@ -185,5 +202,83 @@ void ScreenCapturerX11::OnFrame() {
   }
 
   XDestroyImage(image);
+}
+
+void ScreenCapturerX11::DrawCursor(XImage* image, int x, int y) {
+  if (!display_ || !image) {
+    return;
+  }
+
+  // check XFixes extension
+  int event_base, error_base;
+  if (!XFixesQueryExtension(display_, &event_base, &error_base)) {
+    return;
+  }
+
+  XFixesCursorImage* cursor_image = XFixesGetCursorImage(display_);
+  if (!cursor_image) {
+    return;
+  }
+
+  int cursor_width = cursor_image->width;
+  int cursor_height = cursor_image->height;
+
+  int draw_x = x - cursor_image->xhot;
+  int draw_y = y - cursor_image->yhot;
+
+  // draw cursor on image
+  for (int cy = 0; cy < cursor_height; ++cy) {
+    for (int cx = 0; cx < cursor_width; ++cx) {
+      int img_x = draw_x + cx;
+      int img_y = draw_y + cy;
+
+      if (img_x < 0 || img_x >= image->width || img_y < 0 ||
+          img_y >= image->height) {
+        continue;
+      }
+
+      unsigned long cursor_pixel = cursor_image->pixels[cy * cursor_width + cx];
+      unsigned char a = (cursor_pixel >> 24) & 0xFF;
+
+      // if alpha is 0, skip
+      if (a == 0) {
+        continue;
+      }
+
+      unsigned long img_pixel = XGetPixel(image, img_x, img_y);
+
+      unsigned char img_r = (img_pixel >> 16) & 0xFF;
+      unsigned char img_g = (img_pixel >> 8) & 0xFF;
+      unsigned char img_b = img_pixel & 0xFF;
+
+      unsigned char cursor_r = (cursor_pixel >> 16) & 0xFF;
+      unsigned char cursor_g = (cursor_pixel >> 8) & 0xFF;
+      unsigned char cursor_b = cursor_pixel & 0xFF;
+
+      // alpha mix
+      unsigned char final_r, final_g, final_b;
+      if (a == 255) {
+        // if alpha is 255, use cursor color
+        final_r = cursor_r;
+        final_g = cursor_g;
+        final_b = cursor_b;
+      } else {
+        float alpha = a / 255.0f;
+        float inv_alpha = 1.0f - alpha;
+        final_r =
+            static_cast<unsigned char>(cursor_r * alpha + img_r * inv_alpha);
+        final_g =
+            static_cast<unsigned char>(cursor_g * alpha + img_g * inv_alpha);
+        final_b =
+            static_cast<unsigned char>(cursor_b * alpha + img_b * inv_alpha);
+      }
+
+      // set pixel
+      unsigned long new_pixel = (final_r << 16) | (final_g << 8) | final_b;
+      XPutPixel(image, img_x, img_y, new_pixel);
+    }
+  }
+
+  XFree(cursor_image);
 }
 }  // namespace crossdesk

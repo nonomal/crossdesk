@@ -45,7 +45,7 @@ elseif is_os("linux") then
     add_links("pulse-simple", "pulse")
     add_requires("libyuv") 
     add_syslinks("pthread", "dl")
-    add_links("SDL3", "asound", "X11", "Xtst", "Xrandr")
+    add_links("SDL3", "asound", "X11", "Xtst", "Xrandr", "Xfixes")
     add_cxflags("-Wno-unused-variable")   
 elseif is_os("macosx") then
     add_links("SDL3")
