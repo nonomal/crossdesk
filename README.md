@@ -315,10 +315,10 @@ Generation complete. Deployment files::
   Server certificate: crossdesk.cn_bundle.crt
 ```
 
-#### 服务端
+### 服务端
 将 **crossdesk.cn.key** 和 **crossdesk.cn_bundle.crt** 放置到 **/path/to/your/certs** 目录下。
 
-#### 客户端
+### 客户端
 1. 点击右上角设置进入设置页面。<br>
 <img width="600" height="210" alt="image" src="https://github.com/user-attachments/assets/6431131d-b32a-4726-8783-6788f47baa3b" /><br><br>
 
@@ -330,6 +330,9 @@ Generation complete. Deployment files::
 
 7. 勾选使用**自托管服务器配置**，点击确认配置生效。<br><br>
 <img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/1e455dc3-4087-4f37-a544-1ff9f8789383" /><br><br>
+
+### Web 客户端
+详情见项目 [CrossDesk Web Client](https://github.com/kunkundi/crossdesk-web-client)。
 
 # 常见问题
 见 [常见问题](https://github.com/kunkundi/crossdesk/blob/self-hosted-server/docs/FAQ.md) 。

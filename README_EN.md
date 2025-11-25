@@ -323,10 +323,10 @@ Generation complete. Deployment files::
   Server certificate: crossdesk.cn_bundle.crt
 ```
 
-#### Server Side
+### Server Side
 Place **crossdesk.cn.key** and **crossdesk.cn_bundle.crt** into the **/path/to/your/certs** directory.
 
-#### Client Side
+### Client Side
 1. Click the settings icon in the top-right corner to enter the settings page.<br>
 <img width="600" height="210" alt="image" src="https://github.com/user-attachments/assets/6431131d-b32a-4726-8783-6788f47baa3b" /><br><br>
 
@@ -338,6 +338,9 @@ Place **crossdesk.cn.key** and **crossdesk.cn_bundle.crt** into the **/path/to/y
 
 4. Check the option to use **Self-Hosted Server Configuration**.<br><br>
 <img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/1e455dc3-4087-4f37-a544-1ff9f8789383" /><br><br>
+
+### Web Client
+See [CrossDesk Web Client](https://github.com/kunkundi/crossdesk-web-client)。
 
 # FAQ
 See [FAQ](https://github.com/kunkundi/crosssesk/blob/self-hosted-server/docs/FAQ.md) .
