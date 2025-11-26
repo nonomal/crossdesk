@@ -196,14 +196,26 @@ ScreenCapturerSckImpl::~ScreenCapturerSckImpl() {
 
 int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
   _on_data = cb;
+  fps_ = fps;
+
+  if (@available(macOS 10.15, *)) {
+    bool has_permission = CGPreflightScreenCaptureAccess();
+    if (!has_permission) {
+      LOG_ERROR("Screen recording permission not granted");
+      return -1;
+    }
+  }
 
   dispatch_semaphore_t sema = dispatch_semaphore_create(0);
   __block SCShareableContent *content = nil;
+  __block NSError *capture_error = nil;
 
   [SCShareableContent
       getShareableContentWithCompletionHandler:^(SCShareableContent *result, NSError *error) {
         if (error) {
-          NSLog(@"Failed to get shareable content: %@", error);
+          capture_error = error;
+          LOG_ERROR("Failed to get shareable content: {}",
+                    std::string([error.localizedDescription UTF8String]));
         } else {
           content = result;
         }
@@ -211,9 +223,10 @@ int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
       }];
   dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
 
-  if (!content || content.displays.count == 0) {
-    LOG_ERROR("Failed to get display info");
-    return 0;
+  if (capture_error || !content || content.displays.count == 0) {
+    LOG_ERROR("Failed to get display info, error: {}",
+              std::string([capture_error.localizedDescription UTF8String]));
+    return -1;
   }
 
   CGDirectDisplayID displays[10];
@@ -252,6 +265,16 @@ int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
 }
 
 int ScreenCapturerSckImpl::Start(bool show_cursor) {
+  if (permanent_error_) {
+    LOG_ERROR("Cannot start capturer: permanent error occurred");
+    return -1;
+  }
+
+  if (display_info_list_.empty()) {
+    LOG_ERROR("Cannot start capturer: display info not initialized");
+    return -1;
+  }
+
   show_cursor_ = show_cursor;
   StartOrReconfigureCapturer();
   return 0;
@@ -307,17 +330,17 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
     return;
   }
 
-  if (!content.displays.count) {
+  if (!content.displays || content.displays.count == 0) {
     LOG_ERROR("getShareableContent returned no displays");
     permanent_error_ = true;
     return;
   }
 
-  SCDisplay *captured_display;
+  SCDisplay *captured_display = nil;
   {
     std::lock_guard<std::mutex> lock(lock_);
     for (SCDisplay *display in content.displays) {
-      if (current_display_ == display.displayID) {
+      if (current_display_ != 0 && current_display_ == display.displayID) {
         LOG_WARN("current display: {}, name: {}", current_display_,
                  display_id_name_map_[current_display_]);
         captured_display = display;
@@ -326,13 +349,33 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
     }
     if (!captured_display) {
       captured_display = content.displays.firstObject;
-      current_display_ = captured_display.displayID;
+      if (captured_display) {
+        current_display_ = captured_display.displayID;
+      }
     }
+  }
+
+  if (!captured_display) {
+    LOG_ERROR("Failed to find valid display");
+    permanent_error_ = true;
+    return;
   }
 
   SCContentFilter *filter = [[SCContentFilter alloc] initWithDisplay:captured_display
                                                     excludingWindows:@[]];
+  if (!filter) {
+    LOG_ERROR("Failed to create SCContentFilter");
+    permanent_error_ = true;
+    return;
+  }
+
   SCStreamConfiguration *config = [[SCStreamConfiguration alloc] init];
+  if (!config) {
+    LOG_ERROR("Failed to create SCStreamConfiguration");
+    permanent_error_ = true;
+    return;
+  }
+
   config.pixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
   config.showsCursor = show_cursor_;
   config.width = filter.contentRect.size.width * filter.pointPixelScale;
@@ -423,11 +466,28 @@ void ScreenCapturerSckImpl::OnNewCVPixelBuffer(CVPixelBufferRef pixelBuffer,
 }
 
 void ScreenCapturerSckImpl::StartOrReconfigureCapturer() {
-  // The copy is needed to avoid capturing `this` in the Objective-C block. Accessing `helper_`
-  // inside the block is equivalent to `this->helper_` and would crash (UAF) if `this` is
-  // deleted before the block is executed.
+  if (permanent_error_) {
+    LOG_ERROR("Cannot reconfigure capturer: permanent error occurred");
+    return;
+  }
+
+  if (@available(macOS 10.15, *)) {
+    bool has_permission = CGPreflightScreenCaptureAccess();
+    if (!has_permission) {
+      LOG_ERROR("Screen recording permission not granted");
+      permanent_error_ = true;
+      return;
+    }
+  }
+
   SckHelper *local_helper = helper_;
   auto handler = ^(SCShareableContent *content, NSError *error) {
+    if (error) {
+      LOG_ERROR("getShareableContent failed: {}",
+                std::string([error.localizedDescription UTF8String]));
+      [local_helper onShareableContentCreated:nil];
+      return;
+    }
     [local_helper onShareableContentCreated:content];
   };
   [SCShareableContent getShareableContentWithCompletionHandler:handler];
