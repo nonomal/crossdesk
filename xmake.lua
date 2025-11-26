@@ -182,6 +182,8 @@ target("gui")
     if is_os("windows") then
         add_files("src/gui/tray/*.cpp")
         add_includedirs("src/gui/tray", {public = true})
+    elseif is_os("macosx") then
+        add_files("src/gui/windows/*.mm")
     end
 
 target("crossdesk")

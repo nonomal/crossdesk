@@ -895,6 +895,12 @@ int Render::DrawMainWindow() {
 
   UpdateNotificationWindow();
 
+#ifdef __APPLE__
+  if (show_request_permission_window_) {
+    RequestPermissionWindow();
+  }
+#endif
+
   ImGui::End();
 
   // Rendering

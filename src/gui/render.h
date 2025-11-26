@@ -188,6 +188,14 @@ class Render {
   int NetTrafficStats(std::shared_ptr<SubStreamWindowProperties>& props);
   void DrawConnectionStatusText(
       std::shared_ptr<SubStreamWindowProperties>& props);
+#ifdef __APPLE__
+  int RequestPermissionWindow();
+  bool CheckScreenRecordingPermission();
+  bool CheckAccessibilityPermission();
+  void OpenSystemPreferences();
+  void OpenScreenRecordingPreferences();
+  void OpenAccessibilityPreferences();
+#endif
 
  public:
   static void OnReceiveVideoBufferCb(const XVideoFrame* video_frame,
@@ -449,6 +457,9 @@ class Render {
   bool show_new_version_icon_in_menu_ = true;
   uint64_t new_version_icon_last_trigger_time_ = 0;
   uint64_t new_version_icon_render_start_time_ = 0;
+#ifdef __APPLE__
+  bool show_request_permission_window_ = true;
+#endif
   char client_id_[10] = "";
   char client_id_display_[12] = "";
   char client_id_with_password_[17] = "";
