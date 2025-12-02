@@ -661,19 +661,26 @@ int Render::CreateMainWindow() {
 
   ImGui::SetCurrentContext(main_ctx_);
 
-  dpi_scale_ = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-  LOG_INFO("System DPI scale before window creation: [{}]", dpi_scale_);
-
-  UpdateWindowSizeWithDpiScale(dpi_scale_);
-
   if (!SDL_CreateWindowAndRenderer(
           "Remote Desk", (int)main_window_width_, (int)main_window_height_,
           SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_BORDERLESS |
               SDL_WINDOW_HIDDEN,
           &main_window_, &main_renderer_)) {
-    LOG_ERROR("Error creating main_window_ and main_renderer_: {}",
-              SDL_GetError());
+    LOG_ERROR("Error creating MainWindow and MainRenderer: {}", SDL_GetError());
     return -1;
+  }
+
+  float dpi_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+  if (std::abs(dpi_scale_ - dpi_scale) > 0.01f) {
+    dpi_scale_ = dpi_scale;
+
+    main_window_width_ = (int)(main_window_width_ * dpi_scale_);
+    main_window_height_ = (int)(main_window_height_ * dpi_scale_);
+    stream_window_width_ = (int)(stream_window_width_ * dpi_scale_);
+    stream_window_height_ = (int)(stream_window_height_ * dpi_scale_);
+
+    SDL_SetWindowSize(main_window_, (int)main_window_width_,
+                      (int)main_window_height_);
   }
 
   SDL_SetWindowResizable(main_window_, false);
@@ -751,8 +758,6 @@ int Render::CreateStreamWindow() {
   SDL_SetWindowHitTest(stream_window_, HitTestCallback, this);
 
   SetupFontAndStyle(false);
-
-  SDL_SetRenderScale(stream_renderer_, dpi_scale_, dpi_scale_);
 
   ImGui_ImplSDL3_InitForSDLRenderer(stream_window_, stream_renderer_);
   ImGui_ImplSDLRenderer3_Init(stream_renderer_);
@@ -913,9 +918,10 @@ int Render::DrawMainWindow() {
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
 
+  ImGuiIO& io = ImGui::GetIO();
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(main_window_width_, main_window_height_),
+  ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y),
                            ImGuiCond_Always);
   ImGui::Begin("MainRender", nullptr,
                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
@@ -938,7 +944,6 @@ int Render::DrawMainWindow() {
   ImGui::End();
 
   // Rendering
-  ImGuiIO& io = ImGui::GetIO();
   (void)io;
   ImGui::Render();
   SDL_SetRenderScale(main_renderer_, io.DisplayFramebufferScale.x,
