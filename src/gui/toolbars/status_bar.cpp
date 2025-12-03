@@ -1,34 +1,38 @@
+#include "layout_relative.h"
 #include "localization.h"
 #include "render.h"
 
 namespace crossdesk {
 
 int Render::StatusBar() {
+  ImGuiIO& io = ImGui::GetIO();
+  float status_bar_width = io.DisplaySize.x;
+  float status_bar_height = io.DisplaySize.y * STATUS_BAR_HEIGHT;
+
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   static bool a, b, c, d, e;
-  ImGui::SetNextWindowPos(
-      ImVec2(0, main_window_height_ - status_bar_height_ - 1),
-      ImGuiCond_Always);
+  ImGui::SetNextWindowPos(ImVec2(0, io.DisplaySize.y * (1 - STATUS_BAR_HEIGHT)),
+                          ImGuiCond_Always);
 
   ImGui::BeginChild(
-      "StatusBar", ImVec2(main_window_width_, status_bar_height_ + 1),
+      "StatusBar", ImVec2(status_bar_width, status_bar_height),
       ImGuiChildFlags_Border,
       ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-  ImVec2 dot_pos = ImVec2(13.0f * dpi_scale_,
-                          (main_window_height_ - status_bar_height_) * 1.025f);
+  ImVec2 dot_pos = ImVec2(status_bar_width * 0.025f,
+                          io.DisplaySize.y * (1 - STATUS_BAR_HEIGHT * 0.5f));
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
-  draw_list->AddCircleFilled(dot_pos, 5.0f * dpi_scale_,
+  draw_list->AddCircleFilled(dot_pos, status_bar_height * 0.2f,
                              ImColor(signal_connected_ ? 0.0f : 1.0f,
                                      signal_connected_ ? 1.0f : 0.0f, 0.0f),
                              100);
-  draw_list->AddCircle(dot_pos, 6.0f * dpi_scale_, ImColor(1.0f, 1.0f, 1.0f),
-                       100);
+  draw_list->AddCircle(dot_pos, status_bar_height * 0.25f,
+                       ImColor(1.0f, 1.0f, 1.0f), 100);
 
   ImGui::SetWindowFontScale(0.6f);
   draw_list->AddText(
-      ImVec2(25.0f * dpi_scale_,
-             (main_window_height_ - status_bar_height_) * 1.003f),
+      ImVec2(status_bar_width * 0.045f,
+             io.DisplaySize.y * (1 - STATUS_BAR_HEIGHT * 0.9f)),
       ImColor(0.0f, 0.0f, 0.0f),
       signal_connected_
           ? localization::signal_connected[localization_language_index_].c_str()
