@@ -122,7 +122,6 @@ int Render::ShowSimpleFileBrowser() {
 
 int Render::SelfHostedServerWindow() {
   ImGuiIO& io = ImGui::GetIO();
-  show_self_hosted_server_config_window_ = true;
   if (show_self_hosted_server_config_window_) {
     if (self_hosted_server_config_window_pos_reset_) {
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
@@ -142,7 +141,7 @@ int Render::SelfHostedServerWindow() {
 
     // Settings
     {
-      static int settings_items_padding = 30 * dpi_scale_;
+      static int settings_items_padding = title_bar_button_width_;
       int settings_items_offset = 0;
 
       ImGui::SetWindowFontScale(0.5f);

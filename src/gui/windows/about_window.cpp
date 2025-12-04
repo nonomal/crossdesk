@@ -37,17 +37,18 @@ void Render::Hyperlink(const std::string& label, const std::string& url,
 
 int Render::AboutWindow() {
   if (show_about_window_) {
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-
+    float about_window_width = title_bar_button_width_ * 7.5f;
     float about_window_height = latest_version_.empty()
-                                    ? about_window_height_
-                                    : about_window_height_ + 20.0f;
+                                    ? title_bar_button_width_ * 4.0f
+                                    : title_bar_button_width_ * 4.6f;
+
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(ImVec2(
-        (viewport->WorkSize.x - viewport->WorkPos.x - about_window_width_) / 2,
+        (viewport->WorkSize.x - viewport->WorkPos.x - about_window_width) / 2,
         (viewport->WorkSize.y - viewport->WorkPos.y - about_window_height) /
             2));
 
-    ImGui::SetNextWindowSize(ImVec2(about_window_width_, about_window_height));
+    ImGui::SetNextWindowSize(ImVec2(about_window_width, about_window_height));
 
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
@@ -70,7 +71,7 @@ int Render::AboutWindow() {
 
     std::string text = localization::version[localization_language_index_] +
                        ": CrossDesk " + version;
-    ImGui::SetCursorPosX(about_window_width_ * 0.1f);
+    ImGui::SetCursorPosX(about_window_width * 0.1f);
     ImGui::Text("%s", text.c_str());
 
     if (update_available_) {
@@ -79,19 +80,19 @@ int Render::AboutWindow() {
           ": " + latest_version_;
       std::string access_website =
           localization::access_website[localization_language_index_];
-      Hyperlink(latest_version, "https://crossdesk.cn", about_window_width_);
+      Hyperlink(latest_version, "https://crossdesk.cn", about_window_width);
     }
 
     ImGui::Text("");
 
     std::string copyright_text = "© 2025 by JUNKUN DI. All rights reserved.";
     std::string license_text = "Licensed under GNU LGPL v3.";
-    ImGui::SetCursorPosX(about_window_width_ * 0.1f);
+    ImGui::SetCursorPosX(about_window_width * 0.1f);
     ImGui::Text("%s", copyright_text.c_str());
-    ImGui::SetCursorPosX(about_window_width_ * 0.1f);
+    ImGui::SetCursorPosX(about_window_width * 0.1f);
     ImGui::Text("%s", license_text.c_str());
 
-    ImGui::SetCursorPosX(about_window_width_ * 0.42f);
+    ImGui::SetCursorPosX(about_window_width * 0.445f);
     ImGui::SetCursorPosY(about_window_height * 0.75f);
     // OK
     if (ImGui::Button(localization::ok[localization_language_index_].c_str())) {
