@@ -18,6 +18,7 @@
 #include <shared_mutex>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "IconsFontAwesome6.h"
 #include "config_center.h"
@@ -301,7 +302,7 @@ class Render {
   // thumbnail
   unsigned char aes128_key_[16];
   unsigned char aes128_iv_[16];
-  std::unique_ptr<Thumbnail> thumbnail_;
+  std::shared_ptr<Thumbnail> thumbnail_;
 
   // recent connections
   std::vector<std::pair<std::string, Thumbnail::RecentConnection>>
@@ -511,6 +512,11 @@ class Render {
   std::shared_mutex client_properties_mutex_;
   void CloseTab(decltype(client_properties_)::iterator& it);
   /* ------ stream window property end ------ */
+
+  /* ------ async thumbnail save tasks ------ */
+  std::vector<std::thread> thumbnail_save_threads_;
+  std::mutex thumbnail_save_threads_mutex_;
+  void WaitForThumbnailSaveTasks();
 
   /* ------ server mode ------ */
   std::unordered_map<std::string, ConnectionStatus> connection_status_;

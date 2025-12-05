@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include "OPPOSans_Regular.h"
 #include "device_controller_factory.h"
@@ -207,7 +208,7 @@ int Render::LoadSettingsFromCacheFile() {
     memset(aes128_iv_, 0, sizeof(aes128_iv_));
 
     thumbnail_.reset();
-    thumbnail_ = std::make_unique<Thumbnail>(cache_path_ + "/thumbnails/");
+    thumbnail_ = std::make_shared<Thumbnail>(cache_path_ + "/thumbnails/");
     thumbnail_->GetKeyAndIv(aes128_key_, aes128_iv_);
     thumbnail_->DeleteAllFilesInDirectory();
 
@@ -248,7 +249,7 @@ int Render::LoadSettingsFromCacheFile() {
   memcpy(aes128_iv_, cd_cache_.iv, sizeof(cd_cache_.iv));
 
   thumbnail_.reset();
-  thumbnail_ = std::make_unique<Thumbnail>(cache_path_ + "/thumbnails/",
+  thumbnail_ = std::make_shared<Thumbnail>(cache_path_ + "/thumbnails/",
                                            aes128_key_, aes128_iv_);
 
   language_button_value_ = (int)config_center_->GetLanguage();
@@ -1237,6 +1238,9 @@ void Render::Cleanup() {
 
   CleanupFactories();
   CleanupPeers();
+
+  WaitForThumbnailSaveTasks();
+
   AudioDeviceDestroy();
   DestroyMainWindowContext();
   DestroyMainWindow();
@@ -1264,10 +1268,29 @@ void Render::CleanupPeer(std::shared_ptr<SubStreamWindowProperties> props) {
   SDL_FlushEvent(STREAM_REFRESH_EVENT);
 
   if (props->dst_buffer_) {
-    thumbnail_->SaveToThumbnail(
-        (char*)props->dst_buffer_, props->video_width_, props->video_height_,
-        props->remote_id_, props->remote_host_name_,
-        props->remember_password_ ? props->remote_password_ : "");
+    size_t buffer_size = props->dst_buffer_capacity_;
+    std::vector<unsigned char> buffer_copy(buffer_size);
+    memcpy(buffer_copy.data(), props->dst_buffer_, buffer_size);
+
+    int video_width = props->video_width_;
+    int video_height = props->video_height_;
+    std::string remote_id = props->remote_id_;
+    std::string remote_host_name = props->remote_host_name_;
+    std::string password =
+        props->remember_password_ ? props->remote_password_ : "";
+
+    std::thread save_thread([buffer_copy, video_width, video_height, remote_id,
+                             remote_host_name, password,
+                             thumbnail = thumbnail_]() {
+      thumbnail->SaveToThumbnail((char*)buffer_copy.data(), video_width,
+                                 video_height, remote_id, remote_host_name,
+                                 password);
+    });
+
+    {
+      std::lock_guard<std::mutex> lock(thumbnail_save_threads_mutex_);
+      thumbnail_save_threads_.emplace_back(std::move(save_thread));
+    }
   }
 
   if (props->peer_) {
@@ -1302,6 +1325,25 @@ void Render::CleanupPeers() {
   {
     // std::unique_lock lock(client_properties_mutex_);
     client_properties_.clear();
+  }
+}
+
+void Render::WaitForThumbnailSaveTasks() {
+  std::vector<std::thread> threads_to_join;
+
+  {
+    std::lock_guard<std::mutex> lock(thumbnail_save_threads_mutex_);
+    threads_to_join.swap(thumbnail_save_threads_);
+  }
+
+  if (threads_to_join.empty()) {
+    return;
+  }
+
+  for (auto& thread : threads_to_join) {
+    if (thread.joinable()) {
+      thread.join();
+    }
   }
 }
 
