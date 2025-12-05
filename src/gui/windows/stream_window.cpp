@@ -170,6 +170,20 @@ int Render::StreamWindow() {
           ImGui::EndTabItem();
         } else {
           props->tab_selected_ = false;
+          if (!props->tab_opened_) {
+            std::string remote_id_to_close = props->remote_id_;
+            // lock.unlock();
+            {
+              // std::unique_lock unique_lock(client_properties_mutex_);
+              auto close_it = client_properties_.find(remote_id_to_close);
+              if (close_it != client_properties_.end()) {
+                CloseTab(close_it);
+              }
+            }
+            // lock.lock();
+            it = client_properties_.begin();
+            continue;
+          }
           ++it;
         }
       }
