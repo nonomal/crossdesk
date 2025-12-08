@@ -203,8 +203,24 @@ The parameters you need to pay attention to are as follows:
 - `-v /var/lib/crossdesk:/var/lib/crossdesk`: Persists database and certificate files on the host machine.
 - `-v /var/log/crossdesk:/var/log/crossdesk`: Persists log files on the host machine.
 
+**Example**:
+```bash
+sudo docker run -d \
+  --name crossdesk_server \
+  --network host \
+  -e EXTERNAL_IP=114.114.114.114 \
+  -e INTERNAL_IP=10.0.0.1 \
+  -e CROSSDESK_SERVER_PORT=9099 \
+  -e COTURN_PORT=3478 \
+  -e MIN_PORT=50000 \
+  -e MAX_PORT=60000 \
+  -v /var/lib/crossdesk:/var/lib/crossdesk \
+  -v /var/log/crossdesk:/var/log/crossdesk \
+  crossdesk/crossdesk-server:v1.1.2
+```
+
 **Notes**
-- **The server must open the following ports: 3478/udp, 3478/tcp, MIN_PORT–MAX_PORT/udp, and CROSSDESK_SERVER_PORT/tcp.**
+- **The server must open the following ports: COTURN_PORT/udp, COTURN_PORT/tcp, MIN_PORT–MAX_PORT/udp, and CROSSDESK_SERVER_PORT/tcp.**
 - If you don’t mount volumes, all data will be lost when the container is removed.
 - Certificate files will be automatically generated on first startup and persisted to the host at `/var/lib/crossdesk/certs`.
 - The database file will be automatically created and stored at `/var/lib/crossdesk/db/crossdesk-server.db`.

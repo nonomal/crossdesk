@@ -169,7 +169,7 @@ xmake r -d crossdesk
 
 ## 自托管服务器
 推荐使用Docker部署CrossDesk Server。
-```
+```bash
 sudo docker run -d \
   --name crossdesk_server \
   --network host \
@@ -194,9 +194,25 @@ sudo docker run -d \
 - MIN_PORT/MAX_PORT：COTURN 服务使用的端口范围，例如：MIN_PORT=50000, MAX_PORT=60000，范围可根据客户端数量调整。
 - `-v /var/lib/crossdesk:/var/lib/crossdesk`：持久化数据库和证书文件到宿主机
 - `-v /var/log/crossdesk:/var/log/crossdesk`：持久化日志文件到宿主机
-- 
+
+**示例**：
+```bash
+sudo docker run -d \
+  --name crossdesk_server \
+  --network host \
+  -e EXTERNAL_IP=114.114.114.114 \
+  -e INTERNAL_IP=10.0.0.1 \
+  -e CROSSDESK_SERVER_PORT=9099 \
+  -e COTURN_PORT=3478 \
+  -e MIN_PORT=50000 \
+  -e MAX_PORT=60000 \
+  -v /var/lib/crossdesk:/var/lib/crossdesk \
+  -v /var/log/crossdesk:/var/log/crossdesk \
+  crossdesk/crossdesk-server:v1.1.2
+```
+
 **注意**：
-- **服务器需开放端口：3478/udp，3478/tcp，MIN_PORT-MAX_PORT/udp，CROSSDESK_SERVER_PORT/tcp。**
+- **服务器需开放端口：COTURN_PORT/udp，COTURN_PORT/tcp，MIN_PORT-MAX_PORT/udp，CROSSDESK_SERVER_PORT/tcp。**
 - 如果不挂载 volume，容器删除后数据会丢失
 - 证书文件会在首次启动时自动生成并持久化到宿主机的 `/var/lib/crossdesk/certs` 路径下
 - 数据库文件会自动创建并持久化到宿主机的 `/var/lib/crossdesk/db/crossdesk-server.db` 路径下
